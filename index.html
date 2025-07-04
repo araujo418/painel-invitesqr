@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>InvitesQR - Painel Admin</title>
+  <title>InvitesQR - Painel de Clientes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
@@ -13,7 +13,7 @@
       color: white;
     }
     .container {
-      max-width: 500px;
+      max-width: 700px;
       margin: 2rem auto;
       padding: 2rem;
       background: #1e1e1e;
@@ -59,40 +59,39 @@
 </head>
 <body>
 <div class="container" id="login-box">
-  <h2>Login</h2>
+  <h2>Login Admin</h2>
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="senha" placeholder="Senha">
   <button onclick="logar()">Entrar</button>
 </div>
 
 <div class="container hidden" id="painel">
-  <h2>Painel Admin</h2>
+  <h2>Controle de Clientes</h2>
 
-  <h3>Gerar Licença</h3>
-  <input type="text" id="codigo" placeholder="Código da licença">
-  <input type="date" id="validade">
-  <button onclick="gerarLicenca()">Salvar Licença</button>
+  <h3>Cadastrar Cliente</h3>
+  <input type="text" id="nome_cliente" placeholder="Nome do cliente">
+  <input type="number" id="limite_scan" placeholder="Limite de scans (ex: 50)">
+  <input type="date" id="validade_token" placeholder="Validade do token">
+  <input type="text" id="device_id" placeholder="ID do dispositivo (opcional)">
+  <button onclick="cadastrarCliente()">Salvar Cliente</button>
 
-  <h3>Licenças Ativas</h3>
+  <h3>Clientes Ativos</h3>
   <table>
     <thead>
-      <tr><th>Código</th><th>Validade</th><th>Status</th><th>Ações</th></tr>
+      <tr><th>Nome</th><th>Token</th><th>Dispositivo</th><th>Scans</th><th>Limite</th><th>Validade</th><th>Ações</th></tr>
     </thead>
-    <tbody id="lista-licencas"></tbody>
+    <tbody id="lista-clientes"></tbody>
   </table>
 
-  <h3>Cadastrar Convidado</h3>
-  <input type="text" id="nome_convidado" placeholder="Nome do convidado">
-  <button onclick="cadastrarConvidado()">Salvar Convidado</button>
-
-  <h3>Convidados</h3>
+  <h3>Logs de Acesso</h3>
   <table>
     <thead>
-      <tr><th>Nome</th><th>Ações</th></tr>
+      <tr><th>Token</th><th>Data</th><th>Dispositivo</th><th>Status</th></tr>
     </thead>
-    <tbody id="lista-convidados"></tbody>
+    <tbody id="logs-uso"></tbody>
   </table>
 
+  <button onclick="exportarCSV()">📄 Exportar CSV</button>
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -110,8 +109,8 @@
     if (email === EMAIL_VALIDO && senha === SENHA_VALIDA) {
       document.getElementById('login-box').classList.add('hidden');
       document.getElementById('painel').classList.remove('hidden');
-      listarLicencas();
-      listarConvidados();
+      listarClientes();
+      listarLogs();
     } else {
       alert('Credenciais inválidas');
     }
@@ -122,62 +121,76 @@
     document.getElementById('login-box').classList.remove('hidden');
   }
 
-  async function gerarLicenca() {
-    const codigo = document.getElementById('codigo').value;
-    const validade = document.getElementById('validade').value;
-    if (!codigo || !validade) return alert('Preencha todos os campos');
-    const { error } = await supabase.from('licencas').insert([{ codigo, validade, ativo: true }]);
+  function gerarTokenUnico() {
+    return 'TKN-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
+
+  async function cadastrarCliente() {
+    const nome = document.getElementById('nome_cliente').value;
+    const limite = parseInt(document.getElementById('limite_scan').value);
+    const validade = document.getElementById('validade_token').value;
+    const device_id = document.getElementById('device_id').value || null;
+    if (!nome || !limite || !validade) return alert('Preencha todos os campos obrigatórios');
+    const token = gerarTokenUnico();
+    const { error } = await supabase.from('clientes').insert([{ nome, token, limite_scan: limite, scans_feitos: 0, validade_token: validade, device_id }]);
     if (error) return alert('Erro: ' + error.message);
-    listarLicencas();
+    listarClientes();
+    document.getElementById('nome_cliente').value = '';
+    document.getElementById('limite_scan').value = '';
+    document.getElementById('validade_token').value = '';
+    document.getElementById('device_id').value = '';
   }
 
-  async function listarLicencas() {
-    const { data } = await supabase.from('licencas').select('*').order('validade', { ascending: false });
-    const tabela = document.getElementById('lista-licencas');
-    tabela.innerHTML = '';
-    data.forEach(l => {
-      const status = new Date(l.validade) < new Date() ? 'Expirada' : (l.ativo ? 'Ativa' : 'Inativa');
-      tabela.innerHTML += `<tr><td>${l.codigo}</td><td>${l.validade}</td><td>${status}</td>
-        <td><button onclick="editarLicenca('${l.codigo}', '${l.validade}')">Editar</button>
-        <button onclick="removerLicenca('${l.codigo}')">Remover</button></td></tr>`;
-    });
-  }
-
-  async function editarLicenca(codigo, validadeAtual) {
-    const nova = prompt('Nova validade:', validadeAtual);
-    if (!nova) return;
-    await supabase.from('licencas').update({ validade: nova }).eq('codigo', codigo);
-    listarLicencas();
-  }
-
-  async function removerLicenca(codigo) {
-    if (!confirm('Tem certeza que deseja remover?')) return;
-    await supabase.from('licencas').delete().eq('codigo', codigo);
-    listarLicencas();
-  }
-
-  async function cadastrarConvidado() {
-    const nome = document.getElementById('nome_convidado').value;
-    if (!nome) return alert('Digite o nome do convidado');
-    const { error } = await supabase.from('convidados').insert([{ nome }]);
-    if (error) return alert('Erro: ' + error.message);
-    listarConvidados();
-  }
-
-  async function listarConvidados() {
-    const { data } = await supabase.from('convidados').select('*');
-    const tabela = document.getElementById('lista-convidados');
+  async function listarClientes() {
+    const { data } = await supabase.from('clientes').select('*').order('nome');
+    const tabela = document.getElementById('lista-clientes');
     tabela.innerHTML = '';
     data.forEach(c => {
-      tabela.innerHTML += `<tr><td>${c.nome}</td><td>
-        <button onclick="removerConvidado('${c.id}')">Remover</button></td></tr>`;
+      tabela.innerHTML += `<tr>
+        <td>${c.nome}</td>
+        <td>${c.token}</td>
+        <td>${c.device_id || '-'}</td>
+        <td>${c.scans_feitos}</td>
+        <td>${c.limite_scan}</td>
+        <td>${c.validade_token || '-'}</td>
+        <td><button onclick="removerCliente('${c.id}')">Remover</button></td>
+      </tr>`;
     });
   }
 
-  async function removerConvidado(id) {
-    if (!confirm('Deseja remover este convidado?')) return;
-    await supabase.from('convidados').delete().eq('id', id);
-    listarConvidados();
+  async function removerCliente(id) {
+    if (!confirm('Remover este cliente?')) return;
+    await supabase.from('clientes').delete().eq('id', id);
+    listarClientes();
+  }
+
+  async function listarLogs() {
+    const { data } = await supabase.from('log_uso').select('*').order('data', { ascending: false });
+    const tabela = document.getElementById('logs-uso');
+    tabela.innerHTML = '';
+    data.forEach(log => {
+      tabela.innerHTML += `<tr>
+        <td>${log.token}</td>
+        <td>${log.data}</td>
+        <td>${log.device_id || '-'}</td>
+        <td>${log.status}</td>
+      </tr>`;
+    });
+  }
+
+  function exportarCSV() {
+    supabase.from('clientes').select('*').then(({ data }) => {
+      let csv = 'Nome,Token,Device ID,Scans Feitos,Limite,Validade\n';
+      data.forEach(c => {
+        csv += `${c.nome},${c.token},${c.device_id || '-'},${c.scans_feitos},${c.limite_scan},${c.validade_token}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'clientes.csv';
+      a.click();
+    });
   }
 </script>
 </body>
