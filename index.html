@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>InvitesQR - Painel Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #121212;
+      color: white;
+    }
+    .container {
+      max-width: 500px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #1e1e1e;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    h2, h3 {
+      text-align: center;
+      color: #00ffd5;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 6px;
+    }
+    input {
+      background: #2a2a2a;
+      color: white;
+    }
+    button {
+      background: #00ffd5;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #444;
+    }
+    th {
+      background: #2e2e2e;
+      color: #00ffd5;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="container" id="login-box">
+  <h2>Login</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="senha" placeholder="Senha">
+  <button onclick="logar()">Entrar</button>
+</div>
+
+<div class="container hidden" id="painel">
+  <h2>Painel Admin</h2>
+
+  <h3>Gerar Licença</h3>
+  <input type="text" id="codigo" placeholder="Código da licença">
+  <input type="date" id="validade">
+  <button onclick="gerarLicenca()">Salvar Licença</button>
+
+  <h3>Licenças Ativas</h3>
+  <table>
+    <thead>
+      <tr><th>Código</th><th>Validade</th><th>Status</th><th>Ações</th></tr>
+    </thead>
+    <tbody id="lista-licencas"></tbody>
+  </table>
+
+  <h3>Cadastrar Convidado</h3>
+  <input type="text" id="nome_convidado" placeholder="Nome do convidado">
+  <button onclick="cadastrarConvidado()">Salvar Convidado</button>
+
+  <h3>Convidados</h3>
+  <table>
+    <thead>
+      <tr><th>Nome</th><th>Ações</th></tr>
+    </thead>
+    <tbody id="lista-convidados"></tbody>
+  </table>
+
+  <button onclick="logout()">Sair</button>
+</div>
+
+<script>
+  const EMAIL_VALIDO = "araujo...@gmail.com";
+  const SENHA_VALIDA = "Ki@ra1116";
+  const supabase = supabase.createClient(
+    'https://rnvunprjvppbjavkaoek.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJudnVucHJqdnBwYmphdmthb2VrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2NjYzOTksImV4cCI6MjA2NzI0MjM5OX0.5E37Qm-KMmyGtGKbOINbDqMQlZlfgcQx91RQ01qslT8'
+  );
+
+  function logar() {
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+    if (email === EMAIL_VALIDO && senha === SENHA_VALIDA) {
+      document.getElementById('login-box').classList.add('hidden');
+      document.getElementById('painel').classList.remove('hidden');
+      listarLicencas();
+      listarConvidados();
+    } else {
+      alert('Credenciais inválidas');
+    }
+  }
+
+  function logout() {
+    document.getElementById('painel').classList.add('hidden');
+    document.getElementById('login-box').classList.remove('hidden');
+  }
+
+  async function gerarLicenca() {
+    const codigo = document.getElementById('codigo').value;
+    const validade = document.getElementById('validade').value;
+    if (!codigo || !validade) return alert('Preencha todos os campos');
+    const { error } = await supabase.from('licencas').insert([{ codigo, validade, ativo: true }]);
+    if (error) return alert('Erro: ' + error.message);
+    listarLicencas();
+  }
+
+  async function listarLicencas() {
+    const { data } = await supabase.from('licencas').select('*').order('validade', { ascending: false });
+    const tabela = document.getElementById('lista-licencas');
+    tabela.innerHTML = '';
+    data.forEach(l => {
+      const status = new Date(l.validade) < new Date() ? 'Expirada' : (l.ativo ? 'Ativa' : 'Inativa');
+      tabela.innerHTML += `<tr><td>${l.codigo}</td><td>${l.validade}</td><td>${status}</td>
+        <td><button onclick="editarLicenca('${l.codigo}', '${l.validade}')">Editar</button>
+        <button onclick="removerLicenca('${l.codigo}')">Remover</button></td></tr>`;
+    });
+  }
+
+  async function editarLicenca(codigo, validadeAtual) {
+    const nova = prompt('Nova validade:', validadeAtual);
+    if (!nova) return;
+    await supabase.from('licencas').update({ validade: nova }).eq('codigo', codigo);
+    listarLicencas();
+  }
+
+  async function removerLicenca(codigo) {
+    if (!confirm('Tem certeza que deseja remover?')) return;
+    await supabase.from('licencas').delete().eq('codigo', codigo);
+    listarLicencas();
+  }
+
+  async function cadastrarConvidado() {
+    const nome = document.getElementById('nome_convidado').value;
+    if (!nome) return alert('Digite o nome do convidado');
+    const { error } = await supabase.from('convidados').insert([{ nome }]);
+    if (error) return alert('Erro: ' + error.message);
+    listarConvidados();
+  }
+
+  async function listarConvidados() {
+    const { data } = await supabase.from('convidados').select('*');
+    const tabela = document.getElementById('lista-convidados');
+    tabela.innerHTML = '';
+    data.forEach(c => {
+      tabela.innerHTML += `<tr><td>${c.nome}</td><td>
+        <button onclick="removerConvidado('${c.id}')">Remover</button></td></tr>`;
+    });
+  }
+
+  async function removerConvidado(id) {
+    if (!confirm('Deseja remover este convidado?')) return;
+    await supabase.from('convidados').delete().eq('id', id);
+    listarConvidados();
+  }
+</script>
+</body>
+</html>
