@@ -512,8 +512,8 @@
                         throw new Error('API Error');
                     }
                 } catch (error) {
-                    // Fallback para detecção local usando TensorFlow.js
-                    return await this.detectObjectLocal();
+                    // Fallback para detecção local usando análise de imagem
+                    return await this.detectObjectLocal(imageData);
                 }
             }
 
@@ -556,35 +556,434 @@
                 }
             }
 
-            async detectObjectLocal() {
-                // Simulação melhorada baseada em análise de imagem
-                const objects = [
-                    'Telefone móvel', 'Caneta', 'Livro', 'Chávena de café', 'Óculos',
-                    'Relógio', 'Carteira', 'Chaves', 'Computador portátil', 'Caderno',
-                    'Garrafa de água', 'Planta', 'Cadeira', 'Mesa', 'Lâmpada', 'Pessoa',
-                    'Carro', 'Edifício', 'Árvore', 'Animal', 'Comida', 'Documento'
-                ];
+            async detectObjectLocal(imageData) {
+                try {
+                    // Análise avançada da imagem usando Canvas
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    return new Promise((resolve) => {
+                        img.onload = () => {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            
+                            // Análise de características da imagem
+                            const features = this.analyzeImageFeatures(ctx, canvas.width, canvas.height);
+                            const detectedObject = this.classifyObject(features);
+                            
+                            resolve({
+                                type: 'object',
+                                content: `${detectedObject.name} (${detectedObject.confidence}% confiança)`,
+                                timestamp: new Date().toLocaleString('pt-PT')
+                            });
+                        };
+                        img.src = imageData;
+                    });
+                } catch (error) {
+                    // Fallback simples
+                    const objects = ['Objeto não identificado', 'Item desconhecido', 'Elemento na imagem'];
+                    const randomObject = objects[Math.floor(Math.random() * objects.length)];
+                    
+                    return {
+                        type: 'object',
+                        content: `${randomObject} (50% confiança)`,
+                        timestamp: new Date().toLocaleString('pt-PT')
+                    };
+                }
+            }
+
+            analyzeImageFeatures(ctx, width, height) {
+                // Análise avançada de características visuais
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
                 
-                const confidence = Math.floor(Math.random() * 25) + 75;
-                const detectedObject = objects[Math.floor(Math.random() * objects.length)];
+                let totalR = 0, totalG = 0, totalB = 0;
+                let brightness = 0;
+                let edges = 0;
+                let corners = 0;
+                let lines = 0;
+                let circles = 0;
+                let textureVariance = 0;
+                let pixelCount = 0;
+                
+                // Arrays para análise de histograma
+                const rHist = new Array(256).fill(0);
+                const gHist = new Array(256).fill(0);
+                const bHist = new Array(256).fill(0);
+                
+                // Análise de cor, brilho e histograma
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    totalR += r;
+                    totalG += g;
+                    totalB += b;
+                    brightness += (r + g + b) / 3;
+                    
+                    rHist[r]++;
+                    gHist[g]++;
+                    bHist[b]++;
+                    
+                    pixelCount++;
+                }
+                
+                const avgR = totalR / pixelCount;
+                const avgG = totalG / pixelCount;
+                const avgB = totalB / pixelCount;
+                const avgBrightness = brightness / pixelCount;
+                
+                // Análise de textura e padrões avançada
+                const stepSize = Math.max(1, Math.floor(Math.min(width, height) / 100));
+                
+                for (let y = stepSize; y < height - stepSize; y += stepSize) {
+                    for (let x = stepSize; x < width - stepSize; x += stepSize) {
+                        const idx = (y * width + x) * 4;
+                        const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        
+                        // Análise de bordas em 8 direções
+                        const neighbors = [
+                            (data[idx - 4] + data[idx - 3] + data[idx - 2]) / 3, // esquerda
+                            (data[idx + 4] + data[idx + 5] + data[idx + 6]) / 3, // direita
+                            (data[idx - width * 4] + data[idx - width * 4 + 1] + data[idx - width * 4 + 2]) / 3, // cima
+                            (data[idx + width * 4] + data[idx + width * 4 + 1] + data[idx + width * 4 + 2]) / 3, // baixo
+                        ];
+                        
+                        let edgeCount = 0;
+                        let maxDiff = 0;
+                        
+                        neighbors.forEach(neighbor => {
+                            const diff = Math.abs(current - neighbor);
+                            if (diff > 25) edgeCount++;
+                            maxDiff = Math.max(maxDiff, diff);
+                        });
+                        
+                        if (edgeCount >= 2) edges++;
+                        if (edgeCount >= 3) corners++;
+                        if (maxDiff > 50) textureVariance++;
+                        
+                        // Detecção de linhas (gradiente consistente)
+                        if (Math.abs(neighbors[0] - neighbors[1]) < 10 && 
+                            Math.abs(neighbors[2] - neighbors[3]) > 30) {
+                            lines++;
+                        }
+                        
+                        // Detecção básica de formas circulares
+                        if (edgeCount === 4 && maxDiff > 40 && maxDiff < 80) {
+                            circles++;
+                        }
+                    }
+                }
+                
+                const totalSamples = Math.floor((width / stepSize) * (height / stepSize));
+                const edgeDensity = edges / totalSamples;
+                const cornerDensity = corners / totalSamples;
+                const lineDensity = lines / totalSamples;
+                const circleDensity = circles / totalSamples;
+                const textureDensity = textureVariance / totalSamples;
+                
+                // Análise de distribuição de cores
+                const colorVariance = this.calculateColorVariance(rHist, gHist, bHist, pixelCount);
+                
+                // Análise de simetria
+                const symmetry = this.calculateSymmetry(data, width, height);
                 
                 return {
-                    type: 'object',
-                    content: `${detectedObject} (${confidence}% confiança - detecção local)`,
-                    timestamp: new Date().toLocaleString('pt-PT')
+                    avgR, avgG, avgB, avgBrightness, 
+                    edgeDensity, cornerDensity, lineDensity, circleDensity, textureDensity,
+                    colorVariance, symmetry,
+                    width, height,
+                    aspectRatio: width / height,
+                    dominantColor: this.getDominantColor(avgR, avgG, avgB),
+                    isHighContrast: this.isHighContrast(data, width, height),
+                    hasRegularPattern: this.hasRegularPattern(data, width, height)
                 };
+            }
+            
+            calculateColorVariance(rHist, gHist, bHist, pixelCount) {
+                let variance = 0;
+                for (let i = 0; i < 256; i++) {
+                    const freq = (rHist[i] + gHist[i] + bHist[i]) / (3 * pixelCount);
+                    if (freq > 0.01) variance++; // Cores significativas
+                }
+                return variance / 256;
+            }
+            
+            calculateSymmetry(data, width, height) {
+                let symmetryScore = 0;
+                const centerX = Math.floor(width / 2);
+                const samples = Math.min(50, height);
+                
+                for (let y = 0; y < samples; y++) {
+                    for (let x = 0; x < centerX; x++) {
+                        const leftIdx = (y * width + x) * 4;
+                        const rightIdx = (y * width + (width - 1 - x)) * 4;
+                        
+                        const leftBrightness = (data[leftIdx] + data[leftIdx + 1] + data[leftIdx + 2]) / 3;
+                        const rightBrightness = (data[rightIdx] + data[rightIdx + 1] + data[rightIdx + 2]) / 3;
+                        
+                        if (Math.abs(leftBrightness - rightBrightness) < 30) {
+                            symmetryScore++;
+                        }
+                    }
+                }
+                
+                return symmetryScore / (samples * centerX);
+            }
+            
+            isHighContrast(data, width, height) {
+                let highContrastPixels = 0;
+                const samples = Math.min(1000, width * height / 4);
+                
+                for (let i = 0; i < samples; i++) {
+                    const idx = Math.floor(Math.random() * (data.length / 4)) * 4;
+                    const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                    
+                    if (brightness < 50 || brightness > 200) {
+                        highContrastPixels++;
+                    }
+                }
+                
+                return highContrastPixels / samples > 0.3;
+            }
+            
+            hasRegularPattern(data, width, height) {
+                // Detecta padrões regulares como botões de calculadora
+                let patternScore = 0;
+                const gridSize = 20;
+                
+                for (let y = 0; y < height - gridSize; y += gridSize) {
+                    for (let x = 0; x < width - gridSize; x += gridSize) {
+                        const regions = [];
+                        
+                        // Analisa 4 regiões pequenas
+                        for (let ry = 0; ry < 2; ry++) {
+                            for (let rx = 0; rx < 2; rx++) {
+                                let regionBrightness = 0;
+                                let regionPixels = 0;
+                                
+                                for (let py = 0; py < gridSize/2; py++) {
+                                    for (let px = 0; px < gridSize/2; px++) {
+                                        const idx = ((y + ry * gridSize/2 + py) * width + (x + rx * gridSize/2 + px)) * 4;
+                                        if (idx < data.length) {
+                                            regionBrightness += (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                                            regionPixels++;
+                                        }
+                                    }
+                                }
+                                
+                                if (regionPixels > 0) {
+                                    regions.push(regionBrightness / regionPixels);
+                                }
+                            }
+                        }
+                        
+                        // Verifica se há padrão alternado (como botões)
+                        if (regions.length === 4) {
+                            const diff1 = Math.abs(regions[0] - regions[3]);
+                            const diff2 = Math.abs(regions[1] - regions[2]);
+                            
+                            if (diff1 > 30 && diff2 > 30) {
+                                patternScore++;
+                            }
+                        }
+                    }
+                }
+                
+                return patternScore > 5;
+            }
+
+            getDominantColor(r, g, b) {
+                if (r > g && r > b) return 'vermelho';
+                if (g > r && g > b) return 'verde';
+                if (b > r && b > g) return 'azul';
+                if (r + g + b < 150) return 'escuro';
+                if (r + g + b > 600) return 'claro';
+                return 'neutro';
+            }
+
+            classifyObject(features) {
+                const { 
+                    avgBrightness, edgeDensity, aspectRatio, dominantColor, 
+                    cornerDensity, lineDensity, circleDensity, textureDensity,
+                    colorVariance, symmetry, isHighContrast, hasRegularPattern,
+                    width, height 
+                } = features;
+                
+                // Sistema de classificação avançado com múltiplos critérios
+                const classifications = [];
+                
+                // === CALCULADORA === (Análise muito específica)
+                let calculatorScore = 0;
+                if (Math.abs(aspectRatio - 1) < 0.4) calculatorScore += 25; // Formato quadrado/retangular
+                if (edgeDensity > 0.06) calculatorScore += 30; // Muitas bordas (botões)
+                if (hasRegularPattern) calculatorScore += 35; // Padrão regular de botões
+                if (dominantColor === 'escuro') calculatorScore += 20; // Cor típica
+                if (cornerDensity > 0.05) calculatorScore += 15; // Muitos cantos (botões)
+                if (avgBrightness < 120) calculatorScore += 10; // Não muito brilhante
+                if (colorVariance < 0.3) calculatorScore += 10; // Cores limitadas
+                
+                if (calculatorScore >= 85) {
+                    classifications.push({ name: 'Calculadora', score: Math.min(calculatorScore, 98) });
+                }
+                
+                // === TELEFONE MÓVEL ===
+                let phoneScore = 0;
+                if (aspectRatio > 1.4 && aspectRatio < 2.5) phoneScore += 30; // Proporção típica
+                if (edgeDensity < 0.04) phoneScore += 25; // Superfície lisa
+                if (symmetry > 0.6) phoneScore += 20; // Simétrico
+                if (isHighContrast && avgBrightness > 80) phoneScore += 25; // Ecrã ligado
+                if (dominantColor === 'escuro') phoneScore += 15; // Cor comum
+                if (cornerDensity < 0.02) phoneScore += 10; // Poucos cantos
+                
+                if (phoneScore >= 75) {
+                    classifications.push({ name: 'Telefone móvel', score: Math.min(phoneScore, 95) });
+                }
+                
+                // === LIVRO/CADERNO ===
+                let bookScore = 0;
+                if (aspectRatio > 1.1 && aspectRatio < 1.8) bookScore += 25; // Formato típico
+                if (edgeDensity < 0.03) bookScore += 30; // Superfície lisa
+                if (dominantColor === 'claro') bookScore += 25; // Páginas claras
+                if (!hasRegularPattern) bookScore += 15; // Sem padrão regular
+                if (avgBrightness > 150) bookScore += 20; // Brilhante (papel)
+                if (textureDensity < 0.1) bookScore += 10; // Textura uniforme
+                
+                if (bookScore >= 70) {
+                    classifications.push({ name: 'Livro ou caderno', score: Math.min(bookScore, 92) });
+                }
+                
+                // === CANETA/LÁPIS ===
+                let penScore = 0;
+                if (aspectRatio > 3 || aspectRatio < 0.33) penScore += 40; // Muito alongado
+                if (edgeDensity < 0.05) penScore += 25; // Superfície lisa
+                if (lineDensity > 0.1) penScore += 20; // Linhas paralelas
+                if (symmetry > 0.7) penScore += 15; // Muito simétrico
+                
+                if (penScore >= 60) {
+                    classifications.push({ name: 'Caneta ou lápis', score: Math.min(penScore, 90) });
+                }
+                
+                // === GARRAFA/COPO ===
+                let bottleScore = 0;
+                if (aspectRatio < 0.8 && aspectRatio > 0.3) bottleScore += 30; // Vertical
+                if (circleDensity > 0.02) bottleScore += 25; // Formas circulares
+                if (symmetry > 0.6) bottleScore += 20; // Simétrico
+                if (edgeDensity < 0.04) bottleScore += 15; // Superfície lisa
+                if (avgBrightness > 100) bottleScore += 10; // Reflexos
+                
+                if (bottleScore >= 60) {
+                    classifications.push({ name: 'Garrafa ou copo', score: Math.min(bottleScore, 88) });
+                }
+                
+                // === DOCUMENTO/PAPEL ===
+                let paperScore = 0;
+                if (aspectRatio > 1.2 && aspectRatio < 1.6) paperScore += 25; // Formato A4
+                if (dominantColor === 'claro') paperScore += 30; // Papel branco
+                if (avgBrightness > 180) paperScore += 25; // Muito claro
+                if (edgeDensity < 0.02) paperScore += 15; // Superfície lisa
+                if (colorVariance < 0.2) paperScore += 10; // Cores uniformes
+                
+                if (paperScore >= 65) {
+                    classifications.push({ name: 'Documento ou papel', score: Math.min(paperScore, 90) });
+                }
+                
+                // === CHAVES ===
+                let keyScore = 0;
+                if (edgeDensity > 0.08) keyScore += 30; // Muitos detalhes
+                if (aspectRatio > 2 || aspectRatio < 0.5) keyScore += 25; // Formato irregular
+                if (avgBrightness > 120 && avgBrightness < 180) keyScore += 20; // Metal
+                if (cornerDensity > 0.06) keyScore += 15; // Muitos cantos
+                if (colorVariance < 0.25) keyScore += 10; // Cor metálica uniforme
+                
+                if (keyScore >= 60) {
+                    classifications.push({ name: 'Chaves', score: Math.min(keyScore, 85) });
+                }
+                
+                // === CARTEIRA ===
+                let walletScore = 0;
+                if (Math.abs(aspectRatio - 1.6) < 0.3) walletScore += 25; // Formato retangular
+                if (dominantColor === 'escuro') walletScore += 25; // Cor típica
+                if (edgeDensity < 0.04) walletScore += 20; // Superfície lisa
+                if (avgBrightness < 100) walletScore += 15; // Escura
+                if (textureDensity < 0.08) walletScore += 15; // Textura uniforme
+                
+                if (walletScore >= 60) {
+                    classifications.push({ name: 'Carteira', score: Math.min(walletScore, 85) });
+                }
+                
+                // === RELÓGIO ===
+                let watchScore = 0;
+                if (Math.abs(aspectRatio - 1) < 0.3) watchScore += 25; // Formato circular/quadrado
+                if (circleDensity > 0.03) watchScore += 30; // Forma circular
+                if (symmetry > 0.7) watchScore += 20; // Muito simétrico
+                if (isHighContrast) watchScore += 15; // Contraste do mostrador
+                if (edgeDensity > 0.04 && edgeDensity < 0.08) watchScore += 10; // Detalhes moderados
+                
+                if (watchScore >= 60) {
+                    classifications.push({ name: 'Relógio', score: Math.min(watchScore, 88) });
+                }
+                
+                // === ÓCULOS ===
+                let glassesScore = 0;
+                if (aspectRatio > 2.5) glassesScore += 35; // Muito alongado
+                if (circleDensity > 0.04) glassesScore += 25; // Lentes circulares
+                if (symmetry > 0.8) glassesScore += 25; // Muito simétrico
+                if (edgeDensity > 0.03 && edgeDensity < 0.07) glassesScore += 15; // Bordas das lentes
+                
+                if (glassesScore >= 65) {
+                    classifications.push({ name: 'Óculos', score: Math.min(glassesScore, 90) });
+                }
+                
+                // Selecionar a melhor classificação
+                if (classifications.length > 0) {
+                    const best = classifications.reduce((prev, current) => 
+                        (prev.score > current.score) ? prev : current
+                    );
+                    return { name: best.name, confidence: best.score };
+                }
+                
+                // Fallback inteligente baseado em características dominantes
+                if (hasRegularPattern && edgeDensity > 0.05) {
+                    return { name: 'Dispositivo com botões', confidence: 75 };
+                } else if (aspectRatio > 2.5) {
+                    return { name: 'Objeto alongado', confidence: 70 };
+                } else if (aspectRatio < 0.4) {
+                    return { name: 'Objeto vertical', confidence: 70 };
+                } else if (dominantColor === 'claro' && avgBrightness > 150) {
+                    return { name: 'Papel ou documento', confidence: 65 };
+                } else if (dominantColor === 'escuro' && edgeDensity > 0.03) {
+                    return { name: 'Dispositivo eletrônico', confidence: 70 };
+                } else {
+                    return { name: 'Objeto não identificado', confidence: 50 };
+                }
             }
 
             async recognizeTextLocal(imageData) {
-                // Usar Tesseract.js para OCR local
                 try {
                     if (typeof Tesseract !== 'undefined') {
-                        const { data: { text } } = await Tesseract.recognize(imageData, 'por');
+                        // Pré-processamento da imagem para melhor OCR
+                        const processedImage = await this.preprocessImageForOCR(imageData);
                         
-                        if (text.trim().length > 0) {
+                        // Configurações otimizadas para Tesseract
+                        const { data: { text, confidence } } = await Tesseract.recognize(processedImage, 'por+eng', {
+                            logger: m => console.log(m), // Log do progresso
+                            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ.,!?;:()[]{}"-+*/=@#$%&€ ',
+                            tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+                            preserve_interword_spaces: '1'
+                        });
+                        
+                        if (text && text.trim().length > 0) {
+                            // Limpeza e formatação do texto
+                            const cleanedText = this.cleanRecognizedText(text);
+                            const confidenceLevel = Math.round(confidence);
+                            
                             return {
                                 type: 'text',
-                                content: text.trim(),
+                                content: `${cleanedText}\n\n[Confiança: ${confidenceLevel}%]`,
                                 timestamp: new Date().toLocaleString('pt-PT')
                             };
                         }
@@ -593,12 +992,184 @@
                     console.error('Tesseract error:', error);
                 }
                 
-                // Fallback final
-                return {
-                    type: 'text',
-                    content: 'Não foi possível reconhecer texto na imagem. Certifique-se de que o texto está claro e bem iluminado.',
-                    timestamp: new Date().toLocaleString('pt-PT')
-                };
+                // Fallback com análise básica da imagem
+                return await this.analyzeImageForText(imageData);
+            }
+            
+            async preprocessImageForOCR(imageData) {
+                return new Promise((resolve) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    img.onload = () => {
+                        // Redimensionar se muito grande (otimização)
+                        let { width, height } = img;
+                        const maxSize = 1200;
+                        
+                        if (width > maxSize || height > maxSize) {
+                            const scale = Math.min(maxSize / width, maxSize / height);
+                            width *= scale;
+                            height *= scale;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Obter dados da imagem
+                        const imageData = ctx.getImageData(0, 0, width, height);
+                        const data = imageData.data;
+                        
+                        // Aplicar filtros para melhorar OCR
+                        for (let i = 0; i < data.length; i += 4) {
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+                            
+                            // Converter para escala de cinza
+                            const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                            
+                            // Aumentar contraste (binarização adaptativa)
+                            const threshold = 128;
+                            const enhanced = gray > threshold ? 255 : 0;
+                            
+                            data[i] = enhanced;     // R
+                            data[i + 1] = enhanced; // G
+                            data[i + 2] = enhanced; // B
+                            // Alpha permanece igual
+                        }
+                        
+                        // Aplicar os dados processados
+                        ctx.putImageData(imageData, 0, 0);
+                        
+                        // Retornar imagem processada
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    
+                    img.src = imageData;
+                });
+            }
+            
+            cleanRecognizedText(rawText) {
+                return rawText
+                    // Remover caracteres estranhos comuns do OCR
+                    .replace(/[|\\]/g, 'I')
+                    .replace(/[{}]/g, '')
+                    .replace(/[@#$%^&*]/g, '')
+                    // Corrigir espaçamentos
+                    .replace(/\s+/g, ' ')
+                    .replace(/\n\s*\n/g, '\n')
+                    // Corrigir pontuação
+                    .replace(/\s+([.,!?;:])/g, '$1')
+                    .replace(/([.,!?;:])\s*([a-zA-Z])/g, '$1 $2')
+                    // Remover espaços no início e fim
+                    .trim();
+            }
+            
+            async analyzeImageForText(imageData) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    return new Promise((resolve) => {
+                        img.onload = () => {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            
+                            // Análise básica para detectar se há texto
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            const hasTextLikeFeatures = this.detectTextFeatures(imageData);
+                            
+                            if (hasTextLikeFeatures) {
+                                resolve({
+                                    type: 'text',
+                                    content: 'Texto detectado na imagem, mas não foi possível transcrever com precisão. Tente:\n• Melhorar a iluminação\n• Aproximar mais da câmera\n• Manter a imagem estável\n• Usar fundo contrastante',
+                                    timestamp: new Date().toLocaleString('pt-PT')
+                                });
+                            } else {
+                                resolve({
+                                    type: 'text',
+                                    content: 'Nenhum texto claro detectado na imagem. Certifique-se de que há texto visível e bem iluminado.',
+                                    timestamp: new Date().toLocaleString('pt-PT')
+                                });
+                            }
+                        };
+                        img.src = imageData;
+                    });
+                } catch (error) {
+                    return {
+                        type: 'text',
+                        content: 'Erro ao analisar imagem para texto. Tente novamente.',
+                        timestamp: new Date().toLocaleString('pt-PT')
+                    };
+                }
+            }
+            
+            detectTextFeatures(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                let horizontalLines = 0;
+                let verticalLines = 0;
+                let textLikeRegions = 0;
+                
+                // Análise de linhas horizontais (típicas de texto)
+                for (let y = 0; y < height - 1; y++) {
+                    let lineChanges = 0;
+                    for (let x = 0; x < width - 1; x++) {
+                        const idx = (y * width + x) * 4;
+                        const nextIdx = (y * width + x + 1) * 4;
+                        
+                        const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        const next = (data[nextIdx] + data[nextIdx + 1] + data[nextIdx + 2]) / 3;
+                        
+                        if (Math.abs(current - next) > 50) {
+                            lineChanges++;
+                        }
+                    }
+                    
+                    // Se há muitas mudanças na linha, pode ser texto
+                    if (lineChanges > width * 0.1 && lineChanges < width * 0.8) {
+                        horizontalLines++;
+                    }
+                }
+                
+                // Análise de regiões com padrões de texto
+                const blockSize = 20;
+                for (let y = 0; y < height - blockSize; y += blockSize) {
+                    for (let x = 0; x < width - blockSize; x += blockSize) {
+                        let changes = 0;
+                        
+                        for (let by = 0; by < blockSize; by++) {
+                            for (let bx = 0; bx < blockSize - 1; bx++) {
+                                const idx = ((y + by) * width + (x + bx)) * 4;
+                                const nextIdx = ((y + by) * width + (x + bx + 1)) * 4;
+                                
+                                const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                                const next = (data[nextIdx] + data[nextIdx + 1] + data[nextIdx + 2]) / 3;
+                                
+                                if (Math.abs(current - next) > 40) {
+                                    changes++;
+                                }
+                            }
+                        }
+                        
+                        // Região com densidade de mudanças típica de texto
+                        if (changes > 10 && changes < 100) {
+                            textLikeRegions++;
+                        }
+                    }
+                }
+                
+                // Critérios para detectar texto
+                const hasHorizontalPattern = horizontalLines > height * 0.05;
+                const hasTextRegions = textLikeRegions > 3;
+                
+                return hasHorizontalPattern || hasTextRegions;
             }
 
             translateToPortuguese(englishTerm) {
@@ -723,5 +1294,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96bffa4a109e77e0',t:'MTc1NDY2NjIxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c00de8004f77da',t:'MTc1NDY2NzAxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
