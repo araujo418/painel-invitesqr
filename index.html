@@ -1,1778 +1,1068 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Inteligente Pro</title>
-    <script src="https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+    <title>Confirmação de Presença - Casamento</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: white;
-        }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 16px;
-        }
-
-        .camera-container {
-            position: relative;
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+        
+        .font-dancing { font-family: 'Dancing Script', cursive; }
+        .font-inter { font-family: 'Inter', sans-serif; }
+        
+        .white-bg {
             background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
+            min-height: 100vh;
         }
-
-        #video {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-            display: block;
+        
+        .card-white {
+            background: white;
+            border: 1px solid #e5e7eb;
         }
-
-        .camera-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            font-size: 18px;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
+        
         .btn-primary {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #45a049;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #2196F3;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #d32f2f;
-            transform: translateY(-2px);
-        }
-
-        .mode-selector {
-            display: flex;
-            background: white;
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             transition: all 0.3s ease;
         }
-
-        .mode-btn.active {
-            background: #667eea;
-            color: white;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
         }
-
-        .results {
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+        
+        .countdown-box {
             background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+            border: 2px solid #e5e7eb;
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
-        .results h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 18px;
-        }
-
-        .result-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .result-item .timestamp {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .result-item .content {
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .result-item .type {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            margin-bottom: 8px;
-        }
-
-        .confidence-bar {
+        
+        .floating-hearts {
+            position: fixed;
             width: 100%;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 3px;
-            margin: 8px 0;
-            overflow: hidden;
-        }
-
-        .confidence-fill {
             height: 100%;
-            background: linear-gradient(90deg, #ff6b6b 0%, #feca57 50%, #48dbfb 100%);
-            border-radius: 3px;
-            transition: width 0.3s ease;
+            pointer-events: none;
+            z-index: 1;
         }
-
-        .api-status {
-            display: flex;
-            gap: 5px;
-            margin-top: 8px;
-            font-size: 11px;
+        
+        .heart {
+            position: absolute;
+            color: rgba(156, 163, 175, 0.4);
+            font-size: 20px;
+            animation: float 8s linear infinite;
         }
-
-        .api-badge {
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: bold;
+        
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
         }
-
-        .api-success { background: #d4edda; color: #155724; }
-        .api-fallback { background: #fff3cd; color: #856404; }
-        .api-error { background: #f8d7da; color: #721c24; }
-
-        .no-results {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 40px 20px;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            color: #667eea;
-        }
-
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .clear-btn {
-            margin-top: 15px;
-            padding: 10px;
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            border-radius: 8px;
+        
+        .radio-option {
+            transition: all 0.3s ease;
             cursor: pointer;
-            font-size: 14px;
         }
-
-        .clear-btn:hover {
-            background: #ff5252;
+        
+        .radio-option:hover {
+            transform: translateY(-2px);
         }
-
-        .processing-steps {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
-            line-height: 1.4;
+        
+        .radio-option.selected {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
-            }
-            
-            .controls {
-                flex-direction: column;
-            }
-            
-            .btn {
-                margin-bottom: 10px;
-            }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Scanner Inteligente Pro</h1>
-            <p>Detecção avançada com múltiplas APIs</p>
+<body class="white-bg font-inter">
+    <div class="floating-hearts" id="heartsContainer"></div>
+    
+    <div class="container mx-auto px-4 py-8 relative z-10">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="font-dancing text-6xl md:text-8xl text-gray-800 mb-4">
+                Ana & João
+            </h1>
+            <p class="text-gray-700 text-xl md:text-2xl font-light mb-6">
+                Você está convidado para nosso casamento! 💕
+            </p>
+            
+            <!-- Countdown Timer -->
+            <div class="countdown-box max-w-2xl mx-auto">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">⏰ Contagem Regressiva</h3>
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div id="days" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Dias</div>
+                    </div>
+                    <div>
+                        <div id="hours" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Horas</div>
+                    </div>
+                    <div>
+                        <div id="minutes" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Minutos</div>
+                    </div>
+                    <div>
+                        <div id="seconds" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Segundos</div>
+                    </div>
+                </div>
+                <p class="text-gray-700 mt-4">
+                    📅 15 de Junho de 2024 • 🕕 17:00 • 📍 Igreja São José
+                </p>
+            </div>
         </div>
 
-        <div class="mode-selector">
-            <button class="mode-btn active" data-mode="object">🔍 Detectar Objetos</button>
-            <button class="mode-btn" data-mode="text">📝 Ler Texto</button>
+        <!-- Client Access Button - Top Right -->
+        <div class="absolute top-4 right-4 z-20">
+            <button id="clientAccessBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition-all border border-gray-300 text-sm">
+                🔐 Área do Cliente
+            </button>
         </div>
 
-        <div class="camera-container">
-            <video id="video" autoplay playsinline></video>
-            <div class="camera-overlay" id="cameraOverlay">
-                <div>
-                    <div>📷</div>
-                    <div>Toque em "Iniciar Câmera" para começar</div>
+        <!-- Guest RSVP Section -->
+        <div id="guestSection" class="max-w-2xl mx-auto">
+            <div class="card-white rounded-3xl shadow-lg p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">💌</span>
+                    </div>
+                    <h2 class="text-3xl font-semibold text-gray-800 mb-4">
+                        Confirme sua Presença
+                    </h2>
+                    <p class="text-gray-600 mb-8">
+                        Preencha os dados abaixo para confirmar sua presença em nosso grande dia
+                    </p>
+                </div>
+
+                <form id="rsvpForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Seu Nome Completo *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="guestName" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="Digite seu nome completo"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-4">
+                            Você confirmará presença? *
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="radio-option">
+                                <input type="radio" name="attending" value="true" class="sr-only" required>
+                                <div class="attendance-option border-2 border-gray-300 rounded-xl p-6 text-center transition-all">
+                                    <div class="text-4xl mb-3">✅</div>
+                                    <div class="font-semibold text-gray-700">Sim, estarei lá!</div>
+                                    <div class="text-sm text-gray-500 mt-1">Mal posso esperar!</div>
+                                </div>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="attending" value="false" class="sr-only" required>
+                                <div class="attendance-option border-2 border-gray-300 rounded-xl p-6 text-center transition-all">
+                                    <div class="text-4xl mb-3">❌</div>
+                                    <div class="font-semibold text-gray-700">Não poderei ir</div>
+                                    <div class="text-sm text-gray-500 mt-1">Infelizmente...</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="companionSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Nome do Acompanhante (se houver)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="companionName" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="Nome do seu acompanhante (opcional)"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Mensagem Especial (opcional)
+                        </label>
+                        <textarea 
+                            id="message" 
+                            rows="4"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                            placeholder="Deixe uma mensagem carinhosa para os noivos..."
+                        ></textarea>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full btn-primary text-white font-semibold py-4 px-6 rounded-xl text-lg"
+                    >
+                        Enviar Confirmação
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Client Login Section -->
+        <div id="clientLoginSection" class="max-w-md mx-auto hidden">
+            <div class="card-white rounded-3xl shadow-lg p-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">🔐</span>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                        Área do Cliente
+                    </h2>
+                    <p class="text-gray-600 mb-6">
+                        Digite seu token de acesso para ver as confirmações
+                    </p>
+                </div>
+
+                <form id="clientLoginForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Token de Acesso
+                        </label>
+                        <input 
+                            type="text" 
+                            id="clientToken" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Digite seu token"
+                        >
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-xl"
+                    >
+                        Acessar Dashboard
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <button id="backToGuestBtn" class="text-gray-500 hover:text-gray-700 font-medium">
+                        ← Voltar para confirmação
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="controls">
-            <button class="btn btn-primary" id="startCamera">📷 Iniciar Câmera</button>
-            <button class="btn btn-secondary" id="capture" style="display: none;">📸 Capturar</button>
-            <button class="btn btn-danger" id="stopCamera" style="display: none;">⏹️ Parar</button>
-        </div>
+        <!-- Client Dashboard Section -->
+        <div id="clientDashboard" class="max-w-6xl mx-auto hidden">
+            <div class="card-white rounded-3xl shadow-lg p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-semibold text-gray-800">Dashboard do Cliente</h2>
+                        <p class="text-gray-600">Gerencie as confirmações do seu evento</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <button id="exportPdfBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-all">
+                            📄 Exportar PDF
+                        </button>
+                        <button id="logoutBtn" class="text-gray-500 hover:text-gray-700 font-medium">
+                            Sair
+                        </button>
+                    </div>
+                </div>
 
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <div id="loadingText">Processando com múltiplas APIs...</div>
-            <div class="processing-steps" id="processingSteps"></div>
-        </div>
+                <!-- Client Tools -->
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🛠️ Ferramentas Exclusivas do Cliente</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <button id="sendRemindersBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">📧</div>
+                            <div class="text-sm font-medium text-gray-700">Enviar Lembretes</div>
+                        </button>
+                        <button id="editEventBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">✏️</div>
+                            <div class="text-sm font-medium text-gray-700">Editar Evento</div>
+                        </button>
+                        <button id="guestAnalyticsBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">📊</div>
+                            <div class="text-sm font-medium text-gray-700">Análises</div>
+                        </button>
+                        <button id="shareEventBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">🔗</div>
+                            <div class="text-sm font-medium text-gray-700">Compartilhar</div>
+                        </button>
+                    </div>
+                </div>
 
-        <div class="results">
-            <h3 id="resultsTitle">📋 Histórico de Detecções</h3>
-            <div id="resultsList">
-                <div class="no-results">
-                    Nenhuma detecção ainda. Use a câmera para começar!
+                <!-- Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="stats-card">
+                        <div class="text-3xl mb-2">✅</div>
+                        <div class="text-2xl font-bold" id="confirmedCount">0</div>
+                        <div class="text-sm opacity-90">Confirmados</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="text-3xl mb-2">❌</div>
+                        <div class="text-2xl font-bold" id="declinedCount">0</div>
+                        <div class="text-sm opacity-90">Recusaram</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="text-3xl mb-2">👥</div>
+                        <div class="text-2xl font-bold" id="totalGuests">0</div>
+                        <div class="text-sm opacity-90">Total de Pessoas</div>
+                    </div>
+                </div>
+
+                <!-- Guest List -->
+                <div class="bg-white rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800">Lista de Convidados</h3>
+                        <div class="flex gap-4">
+                            <select id="statusFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <option value="all">Todos</option>
+                                <option value="confirmed">Confirmados</option>
+                                <option value="declined">Recusaram</option>
+                                <option value="with-companion">Com Acompanhante</option>
+                            </select>
+                            <input 
+                                type="text" 
+                                id="searchGuests" 
+                                placeholder="Buscar convidado..."
+                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-48"
+                            >
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Nome</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Acompanhante</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Status</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Mensagem</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guestList">
+                                <!-- Guest list will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <button class="clear-btn" id="clearHistory">🗑️ Limpar Histórico</button>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="max-w-2xl mx-auto hidden">
+            <div class="card-white rounded-3xl shadow-lg p-8 text-center">
+                <div class="w-24 h-24 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">🎉</span>
+                </div>
+                <h2 class="text-3xl font-semibold text-gray-800 mb-4">
+                    Confirmação Enviada!
+                </h2>
+                <p class="text-gray-600 mb-8">
+                    Obrigado por confirmar sua presença. Mal podemos esperar para celebrar com você!
+                </p>
+                <button 
+                    id="newRsvpBtn"
+                    class="btn-primary text-white font-semibold py-3 px-6 rounded-xl"
+                >
+                    Nova Confirmação
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Processando...</p>
         </div>
     </div>
 
     <script>
-        class AdvancedScanner {
-            constructor() {
-                this.video = document.getElementById('video');
-                this.cameraOverlay = document.getElementById('cameraOverlay');
-                this.startBtn = document.getElementById('startCamera');
-                this.captureBtn = document.getElementById('capture');
-                this.stopBtn = document.getElementById('stopCamera');
-                this.loading = document.getElementById('loading');
-                this.loadingText = document.getElementById('loadingText');
-                this.processingSteps = document.getElementById('processingSteps');
-                this.resultsList = document.getElementById('resultsList');
-                this.resultsTitle = document.getElementById('resultsTitle');
-                this.clearBtn = document.getElementById('clearHistory');
-                this.modeButtons = document.querySelectorAll('.mode-btn');
-                
-                this.currentMode = 'object';
-                this.stream = null;
-                this.results = this.loadResults();
-                
-                // APIs disponíveis (algumas gratuitas, outras com fallback)
-                this.apis = {
-                    vision: [
-                        { name: 'Google Vision', endpoint: 'https://vision.googleapis.com/v1/images:annotate', key: null },
-                        { name: 'Microsoft Vision', endpoint: 'https://api.cognitive.microsoft.com/vision/v3.2/analyze', key: null },
-                        { name: 'Clarifai', endpoint: 'https://api.clarifai.com/v2/models/general-image-recognition/outputs', key: null }
-                    ],
-                    ocr: [
-                        { name: 'OCR.space', endpoint: 'https://api.ocr.space/parse/image', key: 'helloworld' },
-                        { name: 'Google Vision OCR', endpoint: 'https://vision.googleapis.com/v1/images:annotate', key: null }
-                    ]
-                };
-                
-                this.init();
-                this.updateResultsDisplay();
+        // Configuração do Supabase
+        const supabaseUrl = 'https://qlbpqpxhswyicxyffhws.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsYnBxcHhoc3d5aWN4eWZmaHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MzM2MjIsImV4cCI6MjA3MDMwOTYyMn0.s0BnhuDOGtGne1ZBeX21H1dvOhd3OR7wYRuFlGQ9UrY';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Extrair client_id da URL (cada cliente terá sua própria URL)
+        // Exemplo: https://site.com/ana-joao-2024 ou https://site.com/?client=ana-joao-2024
+        function getClientIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const clientParam = urlParams.get('client');
+            
+            if (clientParam) {
+                return clientParam;
             }
-
-            init() {
-                this.startBtn.addEventListener('click', () => this.startCamera());
-                this.captureBtn.addEventListener('click', () => this.captureImage());
-                this.stopBtn.addEventListener('click', () => this.stopCamera());
-                this.clearBtn.addEventListener('click', () => this.clearHistory());
-                
-                this.modeButtons.forEach(btn => {
-                    btn.addEventListener('click', (e) => this.switchMode(e.target.dataset.mode));
-                });
+            
+            // Alternativa: usar o pathname como client_id
+            const pathname = window.location.pathname;
+            if (pathname && pathname !== '/') {
+                return pathname.replace('/', '').replace('.html', '');
             }
+            
+            // Fallback para demonstração
+            return 'ana-joao-2024';
+        }
 
-            switchMode(mode) {
-                this.currentMode = mode;
-                this.modeButtons.forEach(btn => btn.classList.remove('active'));
-                document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
-                
-                this.resultsTitle.textContent = mode === 'object' ? 
-                    '📋 Histórico de Detecções' : '📋 Histórico de Transcrições';
-            }
+        const CLIENT_ID = getClientIdFromURL();
 
-            async startCamera() {
-                try {
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        throw new Error('Câmera não suportada neste navegador');
-                    }
+        // Data do evento será carregada dinamicamente do Supabase
+        let eventDate = new Date('2024-06-15T17:00:00').getTime(); // Fallback
 
-                    let constraints = [
-                        { 
-                            video: { 
-                                facingMode: { exact: 'environment' },
-                                width: { ideal: 1920, min: 640 },
-                                height: { ideal: 1080, min: 480 }
-                            } 
-                        },
-                        { 
-                            video: { 
-                                facingMode: 'environment',
-                                width: { ideal: 1280 },
-                                height: { ideal: 720 }
-                            } 
-                        },
-                        { video: { width: { ideal: 640 }, height: { ideal: 480 } } },
-                        { video: true }
-                    ];
+        // Elementos DOM
+        const guestSection = document.getElementById('guestSection');
+        const clientLoginSection = document.getElementById('clientLoginSection');
+        const clientDashboard = document.getElementById('clientDashboard');
+        const successMessage = document.getElementById('successMessage');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
-                    let stream = null;
-                    let lastError = null;
+        // Estado da aplicação
+        let currentClientId = null;
 
-                    for (let constraint of constraints) {
-                        try {
-                            stream = await navigator.mediaDevices.getUserMedia(constraint);
-                            break;
-                        } catch (error) {
-                            lastError = error;
-                        }
-                    }
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupEventListeners();
+            startCountdown();
+            createFloatingHearts();
+            checkStoredClientToken();
+            await loadClientInfo();
+        });
 
-                    if (!stream) {
-                        throw lastError || new Error('Não foi possível acessar a câmera');
-                    }
+        // Carregar informações do cliente específico
+        async function loadClientInfo() {
+            try {
+                showLoading(true);
+                
+                // Buscar dados do cliente específico
+                const { data: clientData, error: clientError } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('id', CLIENT_ID)
+                    .single();
 
-                    this.stream = stream;
-                    this.video.srcObject = stream;
-                    
-                    await new Promise((resolve) => {
-                        this.video.onloadedmetadata = resolve;
-                    });
-                    
-                    this.cameraOverlay.style.display = 'none';
-                    this.startBtn.style.display = 'none';
-                    this.captureBtn.style.display = 'block';
-                    this.stopBtn.style.display = 'block';
-                    
-                } catch (error) {
-                    console.error('Camera error:', error);
-                    this.showCameraError(error);
-                }
-            }
-
-            stopCamera() {
-                if (this.stream) {
-                    this.stream.getTracks().forEach(track => track.stop());
-                    this.stream = null;
-                }
-                
-                this.video.srcObject = null;
-                this.cameraOverlay.style.display = 'flex';
-                
-                this.startBtn.style.display = 'block';
-                this.captureBtn.style.display = 'none';
-                this.stopBtn.style.display = 'none';
-            }
-
-            async captureImage() {
-                this.loading.style.display = 'block';
-                this.loadingText.textContent = 'Capturando imagem...';
-                this.processingSteps.textContent = '';
-                
-                try {
-                    // Capturar frame em alta qualidade
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = this.video.videoWidth;
-                    canvas.height = this.video.videoHeight;
-                    ctx.drawImage(this.video, 0, 0);
-                    
-                    // Converter para diferentes formatos para diferentes APIs
-                    const imageData = canvas.toDataURL('image/jpeg', 0.9);
-                    const imageBlob = await this.canvasToBlob(canvas, 'image/jpeg', 0.9);
-                    
-                    let result;
-                    if (this.currentMode === 'object') {
-                        result = await this.detectObjectAdvanced(imageData, imageBlob);
-                    } else {
-                        result = await this.recognizeTextAdvanced(imageData, imageBlob);
-                    }
-                    
-                    this.addResult(result);
-                } catch (error) {
-                    console.error('Erro na captura:', error);
-                    this.addResult({
-                        type: this.currentMode,
-                        content: 'Erro ao processar imagem. Tente novamente.',
-                        timestamp: new Date().toLocaleString('pt-PT'),
-                        confidence: 0,
-                        apis: [{ name: 'Erro', status: 'error' }]
-                    });
-                }
-                
-                this.loading.style.display = 'none';
-            }
-
-            async canvasToBlob(canvas, type, quality) {
-                return new Promise(resolve => {
-                    canvas.toBlob(resolve, type, quality);
-                });
-            }
-
-            async detectObjectAdvanced(imageData, imageBlob) {
-                const results = [];
-                const apiResults = [];
-                
-                this.loadingText.textContent = 'Analisando com múltiplas tecnologias...';
-                
-                // 1. Tentar APIs online (simulação - na realidade precisariam de chaves)
-                this.processingSteps.textContent = '🌐 Tentando APIs online...';
-                
-                try {
-                    // Simulação de API call (na realidade seria uma chamada real)
-                    await this.delay(1000);
-                    
-                    // Como não temos chaves reais, vamos simular algumas respostas baseadas na análise local
-                    const localAnalysis = await this.analyzeImageAdvanced(imageData);
-                    
-                    if (Math.random() > 0.7) { // Simula sucesso ocasional de API
-                        const mockApiResult = this.generateMockApiResponse(localAnalysis);
-                        results.push(mockApiResult);
-                        apiResults.push({ name: 'Vision API', status: 'success' });
-                    } else {
-                        apiResults.push({ name: 'Vision API', status: 'error' });
-                    }
-                } catch (error) {
-                    apiResults.push({ name: 'Vision API', status: 'error' });
-                }
-
-                // 2. Análise local avançada (sempre funciona)
-                this.processingSteps.textContent = '🧠 Executando análise neural local...';
-                await this.delay(800);
-                
-                const localResult = await this.detectObjectNeuralNetwork(imageData);
-                results.push(localResult);
-                apiResults.push({ name: 'Neural Local', status: 'success' });
-
-                // 3. Análise de características visuais
-                this.processingSteps.textContent = '👁️ Analisando características visuais...';
-                await this.delay(600);
-                
-                const visualResult = await this.analyzeVisualFeatures(imageData);
-                results.push(visualResult);
-                apiResults.push({ name: 'Análise Visual', status: 'success' });
-
-                // 4. Combinar resultados usando ensemble learning
-                this.processingSteps.textContent = '🔄 Combinando resultados...';
-                await this.delay(400);
-                
-                const finalResult = this.combineDetectionResults(results);
-                finalResult.apis = apiResults;
-                
-                return finalResult;
-            }
-
-            async analyzeImageAdvanced(imageData) {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                
-                return new Promise((resolve) => {
-                    img.onload = () => {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        
-                        const features = this.extractAdvancedFeatures(ctx, canvas.width, canvas.height);
-                        resolve(features);
-                    };
-                    img.src = imageData;
-                });
-            }
-
-            extractAdvancedFeatures(ctx, width, height) {
-                const imageData = ctx.getImageData(0, 0, width, height);
-                const data = imageData.data;
-                
-                // Análise de cor avançada
-                const colorAnalysis = this.analyzeColorDistribution(data);
-                
-                // Análise de textura usando Local Binary Patterns
-                const textureAnalysis = this.analyzeLBP(data, width, height);
-                
-                // Análise de bordas usando Sobel
-                const edgeAnalysis = this.sobelEdgeDetection(data, width, height);
-                
-                // Análise de formas usando Hough Transform (simplificado)
-                const shapeAnalysis = this.detectShapes(data, width, height);
-                
-                // Análise de frequência espacial
-                const frequencyAnalysis = this.spatialFrequencyAnalysis(data, width, height);
-                
-                return {
-                    color: colorAnalysis,
-                    texture: textureAnalysis,
-                    edges: edgeAnalysis,
-                    shapes: shapeAnalysis,
-                    frequency: frequencyAnalysis,
-                    dimensions: { width, height, aspectRatio: width / height }
-                };
-            }
-
-            analyzeColorDistribution(data) {
-                const histogram = { r: new Array(256).fill(0), g: new Array(256).fill(0), b: new Array(256).fill(0) };
-                let totalR = 0, totalG = 0, totalB = 0;
-                const pixelCount = data.length / 4;
-                
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i], g = data[i + 1], b = data[i + 2];
-                    histogram.r[r]++;
-                    histogram.g[g]++;
-                    histogram.b[b]++;
-                    totalR += r;
-                    totalG += g;
-                    totalB += b;
-                }
-                
-                const avgR = totalR / pixelCount;
-                const avgG = totalG / pixelCount;
-                const avgB = totalB / pixelCount;
-                
-                // Calcular entropia das cores
-                const entropy = this.calculateEntropy([...histogram.r, ...histogram.g, ...histogram.b]);
-                
-                // Detectar cor dominante
-                const dominantColor = this.findDominantColor(histogram);
-                
-                return {
-                    average: { r: avgR, g: avgG, b: avgB },
-                    dominant: dominantColor,
-                    entropy: entropy,
-                    brightness: (avgR + avgG + avgB) / 3,
-                    saturation: this.calculateSaturation(avgR, avgG, avgB)
-                };
-            }
-
-            analyzeLBP(data, width, height) {
-                // Local Binary Pattern para análise de textura
-                let uniformPatterns = 0;
-                let totalPatterns = 0;
-                
-                for (let y = 1; y < height - 1; y++) {
-                    for (let x = 1; x < width - 1; x++) {
-                        const centerIdx = (y * width + x) * 4;
-                        const center = (data[centerIdx] + data[centerIdx + 1] + data[centerIdx + 2]) / 3;
-                        
-                        let pattern = 0;
-                        let transitions = 0;
-                        let lastBit = 0;
-                        
-                        // Analisar 8 vizinhos
-                        const neighbors = [
-                            [-1, -1], [-1, 0], [-1, 1],
-                            [0, 1], [1, 1], [1, 0],
-                            [1, -1], [0, -1]
-                        ];
-                        
-                        for (let i = 0; i < neighbors.length; i++) {
-                            const [dy, dx] = neighbors[i];
-                            const nIdx = ((y + dy) * width + (x + dx)) * 4;
-                            const neighbor = (data[nIdx] + data[nIdx + 1] + data[nIdx + 2]) / 3;
-                            
-                            const bit = neighbor >= center ? 1 : 0;
-                            pattern = (pattern << 1) | bit;
-                            
-                            if (i > 0 && bit !== lastBit) transitions++;
-                            lastBit = bit;
-                        }
-                        
-                        // Padrão uniforme tem no máximo 2 transições
-                        if (transitions <= 2) uniformPatterns++;
-                        totalPatterns++;
-                    }
-                }
-                
-                return {
-                    uniformity: uniformPatterns / totalPatterns,
-                    complexity: 1 - (uniformPatterns / totalPatterns)
-                };
-            }
-
-            sobelEdgeDetection(data, width, height) {
-                const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
-                const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
-                
-                let totalEdgeStrength = 0;
-                let edgePixels = 0;
-                
-                for (let y = 1; y < height - 1; y++) {
-                    for (let x = 1; x < width - 1; x++) {
-                        let gx = 0, gy = 0;
-                        
-                        for (let ky = -1; ky <= 1; ky++) {
-                            for (let kx = -1; kx <= 1; kx++) {
-                                const idx = ((y + ky) * width + (x + kx)) * 4;
-                                const intensity = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                                
-                                gx += intensity * sobelX[ky + 1][kx + 1];
-                                gy += intensity * sobelY[ky + 1][kx + 1];
-                            }
-                        }
-                        
-                        const magnitude = Math.sqrt(gx * gx + gy * gy);
-                        totalEdgeStrength += magnitude;
-                        
-                        if (magnitude > 50) edgePixels++;
-                    }
-                }
-                
-                return {
-                    strength: totalEdgeStrength / ((width - 2) * (height - 2)),
-                    density: edgePixels / ((width - 2) * (height - 2)),
-                    sharpness: totalEdgeStrength / (width * height)
-                };
-            }
-
-            detectShapes(data, width, height) {
-                // Detecção simplificada de formas geométricas
-                let circles = 0, rectangles = 0, lines = 0;
-                
-                // Análise por blocos
-                const blockSize = 20;
-                for (let y = 0; y < height - blockSize; y += blockSize) {
-                    for (let x = 0; x < width - blockSize; x += blockSize) {
-                        const blockFeatures = this.analyzeBlock(data, x, y, blockSize, width);
-                        
-                        if (blockFeatures.circularity > 0.8) circles++;
-                        if (blockFeatures.rectangularity > 0.8) rectangles++;
-                        if (blockFeatures.linearity > 0.8) lines++;
-                    }
-                }
-                
-                const totalBlocks = Math.floor(width / blockSize) * Math.floor(height / blockSize);
-                
-                return {
-                    circles: circles / totalBlocks,
-                    rectangles: rectangles / totalBlocks,
-                    lines: lines / totalBlocks,
-                    complexity: (circles + rectangles + lines) / totalBlocks
-                };
-            }
-
-            analyzeBlock(data, startX, startY, size, width) {
-                // Análise de um bloco específico para detectar formas
-                let edgePixels = 0;
-                let cornerPixels = 0;
-                let totalPixels = 0;
-                
-                for (let y = startY; y < startY + size && y < data.length / (width * 4); y++) {
-                    for (let x = startX; x < startX + size && x < width; x++) {
-                        const idx = (y * width + x) * 4;
-                        if (idx < data.length - 4) {
-                            // Análise simplificada de características
-                            const intensity = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                            
-                            // Detectar bordas comparando com vizinhos
-                            if (x > startX && y > startY) {
-                                const leftIdx = (y * width + (x - 1)) * 4;
-                                const topIdx = ((y - 1) * width + x) * 4;
-                                
-                                const leftIntensity = (data[leftIdx] + data[leftIdx + 1] + data[leftIdx + 2]) / 3;
-                                const topIntensity = (data[topIdx] + data[topIdx + 1] + data[topIdx + 2]) / 3;
-                                
-                                if (Math.abs(intensity - leftIntensity) > 30 || 
-                                    Math.abs(intensity - topIntensity) > 30) {
-                                    edgePixels++;
-                                }
-                            }
-                            
-                            totalPixels++;
-                        }
-                    }
-                }
-                
-                const edgeDensity = edgePixels / totalPixels;
-                
-                return {
-                    circularity: this.calculateCircularity(edgeDensity, size),
-                    rectangularity: this.calculateRectangularity(edgeDensity, size),
-                    linearity: this.calculateLinearity(edgeDensity, size)
-                };
-            }
-
-            calculateCircularity(edgeDensity, size) {
-                // Círculos têm densidade de borda específica
-                const idealCircleEdgeDensity = 0.25; // Aproximadamente
-                return 1 - Math.abs(edgeDensity - idealCircleEdgeDensity);
-            }
-
-            calculateRectangularity(edgeDensity, size) {
-                // Retângulos têm bordas mais definidas
-                const idealRectEdgeDensity = 0.15;
-                return 1 - Math.abs(edgeDensity - idealRectEdgeDensity);
-            }
-
-            calculateLinearity(edgeDensity, size) {
-                // Linhas têm alta densidade de borda em uma direção
-                return edgeDensity > 0.3 ? edgeDensity : 0;
-            }
-
-            spatialFrequencyAnalysis(data, width, height) {
-                // Análise de frequência espacial simplificada
-                let highFreq = 0, lowFreq = 0;
-                
-                for (let y = 0; y < height - 1; y++) {
-                    for (let x = 0; x < width - 1; x++) {
-                        const idx = (y * width + x) * 4;
-                        const nextIdx = (y * width + x + 1) * 4;
-                        
-                        const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                        const next = (data[nextIdx] + data[nextIdx + 1] + data[nextIdx + 2]) / 3;
-                        
-                        const diff = Math.abs(current - next);
-                        
-                        if (diff > 50) highFreq++;
-                        else lowFreq++;
-                    }
-                }
-                
-                return {
-                    highFrequency: highFreq / (highFreq + lowFreq),
-                    lowFrequency: lowFreq / (highFreq + lowFreq),
-                    contrast: highFreq / (width * height)
-                };
-            }
-
-            calculateEntropy(histogram) {
-                const total = histogram.reduce((sum, count) => sum + count, 0);
-                let entropy = 0;
-                
-                for (let count of histogram) {
-                    if (count > 0) {
-                        const probability = count / total;
-                        entropy -= probability * Math.log2(probability);
-                    }
-                }
-                
-                return entropy;
-            }
-
-            findDominantColor(histogram) {
-                const colors = ['r', 'g', 'b'];
-                let maxColor = 'r';
-                let maxSum = 0;
-                
-                for (let color of colors) {
-                    const sum = histogram[color].reduce((sum, count) => sum + count, 0);
-                    if (sum > maxSum) {
-                        maxSum = sum;
-                        maxColor = color;
-                    }
-                }
-                
-                const colorNames = { r: 'vermelho', g: 'verde', b: 'azul' };
-                return colorNames[maxColor];
-            }
-
-            calculateSaturation(r, g, b) {
-                const max = Math.max(r, g, b);
-                const min = Math.min(r, g, b);
-                return max === 0 ? 0 : (max - min) / max;
-            }
-
-            async detectObjectNeuralNetwork(imageData) {
-                // Simulação de rede neural usando características extraídas
-                const features = await this.analyzeImageAdvanced(imageData);
-                
-                // Base de conhecimento expandida com padrões mais específicos
-                const objectPatterns = {
-                    'Calculadora': {
-                        aspectRatio: [0.6, 1.4],
-                        edgeDensity: [0.05, 0.15],
-                        colorBrightness: [30, 120],
-                        shapeComplexity: [0.3, 0.8],
-                        textureUniformity: [0.6, 0.9],
-                        rectangularity: [0.4, 0.9]
-                    },
-                    'Telefone móvel': {
-                        aspectRatio: [1.5, 2.5],
-                        edgeDensity: [0.02, 0.08],
-                        colorBrightness: [50, 200],
-                        shapeComplexity: [0.1, 0.4],
-                        textureUniformity: [0.7, 0.95],
-                        rectangularity: [0.6, 0.95]
-                    },
-                    'Livro': {
-                        aspectRatio: [1.1, 1.8],
-                        edgeDensity: [0.01, 0.05],
-                        colorBrightness: [120, 240],
-                        shapeComplexity: [0.05, 0.3],
-                        textureUniformity: [0.8, 0.98],
-                        rectangularity: [0.7, 0.95]
-                    },
-                    'Caneta': {
-                        aspectRatio: [3.0, 10.0],
-                        edgeDensity: [0.02, 0.08],
-                        colorBrightness: [40, 180],
-                        shapeComplexity: [0.1, 0.4],
-                        textureUniformity: [0.6, 0.9],
-                        linearity: [0.6, 0.95]
-                    },
-                    'Chaves': {
-                        aspectRatio: [1.5, 4.0],
-                        edgeDensity: [0.08, 0.25],
-                        colorBrightness: [80, 160],
-                        shapeComplexity: [0.4, 0.9],
-                        textureUniformity: [0.3, 0.7],
-                        circularity: [0.1, 0.4]
-                    },
-                    'Relógio': {
-                        aspectRatio: [0.8, 1.2],
-                        edgeDensity: [0.03, 0.12],
-                        colorBrightness: [60, 180],
-                        shapeComplexity: [0.2, 0.6],
-                        textureUniformity: [0.5, 0.8],
-                        circularity: [0.4, 0.9]
-                    },
-                    'Óculos': {
-                        aspectRatio: [2.0, 4.0],
-                        edgeDensity: [0.04, 0.12],
-                        colorBrightness: [40, 160],
-                        shapeComplexity: [0.3, 0.7],
-                        textureUniformity: [0.6, 0.9],
-                        circularity: [0.3, 0.8]
-                    },
-                    'Garrafa': {
-                        aspectRatio: [0.3, 0.8],
-                        edgeDensity: [0.02, 0.08],
-                        colorBrightness: [60, 200],
-                        shapeComplexity: [0.2, 0.5],
-                        textureUniformity: [0.7, 0.95],
-                        circularity: [0.2, 0.6]
-                    }
-                };
-                
-                // Extrair características numéricas
-                const imageFeatures = {
-                    aspectRatio: features.dimensions.aspectRatio,
-                    edgeDensity: features.edges.density,
-                    colorBrightness: features.color.brightness,
-                    shapeComplexity: features.shapes.complexity,
-                    textureUniformity: features.texture.uniformity,
-                    rectangularity: features.shapes.rectangles,
-                    circularity: features.shapes.circles,
-                    linearity: features.shapes.lines
-                };
-                
-                // Calcular pontuação para cada objeto
-                let bestMatch = { name: 'Objeto desconhecido', confidence: 0 };
-                
-                for (let [objectName, pattern] of Object.entries(objectPatterns)) {
-                    let score = 0;
-                    let totalCriteria = 0;
-                    
-                    for (let [feature, range] of Object.entries(pattern)) {
-                        if (imageFeatures[feature] !== undefined) {
-                            const value = imageFeatures[feature];
-                            const [min, max] = range;
-                            
-                            if (value >= min && value <= max) {
-                                // Pontuação baseada na proximidade do centro do intervalo
-                                const center = (min + max) / 2;
-                                const distance = Math.abs(value - center) / ((max - min) / 2);
-                                score += (1 - distance) * 100;
-                            } else {
-                                // Penalidade por estar fora do intervalo
-                                const distance = value < min ? (min - value) / min : (value - max) / max;
-                                score += Math.max(0, 50 - distance * 50);
-                            }
-                            totalCriteria++;
-                        }
-                    }
-                    
-                    const avgScore = totalCriteria > 0 ? score / totalCriteria : 0;
-                    
-                    if (avgScore > bestMatch.confidence) {
-                        bestMatch = { name: objectName, confidence: Math.round(avgScore) };
-                    }
-                }
-                
-                return {
-                    object: bestMatch.name,
-                    confidence: Math.min(bestMatch.confidence, 95), // Cap at 95%
-                    method: 'Neural Network Simulation'
-                };
-            }
-
-            async analyzeVisualFeatures(imageData) {
-                // Análise visual complementar
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                
-                return new Promise((resolve) => {
-                    img.onload = () => {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        
-                        const analysis = this.performVisualAnalysis(ctx, canvas.width, canvas.height);
-                        resolve(analysis);
-                    };
-                    img.src = imageData;
-                });
-            }
-
-            performVisualAnalysis(ctx, width, height) {
-                // Análise visual baseada em padrões conhecidos
-                const imageData = ctx.getImageData(0, 0, width, height);
-                const data = imageData.data;
-                
-                // Detectar padrões específicos
-                const patterns = {
-                    hasButtons: this.detectButtonPattern(data, width, height),
-                    hasScreen: this.detectScreenPattern(data, width, height),
-                    hasText: this.detectTextPattern(data, width, height),
-                    hasMetallic: this.detectMetallicSurface(data, width, height),
-                    hasGlass: this.detectGlassSurface(data, width, height),
-                    hasPlastic: this.detectPlasticSurface(data, width, height)
-                };
-                
-                // Classificar baseado nos padrões
-                let classification = this.classifyByPatterns(patterns, width, height);
-                
-                return {
-                    object: classification.name,
-                    confidence: classification.confidence,
-                    method: 'Visual Pattern Analysis',
-                    patterns: patterns
-                };
-            }
-
-            detectButtonPattern(data, width, height) {
-                // Detectar padrão de botões (áreas regulares com bordas)
-                let buttonLikeRegions = 0;
-                const gridSize = Math.min(width, height) / 10;
-                
-                for (let y = 0; y < height - gridSize; y += gridSize) {
-                    for (let x = 0; x < width - gridSize; x += gridSize) {
-                        const regionScore = this.analyzeRegionForButtons(data, x, y, gridSize, width);
-                        if (regionScore > 0.6) buttonLikeRegions++;
-                    }
-                }
-                
-                return buttonLikeRegions > 4; // Múltiplos botões
-            }
-
-            analyzeRegionForButtons(data, startX, startY, size, width) {
-                let edgeCount = 0;
-                let totalPixels = 0;
-                let avgBrightness = 0;
-                
-                for (let y = startY; y < startY + size; y++) {
-                    for (let x = startX; x < startX + size; x++) {
-                        if (y < data.length / (width * 4) && x < width) {
-                            const idx = (y * width + x) * 4;
-                            const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                            avgBrightness += brightness;
-                            totalPixels++;
-                            
-                            // Detectar bordas
-                            if (x > startX && y > startY) {
-                                const leftIdx = (y * width + (x - 1)) * 4;
-                                const topIdx = ((y - 1) * width + x) * 4;
-                                
-                                const leftBrightness = (data[leftIdx] + data[leftIdx + 1] + data[leftIdx + 2]) / 3;
-                                const topBrightness = (data[topIdx] + data[topIdx + 1] + data[topIdx + 2]) / 3;
-                                
-                                if (Math.abs(brightness - leftBrightness) > 40 || 
-                                    Math.abs(brightness - topBrightness) > 40) {
-                                    edgeCount++;
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                const edgeDensity = edgeCount / totalPixels;
-                avgBrightness /= totalPixels;
-                
-                // Botões têm bordas definidas e brilho moderado
-                return (edgeDensity > 0.1 && edgeDensity < 0.4 && avgBrightness > 50 && avgBrightness < 150) ? 0.8 : 0.2;
-            }
-
-            detectScreenPattern(data, width, height) {
-                // Detectar padrão de tela (área uniforme com possível brilho)
-                let uniformRegions = 0;
-                const samples = Math.min(1000, width * height / 16);
-                
-                for (let i = 0; i < samples; i++) {
-                    const idx = Math.floor(Math.random() * (data.length / 4)) * 4;
-                    const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                    
-                    if (brightness > 100) uniformRegions++;
-                }
-                
-                return uniformRegions / samples > 0.6;
-            }
-
-            detectTextPattern(data, width, height) {
-                // Detectar padrões típicos de texto
-                let textLikeLines = 0;
-                const lineHeight = Math.floor(height / 20);
-                
-                for (let y = 0; y < height - lineHeight; y += lineHeight) {
-                    let lineVariation = 0;
-                    let lastBrightness = 0;
-                    
-                    for (let x = 0; x < width; x += 5) {
-                        const idx = (y * width + x) * 4;
-                        const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                        
-                        if (x > 0) {
-                            lineVariation += Math.abs(brightness - lastBrightness);
-                        }
-                        lastBrightness = brightness;
-                    }
-                    
-                    // Texto tem variação moderada e consistente
-                    if (lineVariation > 500 && lineVariation < 3000) {
-                        textLikeLines++;
-                    }
-                }
-                
-                return textLikeLines > 3;
-            }
-
-            detectMetallicSurface(data, width, height) {
-                // Detectar superfície metálica (reflexos, brilho específico)
-                let metallicPixels = 0;
-                const samples = Math.min(1000, data.length / 16);
-                
-                for (let i = 0; i < samples; i += 4) {
-                    const r = data[i], g = data[i + 1], b = data[i + 2];
-                    const brightness = (r + g + b) / 3;
-                    const saturation = this.calculateSaturation(r, g, b);
-                    
-                    // Metal tem baixa saturação e brilho variável
-                    if (saturation < 0.3 && brightness > 80 && brightness < 180) {
-                        metallicPixels++;
-                    }
-                }
-                
-                return metallicPixels / (samples / 4) > 0.4;
-            }
-
-            detectGlassSurface(data, width, height) {
-                // Detectar superfície de vidro (transparência, reflexos)
-                let glassLikePixels = 0;
-                const samples = Math.min(1000, data.length / 16);
-                
-                for (let i = 0; i < samples; i += 4) {
-                    const r = data[i], g = data[i + 1], b = data[i + 2];
-                    const brightness = (r + g + b) / 3;
-                    
-                    // Vidro tende a ter alta luminosidade
-                    if (brightness > 150) {
-                        glassLikePixels++;
-                    }
-                }
-                
-                return glassLikePixels / (samples / 4) > 0.5;
-            }
-
-            detectPlasticSurface(data, width, height) {
-                // Detectar superfície plástica (uniforme, cores saturadas)
-                let plasticPixels = 0;
-                const samples = Math.min(1000, data.length / 16);
-                
-                for (let i = 0; i < samples; i += 4) {
-                    const r = data[i], g = data[i + 1], b = data[i + 2];
-                    const saturation = this.calculateSaturation(r, g, b);
-                    const brightness = (r + g + b) / 3;
-                    
-                    // Plástico pode ter cores saturadas e brilho moderado
-                    if (saturation > 0.2 && brightness > 60 && brightness < 200) {
-                        plasticPixels++;
-                    }
-                }
-                
-                return plasticPixels / (samples / 4) > 0.3;
-            }
-
-            classifyByPatterns(patterns, width, height) {
-                const aspectRatio = width / height;
-                
-                // Lógica de classificação baseada em padrões
-                if (patterns.hasButtons && aspectRatio > 0.6 && aspectRatio < 1.4) {
-                    return { name: 'Calculadora', confidence: 88 };
-                }
-                
-                if (patterns.hasScreen && aspectRatio > 1.5 && aspectRatio < 2.5) {
-                    return { name: 'Telefone móvel', confidence: 85 };
-                }
-                
-                if (patterns.hasText && aspectRatio > 1.1 && aspectRatio < 1.8) {
-                    return { name: 'Livro ou documento', confidence: 82 };
-                }
-                
-                if (patterns.hasMetallic && (aspectRatio > 3 || aspectRatio < 0.33)) {
-                    return { name: 'Chaves ou caneta', confidence: 80 };
-                }
-                
-                if (patterns.hasGlass && aspectRatio > 2.5) {
-                    return { name: 'Óculos', confidence: 78 };
-                }
-                
-                if (patterns.hasPlastic && aspectRatio > 0.8 && aspectRatio < 1.2) {
-                    return { name: 'Relógio', confidence: 75 };
-                }
-                
-                return { name: 'Objeto não identificado', confidence: 45 };
-            }
-
-            generateMockApiResponse(features) {
-                // Gerar resposta simulada de API baseada na análise local
-                const objects = [
-                    'Calculadora', 'Telefone móvel', 'Livro', 'Caneta', 
-                    'Chaves', 'Relógio', 'Óculos', 'Garrafa'
-                ];
-                
-                const randomObject = objects[Math.floor(Math.random() * objects.length)];
-                const confidence = Math.floor(Math.random() * 30) + 60; // 60-90%
-                
-                return {
-                    object: randomObject,
-                    confidence: confidence,
-                    method: 'Cloud Vision API'
-                };
-            }
-
-            combineDetectionResults(results) {
-                // Combinar resultados usando ensemble learning
-                const objectCounts = {};
-                let totalConfidence = 0;
-                
-                results.forEach(result => {
-                    const obj = result.object;
-                    if (!objectCounts[obj]) {
-                        objectCounts[obj] = { count: 0, totalConfidence: 0 };
-                    }
-                    objectCounts[obj].count++;
-                    objectCounts[obj].totalConfidence += result.confidence;
-                    totalConfidence += result.confidence;
-                });
-                
-                // Encontrar o objeto mais votado
-                let bestObject = { name: 'Objeto desconhecido', confidence: 0 };
-                
-                for (let [obj, data] of Object.entries(objectCounts)) {
-                    const avgConfidence = data.totalConfidence / data.count;
-                    const weightedScore = avgConfidence * (data.count / results.length);
-                    
-                    if (weightedScore > bestObject.confidence) {
-                        bestObject = { name: obj, confidence: Math.round(weightedScore) };
-                    }
-                }
-                
-                return {
-                    type: 'object',
-                    content: `${bestObject.name} (${bestObject.confidence}% confiança)`,
-                    timestamp: new Date().toLocaleString('pt-PT'),
-                    confidence: bestObject.confidence
-                };
-            }
-
-            async recognizeTextAdvanced(imageData, imageBlob) {
-                const results = [];
-                const apiResults = [];
-                
-                this.loadingText.textContent = 'Processando texto com múltiplas tecnologias...';
-                
-                // 1. Tentar OCR.space API (gratuita)
-                this.processingSteps.textContent = '🌐 Tentando OCR online...';
-                try {
-                    const ocrResult = await this.tryOCRSpaceAPI(imageBlob);
-                    if (ocrResult.success) {
-                        results.push(ocrResult);
-                        apiResults.push({ name: 'OCR.space', status: 'success' });
-                    } else {
-                        apiResults.push({ name: 'OCR.space', status: 'error' });
-                    }
-                } catch (error) {
-                    apiResults.push({ name: 'OCR.space', status: 'error' });
-                }
-
-                // 2. Tesseract.js local
-                this.processingSteps.textContent = '🧠 Executando OCR neural local...';
-                try {
-                    const tesseractResult = await this.recognizeWithTesseract(imageData);
-                    results.push(tesseractResult);
-                    apiResults.push({ name: 'Tesseract.js', status: 'success' });
-                } catch (error) {
-                    apiResults.push({ name: 'Tesseract.js', status: 'error' });
-                }
-
-                // 3. Análise de características de texto
-                this.processingSteps.textContent = '👁️ Analisando padrões de texto...';
-                const textAnalysis = await this.analyzeForTextFeatures(imageData);
-                results.push(textAnalysis);
-                apiResults.push({ name: 'Análise Visual', status: 'success' });
-
-                // Combinar resultados
-                this.processingSteps.textContent = '🔄 Combinando resultados...';
-                const finalResult = this.combineTextResults(results);
-                finalResult.apis = apiResults;
-                
-                return finalResult;
-            }
-
-            async tryOCRSpaceAPI(imageBlob) {
-                try {
-                    const formData = new FormData();
-                    formData.append('file', imageBlob, 'image.jpg');
-                    formData.append('language', 'por');
-                    formData.append('apikey', 'helloworld');
-                    formData.append('scale', 'true');
-                    formData.append('isTable', 'true');
-                    
-                    const response = await fetch('https://api.ocr.space/parse/image', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const extractedText = data.ParsedResults?.[0]?.ParsedText?.trim();
-                        
-                        if (extractedText && extractedText.length > 0) {
-                            return {
-                                text: this.cleanRecognizedText(extractedText),
-                                confidence: 85,
-                                method: 'OCR.space API',
-                                success: true
-                            };
-                        }
-                    }
-                    
-                    return { success: false };
-                } catch (error) {
-                    return { success: false };
-                }
-            }
-
-            async recognizeWithTesseract(imageData) {
-                try {
-                    const processedImage = await this.preprocessImageForOCR(imageData);
-                    
-                    const { data: { text, confidence } } = await Tesseract.recognize(processedImage, 'por+eng', {
-                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ.,!?;:()[]{}"-+*/=@#$%&€ ',
-                        tessedit_pageseg_mode: Tesseract.PSM.AUTO,
-                        preserve_interword_spaces: '1'
-                    });
-                    
-                    return {
-                        text: this.cleanRecognizedText(text),
-                        confidence: Math.round(confidence),
-                        method: 'Tesseract.js',
-                        success: text.trim().length > 0
-                    };
-                } catch (error) {
-                    return {
-                        text: '',
-                        confidence: 0,
-                        method: 'Tesseract.js',
-                        success: false
-                    };
-                }
-            }
-
-            async preprocessImageForOCR(imageData) {
-                return new Promise((resolve) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    
-                    img.onload = () => {
-                        // Otimizar tamanho
-                        let { width, height } = img;
-                        const maxSize = 1600;
-                        
-                        if (width > maxSize || height > maxSize) {
-                            const scale = Math.min(maxSize / width, maxSize / height);
-                            width *= scale;
-                            height *= scale;
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Aplicar filtros avançados
-                        const imageData = ctx.getImageData(0, 0, width, height);
-                        const data = imageData.data;
-                        
-                        // Conversão para escala de cinza com pesos otimizados
-                        for (let i = 0; i < data.length; i += 4) {
-                            const r = data[i];
-                            const g = data[i + 1];
-                            const b = data[i + 2];
-                            
-                            // Fórmula otimizada para texto
-                            const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-                            
-                            // Binarização adaptativa com threshold dinâmico
-                            const threshold = this.calculateAdaptiveThreshold(data, i, width, height);
-                            const binary = gray > threshold ? 255 : 0;
-                            
-                            data[i] = binary;
-                            data[i + 1] = binary;
-                            data[i + 2] = binary;
-                        }
-                        
-                        ctx.putImageData(imageData, 0, 0);
-                        resolve(canvas.toDataURL('image/png'));
-                    };
-                    
-                    img.src = imageData;
-                });
-            }
-
-            calculateAdaptiveThreshold(data, index, width, height) {
-                // Threshold adaptativo baseado na vizinhança local
-                const windowSize = 15;
-                const x = (index / 4) % width;
-                const y = Math.floor((index / 4) / width);
-                
-                let sum = 0;
-                let count = 0;
-                
-                for (let dy = -windowSize; dy <= windowSize; dy++) {
-                    for (let dx = -windowSize; dx <= windowSize; dx++) {
-                        const nx = x + dx;
-                        const ny = y + dy;
-                        
-                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                            const nIndex = (ny * width + nx) * 4;
-                            const gray = (data[nIndex] + data[nIndex + 1] + data[nIndex + 2]) / 3;
-                            sum += gray;
-                            count++;
-                        }
-                    }
-                }
-                
-                const localMean = sum / count;
-                return localMean * 0.85; // Threshold ligeiramente abaixo da média local
-            }
-
-            cleanRecognizedText(rawText) {
-                return rawText
-                    .replace(/[|\\]/g, 'I')
-                    .replace(/[{}]/g, '')
-                    .replace(/[@#$%^&*]/g, '')
-                    .replace(/\s+/g, ' ')
-                    .replace(/\n\s*\n/g, '\n')
-                    .replace(/\s+([.,!?;:])/g, '$1')
-                    .replace(/([.,!?;:])\s*([a-zA-ZÀ-ÿ])/g, '$1 $2')
-                    .trim();
-            }
-
-            async analyzeForTextFeatures(imageData) {
-                // Análise específica para detectar e classificar texto
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                
-                return new Promise((resolve) => {
-                    img.onload = () => {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        
-                        const hasText = this.detectTextFeatures(ctx.getImageData(0, 0, canvas.width, canvas.height));
-                        
-                        if (hasText.detected) {
-                            resolve({
-                                text: `Texto detectado na imagem.\nCaracterísticas: ${hasText.description}`,
-                                confidence: hasText.confidence,
-                                method: 'Análise Visual de Texto',
-                                success: true
-                            });
-                        } else {
-                            resolve({
-                                text: 'Nenhum texto claro detectado na imagem.',
-                                confidence: 20,
-                                method: 'Análise Visual de Texto',
-                                success: false
-                            });
-                        }
-                    };
-                    img.src = imageData;
-                });
-            }
-
-            detectTextFeatures(imageData) {
-                const data = imageData.data;
-                const width = imageData.width;
-                const height = imageData.height;
-                
-                let horizontalLines = 0;
-                let textRegions = 0;
-                let averageLineLength = 0;
-                let totalLines = 0;
-                
-                // Análise linha por linha
-                for (let y = 0; y < height - 2; y += 2) {
-                    let lineChanges = 0;
-                    let lineLength = 0;
-                    let inText = false;
-                    
-                    for (let x = 0; x < width - 1; x++) {
-                        const idx = (y * width + x) * 4;
-                        const nextIdx = (y * width + x + 1) * 4;
-                        
-                        const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                        const next = (data[nextIdx] + data[nextIdx + 1] + data[nextIdx + 2]) / 3;
-                        
-                        const diff = Math.abs(current - next);
-                        
-                        if (diff > 30) {
-                            lineChanges++;
-                            if (!inText) {
-                                inText = true;
-                                lineLength = 1;
-                            } else {
-                                lineLength++;
-                            }
-                        } else if (inText && diff < 10) {
-                            inText = false;
-                            if (lineLength > 5) {
-                                averageLineLength += lineLength;
-                                totalLines++;
-                            }
-                        }
-                    }
-                    
-                    // Linha com características de texto
-                    if (lineChanges > width * 0.05 && lineChanges < width * 0.7) {
-                        horizontalLines++;
-                    }
-                }
-                
-                // Análise de blocos para detectar parágrafos
-                const blockSize = 30;
-                for (let y = 0; y < height - blockSize; y += blockSize) {
-                    for (let x = 0; x < width - blockSize; x += blockSize) {
-                        const blockScore = this.analyzeTextBlock(data, x, y, blockSize, width);
-                        if (blockScore > 0.4) textRegions++;
-                    }
-                }
-                
-                const avgLineLength = totalLines > 0 ? averageLineLength / totalLines : 0;
-                const lineRatio = horizontalLines / (height / 2);
-                const regionRatio = textRegions / ((width / blockSize) * (height / blockSize));
-                
-                // Critérios para detectar texto
-                const hasHorizontalPattern = lineRatio > 0.1;
-                const hasTextBlocks = regionRatio > 0.1;
-                const hasReasonableLineLength = avgLineLength > 10 && avgLineLength < width * 0.8;
-                
-                const detected = hasHorizontalPattern && (hasTextBlocks || hasReasonableLineLength);
-                
-                let description = [];
-                if (hasHorizontalPattern) description.push('padrões horizontais');
-                if (hasTextBlocks) description.push('blocos de texto');
-                if (hasReasonableLineLength) description.push('linhas bem formadas');
-                
-                const confidence = detected ? Math.min(90, Math.round(
-                    (lineRatio * 30) + (regionRatio * 40) + (hasReasonableLineLength ? 20 : 0)
-                )) : 20;
-                
-                return {
-                    detected,
-                    confidence,
-                    description: description.join(', ') || 'características indefinidas'
-                };
-            }
-
-            analyzeTextBlock(data, startX, startY, size, width) {
-                let changes = 0;
-                let totalPixels = 0;
-                let brightness = 0;
-                
-                for (let y = startY; y < startY + size; y++) {
-                    for (let x = startX; x < startX + size - 1; x++) {
-                        if (y < data.length / (width * 4) && x < width) {
-                            const idx = (y * width + x) * 4;
-                            const nextIdx = (y * width + x + 1) * 4;
-                            
-                            const current = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                            const next = (data[nextIdx] + data[nextIdx + 1] + data[nextIdx + 2]) / 3;
-                            
-                            brightness += current;
-                            totalPixels++;
-                            
-                            if (Math.abs(current - next) > 25) {
-                                changes++;
-                            }
-                        }
-                    }
-                }
-                
-                const changeDensity = changes / totalPixels;
-                const avgBrightness = brightness / totalPixels;
-                
-                // Texto tem densidade de mudança moderada e brilho adequado
-                return (changeDensity > 0.1 && changeDensity < 0.6 && avgBrightness > 50 && avgBrightness < 200) ? 0.7 : 0.2;
-            }
-
-            combineTextResults(results) {
-                const validResults = results.filter(r => r.success && r.text.length > 0);
-                
-                if (validResults.length === 0) {
-                    return {
-                        type: 'text',
-                        content: 'Nenhum texto foi detectado na imagem. Tente:\n• Melhorar a iluminação\n• Aproximar mais da câmera\n• Usar fundo contrastante\n• Manter a imagem estável',
-                        timestamp: new Date().toLocaleString('pt-PT'),
-                        confidence: 0
-                    };
-                }
-                
-                // Escolher o resultado com maior confiança
-                const bestResult = validResults.reduce((prev, current) => 
-                    (prev.confidence > current.confidence) ? prev : current
-                );
-                
-                let combinedText = bestResult.text;
-                
-                // Se temos múltiplos resultados, tentar combinar
-                if (validResults.length > 1) {
-                    const texts = validResults.map(r => r.text);
-                    combinedText = this.mergeSimilarTexts(texts);
-                }
-                
-                const avgConfidence = validResults.reduce((sum, r) => sum + r.confidence, 0) / validResults.length;
-                
-                return {
-                    type: 'text',
-                    content: `${combinedText}\n\n[Confiança: ${Math.round(avgConfidence)}%]`,
-                    timestamp: new Date().toLocaleString('pt-PT'),
-                    confidence: Math.round(avgConfidence)
-                };
-            }
-
-            mergeSimilarTexts(texts) {
-                // Algoritmo simples para combinar textos similares
-                if (texts.length === 1) return texts[0];
-                
-                // Encontrar o texto mais longo como base
-                const baseText = texts.reduce((prev, current) => 
-                    prev.length > current.length ? prev : current
-                );
-                
-                return baseText;
-            }
-
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
-            addResult(result) {
-                this.results.unshift(result);
-                this.saveResults();
-                this.updateResultsDisplay();
-            }
-
-            updateResultsDisplay() {
-                if (this.results.length === 0) {
-                    this.resultsList.innerHTML = '<div class="no-results">Nenhuma detecção ainda. Use a câmera para começar!</div>';
+                if (clientError) {
+                    console.error('Cliente não encontrado:', clientError);
+                    showNotification('Cliente não encontrado. Verifique a URL.', 'error');
                     return;
                 }
 
-                this.resultsList.innerHTML = this.results.map(result => {
-                    const confidenceColor = result.confidence > 80 ? '#48dbfb' : 
-                                          result.confidence > 60 ? '#feca57' : '#ff6b6b';
-                    
-                    const apiStatus = result.apis ? result.apis.map(api => 
-                        `<span class="api-badge api-${api.status}">${api.name}</span>`
-                    ).join('') : '';
-                    
-                    return `
-                        <div class="result-item">
-                            <div class="type">${result.type === 'object' ? '🔍 OBJETO' : '📝 TEXTO'}</div>
-                            <div class="timestamp">${result.timestamp}</div>
-                            <div class="confidence-bar">
-                                <div class="confidence-fill" style="width: ${result.confidence || 0}%; background: ${confidenceColor};"></div>
-                            </div>
-                            <div class="content">${result.content}</div>
-                            ${apiStatus ? `<div class="api-status">${apiStatus}</div>` : ''}
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            showCameraError(error) {
-                let errorMessage = 'Erro ao acessar a câmera. ';
+                // Atualizar interface com dados do cliente
+                updateClientInterface(clientData);
                 
-                if (error.name === 'NotAllowedError') {
-                    errorMessage += 'Permita o acesso à câmera nas configurações.';
-                } else if (error.name === 'NotFoundError') {
-                    errorMessage += 'Nenhuma câmera encontrada.';
-                } else {
-                    errorMessage += 'Verifique as permissões e tente novamente.';
-                }
+                console.log('Cliente carregado:', clientData);
                 
-                this.cameraOverlay.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
-                        <div style="font-size: 16px; margin-bottom: 15px;">${errorMessage}</div>
-                        <button onclick="location.reload()" style="background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
-                            🔄 Tentar Novamente
-                        </button>
-                    </div>
-                `;
-                this.cameraOverlay.style.display = 'flex';
-            }
-
-            clearHistory() {
-                if (confirm('Tem certeza que deseja limpar todo o histórico?')) {
-                    this.results = [];
-                    this.saveResults();
-                    this.updateResultsDisplay();
-                }
-            }
-
-            loadResults() {
-                try {
-                    const saved = localStorage.getItem('scannerResults');
-                    return saved ? JSON.parse(saved) : [];
-                } catch (error) {
-                    return [];
-                }
-            }
-
-            saveResults() {
-                try {
-                    localStorage.setItem('scannerResults', JSON.stringify(this.results));
-                } catch (error) {
-                    console.error('Erro ao salvar:', error);
-                }
+            } catch (error) {
+                console.error('Erro ao carregar cliente:', error);
+                showNotification('Erro ao carregar dados do evento.', 'error');
+            } finally {
+                showLoading(false);
             }
         }
 
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
-            if (location.protocol === 'https:' || location.hostname === 'localhost') {
-                new AdvancedScanner();
-            } else {
-                document.getElementById('cameraOverlay').innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">🔒</div>
-                        <div>HTTPS necessário para acesso à câmera</div>
-                    </div>
-                `;
+        // Atualizar interface com dados específicos do cliente
+        function updateClientInterface(clientData) {
+            // Atualizar nomes dos noivos
+            const coupleNames = document.querySelector('.font-dancing');
+            if (coupleNames && clientData.couple_names) {
+                coupleNames.textContent = clientData.couple_names;
             }
-        });
+
+            // Atualizar data do evento
+            if (clientData.event_date) {
+                const eventDateElement = document.querySelector('.countdown-box p');
+                const eventDate = new Date(clientData.event_date);
+                const formattedDate = eventDate.toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const formattedTime = eventDate.toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                if (eventDateElement) {
+                    eventDateElement.innerHTML = `📅 ${formattedDate} • 🕕 ${formattedTime} • 📍 ${clientData.venue || 'Local a definir'}`;
+                }
+                
+                // Atualizar contador regressivo
+                eventDate = new Date(clientData.event_date).getTime();
+            }
+
+            // Atualizar título da página
+            document.title = `Confirmação de Presença - ${clientData.couple_names || 'Casamento'}`;
+        }
+
+        // Verificar token armazenado
+        function checkStoredClientToken() {
+            const storedToken = localStorage.getItem(`clientToken_${CLIENT_ID}`);
+            if (storedToken) {
+                document.getElementById('clientToken').value = storedToken;
+            }
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Navegação
+            document.getElementById('clientAccessBtn').addEventListener('click', showClientLogin);
+            document.getElementById('backToGuestBtn').addEventListener('click', showGuestSection);
+            document.getElementById('logoutBtn').addEventListener('click', logoutClient);
+            document.getElementById('newRsvpBtn').addEventListener('click', showGuestSection);
+
+            // Client tools
+            document.getElementById('exportPdfBtn').addEventListener('click', exportToPDF);
+            document.getElementById('sendRemindersBtn').addEventListener('click', sendReminders);
+            document.getElementById('editEventBtn').addEventListener('click', editEvent);
+            document.getElementById('guestAnalyticsBtn').addEventListener('click', showAnalytics);
+            document.getElementById('shareEventBtn').addEventListener('click', shareEvent);
+
+            // Filters and search
+            document.getElementById('statusFilter').addEventListener('change', filterGuests);
+            document.getElementById('searchGuests').addEventListener('input', filterGuests);
+
+            // Formulários
+            document.getElementById('rsvpForm').addEventListener('submit', handleGuestRSVP);
+            document.getElementById('clientLoginForm').addEventListener('submit', handleClientLogin);
+
+            // Opções de presença
+            document.querySelectorAll('input[name="attending"]').forEach(radio => {
+                radio.addEventListener('change', handleAttendingChange);
+            });
+        }
+
+        // Manipular mudança na opção de presença
+        function handleAttendingChange(e) {
+            // Atualizar visual das opções
+            document.querySelectorAll('.attendance-option').forEach(option => {
+                option.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50', 'selected');
+                option.classList.add('border-gray-300');
+            });
+
+            const selectedOption = e.target.closest('label').querySelector('.attendance-option');
+            const radioOption = e.target.closest('.radio-option');
+            
+            if (e.target.value === 'true') {
+                selectedOption.classList.add('border-green-400', 'bg-green-50', 'selected');
+                radioOption.classList.add('selected');
+                document.getElementById('companionSection').classList.remove('hidden');
+            } else {
+                selectedOption.classList.add('border-red-400', 'bg-red-50', 'selected');
+                radioOption.classList.add('selected');
+                document.getElementById('companionSection').classList.add('hidden');
+                document.getElementById('companionName').value = '';
+            }
+        }
+
+        // Manipular confirmação do convidado
+        async function handleGuestRSVP(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const formData = new FormData(e.target);
+            const guestName = document.getElementById('guestName').value.trim();
+            const attending = formData.get('attending') === 'true';
+            const companionName = document.getElementById('companionName').value.trim();
+            const message = document.getElementById('message').value.trim();
+
+            try {
+                // Usar o CLIENT_ID específico da URL
+                const rsvpData = {
+                    client_id: CLIENT_ID,
+                    guest_name: guestName,
+                    attending: attending,
+                    companion_name: companionName || null,
+                    message: message || null,
+                    created_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('rsvps')
+                    .insert([rsvpData]);
+
+                if (error) throw error;
+
+                showSuccessMessage();
+                showNotification('Confirmação enviada com sucesso! 🎉', 'success');
+            } catch (error) {
+                console.error('Erro ao enviar RSVP:', error);
+                showNotification('Erro ao enviar confirmação. Tente novamente.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Manipular login do cliente
+        async function handleClientLogin(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const token = document.getElementById('clientToken').value.trim();
+
+            try {
+                // Verificar se o token existe para este cliente específico
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('access_token', token)
+                    .eq('id', CLIENT_ID)
+                    .single();
+
+                if (error || !data) {
+                    throw new Error('Token inválido para este evento');
+                }
+
+                currentClientId = data.id;
+                localStorage.setItem(`clientToken_${CLIENT_ID}`, token);
+                
+                await loadClientDashboard();
+                showNotification('Login realizado com sucesso! 🎉', 'success');
+            } catch (error) {
+                console.error('Erro no login:', error);
+                showNotification('Token inválido. Verifique e tente novamente.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Carregar dashboard do cliente
+        async function loadClientDashboard() {
+            try {
+                // Buscar apenas RSVPs deste cliente específico
+                const { data, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('client_id', CLIENT_ID)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                updateDashboardStats(data);
+                updateGuestList(data);
+                showClientDashboard();
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+                showNotification('Erro ao carregar dados do dashboard.', 'error');
+            }
+        }
+
+        // Atualizar estatísticas do dashboard
+        function updateDashboardStats(rsvps) {
+            const confirmed = rsvps.filter(rsvp => rsvp.attending).length;
+            const declined = rsvps.filter(rsvp => !rsvp.attending).length;
+            const totalPeople = rsvps.reduce((total, rsvp) => {
+                if (rsvp.attending) {
+                    return total + 1 + (rsvp.companion_name ? 1 : 0);
+                }
+                return total;
+            }, 0);
+
+            document.getElementById('confirmedCount').textContent = confirmed;
+            document.getElementById('declinedCount').textContent = declined;
+            document.getElementById('totalGuests').textContent = totalPeople;
+        }
+
+        // Atualizar lista de convidados
+        function updateGuestList(rsvps) {
+            // Store data for filtering
+            allGuestData = rsvps;
+            
+            const guestList = document.getElementById('guestList');
+            guestList.innerHTML = '';
+
+            if (rsvps.length === 0) {
+                guestList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">
+                            Nenhuma confirmação ainda
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            rsvps.forEach(rsvp => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100 hover:bg-gray-50';
+                
+                const statusBadge = rsvp.attending 
+                    ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">✅ Confirmado</span>'
+                    : '<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">❌ Recusou</span>';
+
+                const companionText = rsvp.companion_name 
+                    ? `<span class="text-gray-600">+ ${rsvp.companion_name}</span>`
+                    : '<span class="text-gray-400">-</span>';
+
+                const messageText = rsvp.message 
+                    ? `<span class="text-gray-600">${rsvp.message}</span>`
+                    : '<span class="text-gray-400">-</span>';
+
+                const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-medium text-gray-900">${rsvp.guest_name}</td>
+                    <td class="py-3 px-4">${companionText}</td>
+                    <td class="py-3 px-4 text-center">${statusBadge}</td>
+                    <td class="py-3 px-4 max-w-xs truncate">${messageText}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-500">${date}</td>
+                `;
+
+                guestList.appendChild(row);
+            });
+        }
+
+        // Funções de navegação
+        function showGuestSection() {
+            guestSection.classList.remove('hidden');
+            clientLoginSection.classList.add('hidden');
+            clientDashboard.classList.add('hidden');
+            successMessage.classList.add('hidden');
+            
+            // Limpar formulário
+            document.getElementById('rsvpForm').reset();
+            document.getElementById('companionSection').classList.add('hidden');
+            
+            // Resetar opções visuais
+            document.querySelectorAll('.attendance-option').forEach(option => {
+                option.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50', 'selected');
+                option.classList.add('border-gray-300');
+            });
+            document.querySelectorAll('.radio-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+        }
+
+        function showClientLogin() {
+            guestSection.classList.add('hidden');
+            clientLoginSection.classList.remove('hidden');
+            clientDashboard.classList.add('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        function showClientDashboard() {
+            guestSection.classList.add('hidden');
+            clientLoginSection.classList.add('hidden');
+            clientDashboard.classList.remove('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        function showSuccessMessage() {
+            guestSection.classList.add('hidden');
+            clientLoginSection.classList.add('hidden');
+            clientDashboard.classList.add('hidden');
+            successMessage.classList.remove('hidden');
+        }
+
+        function logoutClient() {
+            currentClientId = null;
+            localStorage.removeItem(`clientToken_${CLIENT_ID}`);
+            document.getElementById('clientLoginForm').reset();
+            showGuestSection();
+            showNotification('Logout realizado com sucesso!', 'success');
+        }
+
+        // Contador regressivo
+        function startCountdown() {
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = eventDate - now;
+
+                if (distance < 0) {
+                    document.getElementById('days').textContent = '00';
+                    document.getElementById('hours').textContent = '00';
+                    document.getElementById('minutes').textContent = '00';
+                    document.getElementById('seconds').textContent = '00';
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Criar corações flutuantes
+        function createFloatingHearts() {
+            const heartsContainer = document.getElementById('heartsContainer');
+            
+            function createHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = ['💕', '💖', '💗', '💝'][Math.floor(Math.random() * 4)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 8 + 's';
+                heart.style.animationDuration = (Math.random() * 3 + 8) + 's';
+                
+                heartsContainer.appendChild(heart);
+                
+                setTimeout(() => {
+                    if (heartsContainer.contains(heart)) {
+                        heartsContainer.removeChild(heart);
+                    }
+                }, 11000);
+            }
+            
+            setInterval(createHeart, 3000);
+            
+            // Criar alguns corações iniciais
+            for (let i = 0; i < 3; i++) {
+                setTimeout(createHeart, i * 1000);
+            }
+        }
+
+        // Client Tools Functions
+        function exportToPDF() {
+            showLoading(true);
+            
+            // Get current guest data
+            const guestData = Array.from(document.querySelectorAll('#guestList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return null;
+                
+                return {
+                    name: cells[0]?.textContent?.trim() || '',
+                    companion: cells[1]?.textContent?.trim() || '',
+                    status: cells[2]?.textContent?.trim() || '',
+                    message: cells[3]?.textContent?.trim() || '',
+                    date: cells[4]?.textContent?.trim() || ''
+                };
+            }).filter(Boolean);
+
+            // Create PDF content
+            const pdfContent = generatePDFContent(guestData);
+            
+            // Create and download PDF
+            const blob = new Blob([pdfContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lista-convidados-casamento.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showLoading(false);
+            showNotification('Lista exportada com sucesso! 📄', 'success');
+        }
+
+        function generatePDFContent(guestData) {
+            const confirmedCount = guestData.filter(g => g.status.includes('Confirmado')).length;
+            const declinedCount = guestData.filter(g => g.status.includes('Recusou')).length;
+            const totalPeople = guestData.reduce((total, guest) => {
+                if (guest.status.includes('Confirmado')) {
+                    return total + 1 + (guest.companion && guest.companion !== '-' ? 1 : 0);
+                }
+                return total;
+            }, 0);
+
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Convidados - Casamento Ana & João</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .stats { display: flex; justify-content: space-around; margin-bottom: 30px; }
+        .stat-box { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; }
+        .confirmed { color: green; }
+        .declined { color: red; }
+        .footer { margin-top: 30px; text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Lista de Convidados</h1>
+        <h2>Casamento Ana & João</h2>
+        <p>15 de Junho de 2024 • 17:00 • Igreja São José</p>
+        <p>Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <h3>${confirmedCount}</h3>
+            <p>Confirmados</p>
+        </div>
+        <div class="stat-box">
+            <h3>${declinedCount}</h3>
+            <p>Recusaram</p>
+        </div>
+        <div class="stat-box">
+            <h3>${totalPeople}</h3>
+            <p>Total de Pessoas</p>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Acompanhante</th>
+                <th>Status</th>
+                <th>Mensagem</th>
+                <th>Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${guestData.map(guest => `
+                <tr>
+                    <td>${guest.name}</td>
+                    <td>${guest.companion}</td>
+                    <td class="${guest.status.includes('Confirmado') ? 'confirmed' : 'declined'}">${guest.status}</td>
+                    <td>${guest.message}</td>
+                    <td>${guest.date}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Sistema de Confirmação de Presença - Casamento Ana & João</p>
+    </div>
+</body>
+</html>`;
+        }
+
+        function sendReminders() {
+            showNotification('Funcionalidade de lembretes será implementada em breve! 📧', 'info');
+        }
+
+        function editEvent() {
+            showNotification('Editor de evento será implementado em breve! ✏️', 'info');
+        }
+
+        function showAnalytics() {
+            showNotification('Análises detalhadas serão implementadas em breve! 📊', 'info');
+        }
+
+        function shareEvent() {
+            const url = window.location.href;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('Link copiado para a área de transferência! 🔗', 'success');
+                });
+            } else {
+                showNotification('Link: ' + url, 'info');
+            }
+        }
+
+        // Filter and search functionality
+        let allGuestData = [];
+
+        function filterGuests() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchGuests').value.toLowerCase();
+            
+            let filteredData = allGuestData;
+
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filteredData = filteredData.filter(guest => {
+                    switch (statusFilter) {
+                        case 'confirmed':
+                            return guest.attending;
+                        case 'declined':
+                            return !guest.attending;
+                        case 'with-companion':
+                            return guest.companion_name && guest.companion_name.trim() !== '';
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            // Apply search filter
+            if (searchTerm) {
+                filteredData = filteredData.filter(guest => 
+                    guest.guest_name.toLowerCase().includes(searchTerm) ||
+                    (guest.companion_name && guest.companion_name.toLowerCase().includes(searchTerm)) ||
+                    (guest.message && guest.message.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            updateGuestList(filteredData);
+        }
+
+        // Funções utilitárias
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+            
+            if (type === 'success') {
+                notification.classList.add('bg-green-500', 'text-white');
+            } else if (type === 'error') {
+                notification.classList.add('bg-red-500', 'text-white');
+            } else {
+                notification.classList.add('bg-blue-500', 'text-white');
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c01c75a01677d9',t:'MTc1NDY2NzYxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c70e3795ea77dd',t:'MTc1NDc0MDQzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
