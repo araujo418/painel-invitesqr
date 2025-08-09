@@ -197,14 +197,18 @@
 
                     <div id="companionSection" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Nome do Acompanhante (se houver)
+                            Quantos acompanhantes? (opcional)
                         </label>
-                        <input 
-                            type="text" 
-                            id="companionName" 
+                        <select 
+                            id="guestCount" 
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            placeholder="Nome do seu acompanhante (opcional)"
                         >
+                            <option value="0">Apenas eu</option>
+                            <option value="1">Eu + 1 acompanhante</option>
+                            <option value="2">Eu + 2 acompanhantes</option>
+                            <option value="3">Eu + 3 acompanhantes</option>
+                            <option value="4">Eu + 4 acompanhantes</option>
+                        </select>
                     </div>
 
                     <div>
@@ -362,6 +366,7 @@
                                     <th class="text-center py-3 px-4 font-medium text-gray-700">Status</th>
                                     <th class="text-left py-3 px-4 font-medium text-gray-700">Mensagem</th>
                                     <th class="text-center py-3 px-4 font-medium text-gray-700">Data</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="guestList">
@@ -395,6 +400,109 @@
         </div>
     </div>
 
+    <!-- Edit Event Modal -->
+    <div id="editEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-r from-purple-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl">✏️</span>
+                </div>
+                <h3 class="text-2xl font-semibold text-gray-800">Editar Evento</h3>
+                <p class="text-gray-600 mt-2">Atualize as informações do seu casamento</p>
+            </div>
+
+            <form id="editEventForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Casal *
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editCoupleName" 
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="Ex: Ana & João"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Nome da Noiva
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editBrideName" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="Nome da noiva"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Noivo
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editGroomName" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="Nome do noivo"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Data do Evento *
+                    </label>
+                    <input 
+                        type="date" 
+                        id="editEventDate" 
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Horário do Evento
+                    </label>
+                    <input 
+                        type="time" 
+                        id="editEventTime" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Local do Evento
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editEventLocation" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="Ex: Igreja São José"
+                    >
+                </div>
+
+                <div class="flex gap-4 pt-4">
+                    <button 
+                        type="button" 
+                        id="cancelEditBtn"
+                        class="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-200 transition-all"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="flex-1 btn-primary text-white font-semibold py-3 px-6 rounded-xl"
+                    >
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-2xl p-8 text-center">
@@ -404,35 +512,75 @@
     </div>
 
     <script>
-        // Configuração do Supabase
+        // 🗄️ CONFIGURAÇÃO DO SUPABASE
+        // Este sistema funciona 100% integrado com Supabase:
+        // 1. Dados dos clientes ficam na tabela 'wedding_clients'
+        // 2. Confirmações dos convidados ficam na tabela 'wedding_confirmations'
+        // 3. Cada cliente tem um client_id único gerado pelo painel administrativo
+        // 4. O painel gera links únicos no formato: /c/client-id
         const supabaseUrl = 'https://qlbpqpxhswyicxyffhws.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsYnBxcHhoc3d5aWN4eWZmaHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MzM2MjIsImV4cCI6MjA3MDMwOTYyMn0.s0BnhuDOGtGne1ZBeX21H1dvOhd3OR7wYRuFlGQ9UrY';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsYnBxcHhoc3d5aWN4eWZmaHdzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDczMzYyMiwiZXhwIjoyMDcwMzA5NjIyfQ.YOUR_SERVICE_ROLE_KEY_HERE';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Extrair client_id da URL (cada cliente terá sua própria URL)
-        // Exemplo: https://site.com/ana-joao-2024 ou https://site.com/?client=ana-joao-2024
+        // 🔗 EXTRAÇÃO DO CLIENT_ID DA URL
+        // O painel administrativo gera links únicos no formato:
+        // https://seudominio.com/c/client-id-unico
+        // Exemplo: https://araujo418.github.io/painel-invitesqr/c/ana-joao-2024
         function getClientIdFromURL() {
+            const pathname = window.location.pathname;
+            console.log('🔍 Analisando URL:', pathname);
+            
+            // Padrão principal: /c/client-id ou /qualquer-path/c/client-id
+            const match = pathname.match(/\/c\/([^\/]+)/);
+            if (match) {
+                console.log('✅ Client ID encontrado na URL:', match[1]);
+                return match[1];
+            }
+            
+            // Fallback para parâmetro de query (?client=client-id)
             const urlParams = new URLSearchParams(window.location.search);
             const clientParam = urlParams.get('client');
-            
             if (clientParam) {
+                console.log('✅ Client ID encontrado no parâmetro:', clientParam);
                 return clientParam;
             }
             
-            // Alternativa: usar o pathname como client_id
-            const pathname = window.location.pathname;
-            if (pathname && pathname !== '/') {
-                return pathname.replace('/', '').replace('.html', '');
-            }
-            
-            // Fallback para demonstração
+            // ⚠️ ATENÇÃO: Este fallback é apenas para demonstração
+            // Em produção, deve retornar erro se não encontrar client_id
+            console.warn('⚠️ Client ID não encontrado, usando fallback de demonstração');
             return 'ana-joao-2024';
         }
 
         const CLIENT_ID = getClientIdFromURL();
 
+        // 📊 ESTRUTURA DAS TABELAS SUPABASE
+        // 
+        // Tabela: wedding_clients
+        // - id (uuid, primary key)
+        // - client_id (text, unique) - ID único gerado pelo painel
+        // - couple_name (text) - Nome do casal (ex: "Ana & João")
+        // - bride_name (text) - Nome da noiva
+        // - groom_name (text) - Nome do noivo
+        // - event_date (date) - Data do casamento
+        // - event_time (time) - Horário do casamento
+        // - event_location (text) - Local do evento
+        // - access_token (text) - Token para acesso do cliente
+        // - status (text) - 'active' ou 'inactive'
+        // - created_at (timestamp)
+        // - updated_at (timestamp)
+        //
+        // Tabela: wedding_confirmations
+        // - id (uuid, primary key)
+        // - client_id (text) - Referência ao cliente
+        // - guest_name (text) - Nome do convidado
+        // - will_attend (boolean) - Confirmou presença?
+        // - guest_count (integer) - Número de acompanhantes
+        // - dietary_restrictions (text) - Restrições alimentares
+        // - message (text) - Mensagem do convidado
+        // - created_at (timestamp)
+
         // Data do evento será carregada dinamicamente do Supabase
-        let eventDate = new Date('2024-06-15T17:00:00').getTime(); // Fallback
+        let eventDate = new Date('2024-06-15T17:00:00').getTime(); // Fallback inicial
 
         // Elementos DOM
         const guestSection = document.getElementById('guestSection');
@@ -443,6 +591,7 @@
 
         // Estado da aplicação
         let currentClientId = null;
+        let currentClientData = null;
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', async () => {
@@ -451,30 +600,46 @@
             createFloatingHearts();
             checkStoredClientToken();
             await loadClientInfo();
+            await loadGuestMessages();
         });
 
-        // Carregar informações do cliente específico
+        // Carregar informações do cliente específico do Supabase
         async function loadClientInfo() {
             try {
                 showLoading(true);
                 
-                // Buscar dados do cliente específico
+                // Buscar dados do cliente específico na tabela wedding_clients
                 const { data: clientData, error: clientError } = await supabase
-                    .from('clients')
+                    .from('wedding_clients')
                     .select('*')
-                    .eq('id', CLIENT_ID)
+                    .eq('client_id', CLIENT_ID)
+                    .eq('status', 'active')
                     .single();
 
                 if (clientError) {
                     console.error('Cliente não encontrado:', clientError);
-                    showNotification('Cliente não encontrado. Verifique a URL.', 'error');
+                    
+                    // Mostrar página de erro personalizada
+                    document.body.innerHTML = `
+                        <div class="min-h-screen flex items-center justify-center bg-gray-50">
+                            <div class="text-center p-8">
+                                <div class="text-6xl mb-4">😔</div>
+                                <h1 class="text-2xl font-bold text-gray-800 mb-4">Evento não encontrado</h1>
+                                <p class="text-gray-600 mb-6">O link que você acessou não é válido ou o evento foi removido.</p>
+                                <p class="text-sm text-gray-500">Verifique o link com quem te enviou o convite.</p>
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
 
+                // Armazenar dados do cliente globalmente
+                currentClientData = clientData;
+                
                 // Atualizar interface com dados do cliente
                 updateClientInterface(clientData);
                 
-                console.log('Cliente carregado:', clientData);
+                console.log('✅ Cliente carregado:', clientData.couple_name);
                 
             } catch (error) {
                 console.error('Erro ao carregar cliente:', error);
@@ -484,38 +649,72 @@
             }
         }
 
-        // Atualizar interface com dados específicos do cliente
+        // Atualizar interface com dados específicos do cliente vindos do Supabase
         function updateClientInterface(clientData) {
-            // Atualizar nomes dos noivos
+            console.log('🔄 Atualizando interface com dados:', clientData);
+            
+            // Atualizar nomes dos noivos no título principal
             const coupleNames = document.querySelector('.font-dancing');
-            if (coupleNames && clientData.couple_names) {
-                coupleNames.textContent = clientData.couple_names;
+            if (coupleNames && clientData.couple_name) {
+                coupleNames.textContent = clientData.couple_name;
+                console.log('✅ Nome do casal atualizado:', clientData.couple_name);
             }
 
-            // Atualizar data do evento
+            // Atualizar subtítulo personalizado
+            const subtitle = document.querySelector('.text-xl.md\\:text-2xl');
+            if (subtitle && clientData.couple_name) {
+                subtitle.innerHTML = `Você está convidado para nosso casamento! 💕`;
+            }
+
+            // Atualizar data, horário e local do evento
             if (clientData.event_date) {
                 const eventDateElement = document.querySelector('.countdown-box p');
-                const eventDate = new Date(clientData.event_date);
-                const formattedDate = eventDate.toLocaleDateString('pt-BR', {
+                const eventDateTime = new Date(clientData.event_date);
+                
+                // Se tiver horário separado, combinar
+                if (clientData.event_time) {
+                    const [hours, minutes] = clientData.event_time.split(':');
+                    eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+                }
+                
+                const formattedDate = eventDateTime.toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric'
                 });
-                const formattedTime = eventDate.toLocaleTimeString('pt-BR', {
+                
+                const formattedTime = clientData.event_time || eventDateTime.toLocaleTimeString('pt-BR', {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
                 
+                const location = clientData.event_location || 'Local a definir';
+                
                 if (eventDateElement) {
-                    eventDateElement.innerHTML = `📅 ${formattedDate} • 🕕 ${formattedTime} • 📍 ${clientData.venue || 'Local a definir'}`;
+                    eventDateElement.innerHTML = `📅 ${formattedDate} • 🕕 ${formattedTime} • 📍 ${location}`;
+                    console.log('✅ Data/hora/local atualizados:', formattedDate, formattedTime, location);
                 }
                 
-                // Atualizar contador regressivo
-                eventDate = new Date(clientData.event_date).getTime();
+                // Atualizar contador regressivo global
+                eventDate = eventDateTime.getTime();
+                console.log('✅ Contador regressivo atualizado para:', new Date(eventDate));
             }
 
-            // Atualizar título da página
-            document.title = `Confirmação de Presença - ${clientData.couple_names || 'Casamento'}`;
+            // Atualizar título da página dinamicamente
+            const pageTitle = `Confirmação de Presença - ${clientData.couple_name || 'Casamento'}`;
+            document.title = pageTitle;
+            console.log('✅ Título da página atualizado:', pageTitle);
+
+            // Atualizar mensagem de confirmação personalizada
+            const confirmationTitle = document.querySelector('#guestSection h2');
+            if (confirmationTitle) {
+                confirmationTitle.textContent = 'Confirme sua Presença';
+            }
+
+            const confirmationSubtitle = document.querySelector('#guestSection p');
+            if (confirmationSubtitle) {
+                confirmationSubtitle.textContent = 'Preencha os dados abaixo para confirmar sua presença em nosso grande dia';
+            }
         }
 
         // Verificar token armazenado
@@ -548,6 +747,10 @@
             // Formulários
             document.getElementById('rsvpForm').addEventListener('submit', handleGuestRSVP);
             document.getElementById('clientLoginForm').addEventListener('submit', handleClientLogin);
+            document.getElementById('editEventForm').addEventListener('submit', handleEditEvent);
+            
+            // Modal controls
+            document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
 
             // Opções de presença
             document.querySelectorAll('input[name="attending"]').forEach(radio => {
@@ -574,8 +777,71 @@
                 selectedOption.classList.add('border-red-400', 'bg-red-50', 'selected');
                 radioOption.classList.add('selected');
                 document.getElementById('companionSection').classList.add('hidden');
-                document.getElementById('companionName').value = '';
+                document.getElementById('guestCount').value = '0';
             }
+        }
+
+        // Carregar recados dos convidados
+        async function loadGuestMessages() {
+            try {
+                // Buscar apenas confirmações com mensagens deste cliente específico
+                const { data, error } = await supabase
+                    .from('wedding_confirmations')
+                    .select('guest_name, message, created_at, will_attend')
+                    .eq('client_id', CLIENT_ID)
+                    .not('message', 'is', null)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                updateMessagesDisplay(data);
+            } catch (error) {
+                console.error('Erro ao carregar recados:', error);
+            }
+        }
+
+        // Atualizar exibição dos recados
+        function updateMessagesDisplay(messages) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            if (!messages || messages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <div class="text-4xl mb-4">💌</div>
+                        <p>Ainda não há recados dos convidados</p>
+                        <p class="text-sm mt-2">Seja o primeiro a deixar uma mensagem carinhosa!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            messagesContainer.innerHTML = messages.map(msg => {
+                const date = new Date(msg.created_at).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const statusIcon = msg.will_attend ? '✅' : '❌';
+                const statusText = msg.will_attend ? 'Confirmou presença' : 'Não poderá comparecer';
+
+                return `
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-gray-800">${msg.guest_name}</span>
+                                <span class="text-xs px-2 py-1 rounded-full ${msg.will_attend ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                    ${statusIcon} ${statusText}
+                                </span>
+                            </div>
+                            <span class="text-xs text-gray-500">${date}</span>
+                        </div>
+                        <p class="text-gray-700 italic leading-relaxed">"${msg.message}"</p>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Manipular confirmação do convidado
@@ -586,25 +852,32 @@
             const formData = new FormData(e.target);
             const guestName = document.getElementById('guestName').value.trim();
             const attending = formData.get('attending') === 'true';
-            const companionName = document.getElementById('companionName').value.trim();
+            const guestCount = parseInt(document.getElementById('guestCount').value) || 0;
             const message = document.getElementById('message').value.trim();
 
             try {
-                // Usar o CLIENT_ID específico da URL
-                const rsvpData = {
+
+                // Usar o CLIENT_ID específico da URL e estrutura correta
+                const confirmationData = {
                     client_id: CLIENT_ID,
                     guest_name: guestName,
-                    attending: attending,
-                    companion_name: companionName || null,
+                    will_attend: attending,
+                    guest_count: guestCount,
+                    dietary_restrictions: null, // Pode ser adicionado depois
                     message: message || null,
                     created_at: new Date().toISOString()
                 };
 
                 const { error } = await supabase
-                    .from('rsvps')
-                    .insert([rsvpData]);
+                    .from('wedding_confirmations')
+                    .insert([confirmationData]);
 
                 if (error) throw error;
+
+                // Recarregar recados se uma mensagem foi adicionada
+                if (message) {
+                    await loadGuestMessages();
+                }
 
                 showSuccessMessage();
                 showNotification('Confirmação enviada com sucesso! 🎉', 'success');
@@ -626,17 +899,18 @@
             try {
                 // Verificar se o token existe para este cliente específico
                 const { data, error } = await supabase
-                    .from('clients')
+                    .from('wedding_clients')
                     .select('*')
                     .eq('access_token', token)
-                    .eq('id', CLIENT_ID)
+                    .eq('client_id', CLIENT_ID)
+                    .eq('status', 'active')
                     .single();
 
                 if (error || !data) {
                     throw new Error('Token inválido para este evento');
                 }
 
-                currentClientId = data.id;
+                currentClientId = data.client_id;
                 localStorage.setItem(`clientToken_${CLIENT_ID}`, token);
                 
                 await loadClientDashboard();
@@ -652,10 +926,10 @@
         // Carregar dashboard do cliente
         async function loadClientDashboard() {
             try {
-                // Buscar apenas RSVPs deste cliente específico
+                // Buscar apenas confirmações deste cliente específico com ID
                 const { data, error } = await supabase
-                    .from('rsvps')
-                    .select('*')
+                    .from('wedding_confirmations')
+                    .select('id, client_id, guest_name, will_attend, guest_count, message, created_at')
                     .eq('client_id', CLIENT_ID)
                     .order('created_at', { ascending: false });
 
@@ -671,12 +945,12 @@
         }
 
         // Atualizar estatísticas do dashboard
-        function updateDashboardStats(rsvps) {
-            const confirmed = rsvps.filter(rsvp => rsvp.attending).length;
-            const declined = rsvps.filter(rsvp => !rsvp.attending).length;
-            const totalPeople = rsvps.reduce((total, rsvp) => {
-                if (rsvp.attending) {
-                    return total + 1 + (rsvp.companion_name ? 1 : 0);
+        function updateDashboardStats(confirmations) {
+            const confirmed = confirmations.filter(conf => conf.will_attend).length;
+            const declined = confirmations.filter(conf => !conf.will_attend).length;
+            const totalPeople = confirmations.reduce((total, conf) => {
+                if (conf.will_attend) {
+                    return total + 1 + (conf.guest_count || 0);
                 }
                 return total;
             }, 0);
@@ -687,17 +961,17 @@
         }
 
         // Atualizar lista de convidados
-        function updateGuestList(rsvps) {
+        function updateGuestList(confirmations) {
             // Store data for filtering
-            allGuestData = rsvps;
+            allGuestData = confirmations;
             
             const guestList = document.getElementById('guestList');
             guestList.innerHTML = '';
 
-            if (rsvps.length === 0) {
+            if (confirmations.length === 0) {
                 guestList.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center py-8 text-gray-500">
+                        <td colspan="6" class="text-center py-8 text-gray-500">
                             Nenhuma confirmação ainda
                         </td>
                     </tr>
@@ -705,23 +979,23 @@
                 return;
             }
 
-            rsvps.forEach(rsvp => {
+            confirmations.forEach(conf => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-100 hover:bg-gray-50';
                 
-                const statusBadge = rsvp.attending 
+                const statusBadge = conf.will_attend 
                     ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">✅ Confirmado</span>'
                     : '<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">❌ Recusou</span>';
 
-                const companionText = rsvp.companion_name 
-                    ? `<span class="text-gray-600">+ ${rsvp.companion_name}</span>`
+                const companionText = conf.guest_count > 0
+                    ? `<span class="text-gray-600">+ ${conf.guest_count} acompanhante${conf.guest_count > 1 ? 's' : ''}</span>`
                     : '<span class="text-gray-400">-</span>';
 
-                const messageText = rsvp.message 
-                    ? `<span class="text-gray-600">${rsvp.message}</span>`
+                const messageText = conf.message 
+                    ? `<span class="text-gray-600">${conf.message}</span>`
                     : '<span class="text-gray-400">-</span>';
 
-                const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR', {
+                const date = new Date(conf.created_at).toLocaleDateString('pt-BR', {
                     day: '2-digit',
                     month: '2-digit',
                     hour: '2-digit',
@@ -729,20 +1003,62 @@
                 });
 
                 row.innerHTML = `
-                    <td class="py-3 px-4 font-medium text-gray-900">${rsvp.guest_name}</td>
+                    <td class="py-3 px-4 font-medium text-gray-900">${conf.guest_name}</td>
                     <td class="py-3 px-4">${companionText}</td>
                     <td class="py-3 px-4 text-center">${statusBadge}</td>
                     <td class="py-3 px-4 max-w-xs truncate">${messageText}</td>
                     <td class="py-3 px-4 text-center text-sm text-gray-500">${date}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button 
+                            onclick="removeGuest('${conf.id}', '${conf.guest_name}')"
+                            class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all"
+                            title="Remover confirmação"
+                        >
+                            🗑️
+                        </button>
+                    </td>
                 `;
 
                 guestList.appendChild(row);
             });
         }
 
+        // Remover convidado
+        async function removeGuest(guestId, guestName) {
+            if (!confirm(`Tem certeza que deseja remover a confirmação de "${guestName}"?\n\nEsta ação não pode ser desfeita.`)) {
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const { error } = await supabase
+                    .from('wedding_confirmations')
+                    .delete()
+                    .eq('id', guestId)
+                    .eq('client_id', CLIENT_ID); // Segurança extra
+
+                if (error) throw error;
+
+                // Recarregar dashboard
+                await loadClientDashboard();
+                
+                // Recarregar recados se necessário
+                await loadGuestMessages();
+
+                showNotification(`Confirmação de "${guestName}" removida com sucesso! 🗑️`, 'success');
+            } catch (error) {
+                console.error('Erro ao remover convidado:', error);
+                showNotification('Erro ao remover confirmação. Tente novamente.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
         // Funções de navegação
         function showGuestSection() {
             guestSection.classList.remove('hidden');
+            document.getElementById('guestMessagesSection').classList.remove('hidden');
             clientLoginSection.classList.add('hidden');
             clientDashboard.classList.add('hidden');
             successMessage.classList.add('hidden');
@@ -750,6 +1066,7 @@
             // Limpar formulário
             document.getElementById('rsvpForm').reset();
             document.getElementById('companionSection').classList.add('hidden');
+            document.getElementById('guestCount').value = '0';
             
             // Resetar opções visuais
             document.querySelectorAll('.attendance-option').forEach(option => {
@@ -763,6 +1080,7 @@
 
         function showClientLogin() {
             guestSection.classList.add('hidden');
+            document.getElementById('guestMessagesSection').classList.add('hidden');
             clientLoginSection.classList.remove('hidden');
             clientDashboard.classList.add('hidden');
             successMessage.classList.add('hidden');
@@ -770,6 +1088,7 @@
 
         function showClientDashboard() {
             guestSection.classList.add('hidden');
+            document.getElementById('guestMessagesSection').classList.add('hidden');
             clientLoginSection.classList.add('hidden');
             clientDashboard.classList.remove('hidden');
             successMessage.classList.add('hidden');
@@ -777,6 +1096,7 @@
 
         function showSuccessMessage() {
             guestSection.classList.add('hidden');
+            document.getElementById('guestMessagesSection').classList.add('hidden');
             clientLoginSection.classList.add('hidden');
             clientDashboard.classList.add('hidden');
             successMessage.classList.remove('hidden');
@@ -971,7 +1291,75 @@
         }
 
         function editEvent() {
-            showNotification('Editor de evento será implementado em breve! ✏️', 'info');
+            if (!currentClientData) {
+                showNotification('Erro: Dados do cliente não encontrados.', 'error');
+                return;
+            }
+            
+            // Preencher formulário com dados atuais
+            document.getElementById('editCoupleName').value = currentClientData.couple_name || '';
+            document.getElementById('editBrideName').value = currentClientData.bride_name || '';
+            document.getElementById('editGroomName').value = currentClientData.groom_name || '';
+            document.getElementById('editEventDate').value = currentClientData.event_date || '';
+            document.getElementById('editEventTime').value = currentClientData.event_time || '';
+            document.getElementById('editEventLocation').value = currentClientData.event_location || '';
+            
+            // Mostrar modal
+            document.getElementById('editEventModal').classList.remove('hidden');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editEventModal').classList.add('hidden');
+        }
+        
+        // Fechar modal ao clicar fora
+        document.getElementById('editEventModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editEventModal') {
+                closeEditModal();
+            }
+        });
+        
+        // Manipular edição do evento
+        async function handleEditEvent(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const formData = new FormData(e.target);
+            const updatedData = {
+                couple_name: document.getElementById('editCoupleName').value.trim(),
+                bride_name: document.getElementById('editBrideName').value.trim(),
+                groom_name: document.getElementById('editGroomName').value.trim(),
+                event_date: document.getElementById('editEventDate').value,
+                event_time: document.getElementById('editEventTime').value,
+                event_location: document.getElementById('editEventLocation').value.trim(),
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                // Atualizar no Supabase
+                const { error } = await supabase
+                    .from('wedding_clients')
+                    .update(updatedData)
+                    .eq('client_id', CLIENT_ID);
+
+                if (error) throw error;
+
+                // Atualizar dados locais
+                currentClientData = { ...currentClientData, ...updatedData };
+                
+                // Atualizar interface
+                updateClientInterface(currentClientData);
+                
+                // Fechar modal
+                closeEditModal();
+                
+                showNotification('Evento atualizado com sucesso! 🎉', 'success');
+            } catch (error) {
+                console.error('Erro ao atualizar evento:', error);
+                showNotification('Erro ao atualizar evento. Tente novamente.', 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
         function showAnalytics() {
@@ -1000,14 +1388,14 @@
 
             // Apply status filter
             if (statusFilter !== 'all') {
-                filteredData = filteredData.filter(guest => {
+                filteredData = filteredData.filter(conf => {
                     switch (statusFilter) {
                         case 'confirmed':
-                            return guest.attending;
+                            return conf.will_attend;
                         case 'declined':
-                            return !guest.attending;
+                            return !conf.will_attend;
                         case 'with-companion':
-                            return guest.companion_name && guest.companion_name.trim() !== '';
+                            return conf.guest_count > 0;
                         default:
                             return true;
                     }
@@ -1016,10 +1404,9 @@
 
             // Apply search filter
             if (searchTerm) {
-                filteredData = filteredData.filter(guest => 
-                    guest.guest_name.toLowerCase().includes(searchTerm) ||
-                    (guest.companion_name && guest.companion_name.toLowerCase().includes(searchTerm)) ||
-                    (guest.message && guest.message.toLowerCase().includes(searchTerm))
+                filteredData = filteredData.filter(conf => 
+                    conf.guest_name.toLowerCase().includes(searchTerm) ||
+                    (conf.message && conf.message.toLowerCase().includes(searchTerm))
                 );
             }
 
@@ -1064,5 +1451,5 @@
             }, 5000);
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c70e3795ea77dd',t:'MTc1NDc0MDQzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c77af1c29777e0',t:'MTc1NDc0NDg4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
