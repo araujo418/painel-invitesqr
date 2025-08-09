@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmação de Presença - Casamento</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+        
+        .font-dancing { font-family: 'Dancing Script', cursive; }
+        .font-inter { font-family: 'Inter', sans-serif; }
+        
+        .white-bg {
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .card-white {
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+        
+        .countdown-box {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .floating-hearts {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .heart {
+            position: absolute;
+            color: rgba(156, 163, 175, 0.4);
+            font-size: 20px;
+            animation: float 8s linear infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+        
+        .radio-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .radio-option:hover {
+            transform: translateY(-2px);
+        }
+        
+        .radio-option.selected {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="white-bg font-inter">
+    <div class="floating-hearts" id="heartsContainer"></div>
+    
+    <div class="container mx-auto px-4 py-8 relative z-10">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="font-dancing text-6xl md:text-8xl text-gray-800 mb-4">
+                Ana & João
+            </h1>
+            <p class="text-gray-700 text-xl md:text-2xl font-light mb-6">
+                Você está convidado para nosso casamento! 💕
+            </p>
+            
+            <!-- Countdown Timer -->
+            <div class="countdown-box max-w-2xl mx-auto">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">⏰ Contagem Regressiva</h3>
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div id="days" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Dias</div>
+                    </div>
+                    <div>
+                        <div id="hours" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Horas</div>
+                    </div>
+                    <div>
+                        <div id="minutes" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Minutos</div>
+                    </div>
+                    <div>
+                        <div id="seconds" class="text-3xl font-bold text-purple-600">00</div>
+                        <div class="text-sm text-gray-600">Segundos</div>
+                    </div>
+                </div>
+                <p class="text-gray-700 mt-4">
+                    📅 15 de Junho de 2024 • 🕕 17:00 • 📍 Igreja São José
+                </p>
+            </div>
+        </div>
+
+        <!-- Client Access Button - Top Right -->
+        <div class="absolute top-4 right-4 z-20">
+            <button id="clientAccessBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition-all border border-gray-300 text-sm">
+                🔐 Área do Cliente
+            </button>
+        </div>
+
+        <!-- Guest RSVP Section -->
+        <div id="guestSection" class="max-w-2xl mx-auto">
+            <div class="card-white rounded-3xl shadow-lg p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">💌</span>
+                    </div>
+                    <h2 class="text-3xl font-semibold text-gray-800 mb-4">
+                        Confirme sua Presença
+                    </h2>
+                    <p class="text-gray-600 mb-8">
+                        Preencha os dados abaixo para confirmar sua presença em nosso grande dia
+                    </p>
+                </div>
+
+                <form id="rsvpForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Seu Nome Completo *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="guestName" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="Digite seu nome completo"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-4">
+                            Você confirmará presença? *
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="radio-option">
+                                <input type="radio" name="attending" value="true" class="sr-only" required>
+                                <div class="attendance-option border-2 border-gray-300 rounded-xl p-6 text-center transition-all">
+                                    <div class="text-4xl mb-3">✅</div>
+                                    <div class="font-semibold text-gray-700">Sim, estarei lá!</div>
+                                    <div class="text-sm text-gray-500 mt-1">Mal posso esperar!</div>
+                                </div>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="attending" value="false" class="sr-only" required>
+                                <div class="attendance-option border-2 border-gray-300 rounded-xl p-6 text-center transition-all">
+                                    <div class="text-4xl mb-3">❌</div>
+                                    <div class="font-semibold text-gray-700">Não poderei ir</div>
+                                    <div class="text-sm text-gray-500 mt-1">Infelizmente...</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="companionSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Nome do Acompanhante (se houver)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="companionName" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="Nome do seu acompanhante (opcional)"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Mensagem Especial (opcional)
+                        </label>
+                        <textarea 
+                            id="message" 
+                            rows="4"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                            placeholder="Deixe uma mensagem carinhosa para os noivos..."
+                        ></textarea>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full btn-primary text-white font-semibold py-4 px-6 rounded-xl text-lg"
+                    >
+                        Enviar Confirmação
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Client Login Section -->
+        <div id="clientLoginSection" class="max-w-md mx-auto hidden">
+            <div class="card-white rounded-3xl shadow-lg p-8">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span class="text-3xl">🔐</span>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                        Área do Cliente
+                    </h2>
+                    <p class="text-gray-600 mb-6">
+                        Digite seu token de acesso para ver as confirmações
+                    </p>
+                </div>
+
+                <form id="clientLoginForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Token de Acesso
+                        </label>
+                        <input 
+                            type="text" 
+                            id="clientToken" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Digite seu token"
+                        >
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-xl"
+                    >
+                        Acessar Dashboard
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <button id="backToGuestBtn" class="text-gray-500 hover:text-gray-700 font-medium">
+                        ← Voltar para confirmação
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Client Dashboard Section -->
+        <div id="clientDashboard" class="max-w-6xl mx-auto hidden">
+            <div class="card-white rounded-3xl shadow-lg p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-semibold text-gray-800">Dashboard do Cliente</h2>
+                        <p class="text-gray-600">Gerencie as confirmações do seu evento</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <button id="exportPdfBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-all">
+                            📄 Exportar PDF
+                        </button>
+                        <button id="logoutBtn" class="text-gray-500 hover:text-gray-700 font-medium">
+                            Sair
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Client Tools -->
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🛠️ Ferramentas Exclusivas do Cliente</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <button id="sendRemindersBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">📧</div>
+                            <div class="text-sm font-medium text-gray-700">Enviar Lembretes</div>
+                        </button>
+                        <button id="editEventBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">✏️</div>
+                            <div class="text-sm font-medium text-gray-700">Editar Evento</div>
+                        </button>
+                        <button id="guestAnalyticsBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">📊</div>
+                            <div class="text-sm font-medium text-gray-700">Análises</div>
+                        </button>
+                        <button id="shareEventBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
+                            <div class="text-2xl mb-2">🔗</div>
+                            <div class="text-sm font-medium text-gray-700">Compartilhar</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="stats-card">
+                        <div class="text-3xl mb-2">✅</div>
+                        <div class="text-2xl font-bold" id="confirmedCount">0</div>
+                        <div class="text-sm opacity-90">Confirmados</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="text-3xl mb-2">❌</div>
+                        <div class="text-2xl font-bold" id="declinedCount">0</div>
+                        <div class="text-sm opacity-90">Recusaram</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="text-3xl mb-2">👥</div>
+                        <div class="text-2xl font-bold" id="totalGuests">0</div>
+                        <div class="text-sm opacity-90">Total de Pessoas</div>
+                    </div>
+                </div>
+
+                <!-- Guest List -->
+                <div class="bg-white rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800">Lista de Convidados</h3>
+                        <div class="flex gap-4">
+                            <select id="statusFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                <option value="all">Todos</option>
+                                <option value="confirmed">Confirmados</option>
+                                <option value="declined">Recusaram</option>
+                                <option value="with-companion">Com Acompanhante</option>
+                            </select>
+                            <input 
+                                type="text" 
+                                id="searchGuests" 
+                                placeholder="Buscar convidado..."
+                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-48"
+                            >
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Nome</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Acompanhante</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Status</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Mensagem</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guestList">
+                                <!-- Guest list will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="max-w-2xl mx-auto hidden">
+            <div class="card-white rounded-3xl shadow-lg p-8 text-center">
+                <div class="w-24 h-24 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">🎉</span>
+                </div>
+                <h2 class="text-3xl font-semibold text-gray-800 mb-4">
+                    Confirmação Enviada!
+                </h2>
+                <p class="text-gray-600 mb-8">
+                    Obrigado por confirmar sua presença. Mal podemos esperar para celebrar com você!
+                </p>
+                <button 
+                    id="newRsvpBtn"
+                    class="btn-primary text-white font-semibold py-3 px-6 rounded-xl"
+                >
+                    Nova Confirmação
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Processando...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Supabase
+        const supabaseUrl = 'https://qlbpqpxhswyicxyffhws.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsYnBxcHhoc3d5aWN4eWZmaHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MzM2MjIsImV4cCI6MjA3MDMwOTYyMn0.s0BnhuDOGtGne1ZBeX21H1dvOhd3OR7wYRuFlGQ9UrY';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Extrair client_id da URL (cada cliente terá sua própria URL)
+        // Exemplo: https://site.com/ana-joao-2024 ou https://site.com/?client=ana-joao-2024
+        function getClientIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const clientParam = urlParams.get('client');
+            
+            if (clientParam) {
+                return clientParam;
+            }
+            
+            // Alternativa: usar o pathname como client_id
+            const pathname = window.location.pathname;
+            if (pathname && pathname !== '/') {
+                return pathname.replace('/', '').replace('.html', '');
+            }
+            
+            // Fallback para demonstração
+            return 'ana-joao-2024';
+        }
+
+        const CLIENT_ID = getClientIdFromURL();
+
+        // Data do evento será carregada dinamicamente do Supabase
+        let eventDate = new Date('2024-06-15T17:00:00').getTime(); // Fallback
+
+        // Elementos DOM
+        const guestSection = document.getElementById('guestSection');
+        const clientLoginSection = document.getElementById('clientLoginSection');
+        const clientDashboard = document.getElementById('clientDashboard');
+        const successMessage = document.getElementById('successMessage');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Estado da aplicação
+        let currentClientId = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupEventListeners();
+            startCountdown();
+            createFloatingHearts();
+            checkStoredClientToken();
+            await loadClientInfo();
+        });
+
+        // Carregar informações do cliente específico
+        async function loadClientInfo() {
+            try {
+                showLoading(true);
+                
+                // Buscar dados do cliente específico
+                const { data: clientData, error: clientError } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('id', CLIENT_ID)
+                    .single();
+
+                if (clientError) {
+                    console.error('Cliente não encontrado:', clientError);
+                    showNotification('Cliente não encontrado. Verifique a URL.', 'error');
+                    return;
+                }
+
+                // Atualizar interface com dados do cliente
+                updateClientInterface(clientData);
+                
+                console.log('Cliente carregado:', clientData);
+                
+            } catch (error) {
+                console.error('Erro ao carregar cliente:', error);
+                showNotification('Erro ao carregar dados do evento.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Atualizar interface com dados específicos do cliente
+        function updateClientInterface(clientData) {
+            // Atualizar nomes dos noivos
+            const coupleNames = document.querySelector('.font-dancing');
+            if (coupleNames && clientData.couple_names) {
+                coupleNames.textContent = clientData.couple_names;
+            }
+
+            // Atualizar data do evento
+            if (clientData.event_date) {
+                const eventDateElement = document.querySelector('.countdown-box p');
+                const eventDate = new Date(clientData.event_date);
+                const formattedDate = eventDate.toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const formattedTime = eventDate.toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                if (eventDateElement) {
+                    eventDateElement.innerHTML = `📅 ${formattedDate} • 🕕 ${formattedTime} • 📍 ${clientData.venue || 'Local a definir'}`;
+                }
+                
+                // Atualizar contador regressivo
+                eventDate = new Date(clientData.event_date).getTime();
+            }
+
+            // Atualizar título da página
+            document.title = `Confirmação de Presença - ${clientData.couple_names || 'Casamento'}`;
+        }
+
+        // Verificar token armazenado
+        function checkStoredClientToken() {
+            const storedToken = localStorage.getItem(`clientToken_${CLIENT_ID}`);
+            if (storedToken) {
+                document.getElementById('clientToken').value = storedToken;
+            }
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Navegação
+            document.getElementById('clientAccessBtn').addEventListener('click', showClientLogin);
+            document.getElementById('backToGuestBtn').addEventListener('click', showGuestSection);
+            document.getElementById('logoutBtn').addEventListener('click', logoutClient);
+            document.getElementById('newRsvpBtn').addEventListener('click', showGuestSection);
+
+            // Client tools
+            document.getElementById('exportPdfBtn').addEventListener('click', exportToPDF);
+            document.getElementById('sendRemindersBtn').addEventListener('click', sendReminders);
+            document.getElementById('editEventBtn').addEventListener('click', editEvent);
+            document.getElementById('guestAnalyticsBtn').addEventListener('click', showAnalytics);
+            document.getElementById('shareEventBtn').addEventListener('click', shareEvent);
+
+            // Filters and search
+            document.getElementById('statusFilter').addEventListener('change', filterGuests);
+            document.getElementById('searchGuests').addEventListener('input', filterGuests);
+
+            // Formulários
+            document.getElementById('rsvpForm').addEventListener('submit', handleGuestRSVP);
+            document.getElementById('clientLoginForm').addEventListener('submit', handleClientLogin);
+
+            // Opções de presença
+            document.querySelectorAll('input[name="attending"]').forEach(radio => {
+                radio.addEventListener('change', handleAttendingChange);
+            });
+        }
+
+        // Manipular mudança na opção de presença
+        function handleAttendingChange(e) {
+            // Atualizar visual das opções
+            document.querySelectorAll('.attendance-option').forEach(option => {
+                option.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50', 'selected');
+                option.classList.add('border-gray-300');
+            });
+
+            const selectedOption = e.target.closest('label').querySelector('.attendance-option');
+            const radioOption = e.target.closest('.radio-option');
+            
+            if (e.target.value === 'true') {
+                selectedOption.classList.add('border-green-400', 'bg-green-50', 'selected');
+                radioOption.classList.add('selected');
+                document.getElementById('companionSection').classList.remove('hidden');
+            } else {
+                selectedOption.classList.add('border-red-400', 'bg-red-50', 'selected');
+                radioOption.classList.add('selected');
+                document.getElementById('companionSection').classList.add('hidden');
+                document.getElementById('companionName').value = '';
+            }
+        }
+
+        // Manipular confirmação do convidado
+        async function handleGuestRSVP(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const formData = new FormData(e.target);
+            const guestName = document.getElementById('guestName').value.trim();
+            const attending = formData.get('attending') === 'true';
+            const companionName = document.getElementById('companionName').value.trim();
+            const message = document.getElementById('message').value.trim();
+
+            try {
+                // Usar o CLIENT_ID específico da URL
+                const rsvpData = {
+                    client_id: CLIENT_ID,
+                    guest_name: guestName,
+                    attending: attending,
+                    companion_name: companionName || null,
+                    message: message || null,
+                    created_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('rsvps')
+                    .insert([rsvpData]);
+
+                if (error) throw error;
+
+                showSuccessMessage();
+                showNotification('Confirmação enviada com sucesso! 🎉', 'success');
+            } catch (error) {
+                console.error('Erro ao enviar RSVP:', error);
+                showNotification('Erro ao enviar confirmação. Tente novamente.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Manipular login do cliente
+        async function handleClientLogin(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const token = document.getElementById('clientToken').value.trim();
+
+            try {
+                // Verificar se o token existe para este cliente específico
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('access_token', token)
+                    .eq('id', CLIENT_ID)
+                    .single();
+
+                if (error || !data) {
+                    throw new Error('Token inválido para este evento');
+                }
+
+                currentClientId = data.id;
+                localStorage.setItem(`clientToken_${CLIENT_ID}`, token);
+                
+                await loadClientDashboard();
+                showNotification('Login realizado com sucesso! 🎉', 'success');
+            } catch (error) {
+                console.error('Erro no login:', error);
+                showNotification('Token inválido. Verifique e tente novamente.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Carregar dashboard do cliente
+        async function loadClientDashboard() {
+            try {
+                // Buscar apenas RSVPs deste cliente específico
+                const { data, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('client_id', CLIENT_ID)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                updateDashboardStats(data);
+                updateGuestList(data);
+                showClientDashboard();
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+                showNotification('Erro ao carregar dados do dashboard.', 'error');
+            }
+        }
+
+        // Atualizar estatísticas do dashboard
+        function updateDashboardStats(rsvps) {
+            const confirmed = rsvps.filter(rsvp => rsvp.attending).length;
+            const declined = rsvps.filter(rsvp => !rsvp.attending).length;
+            const totalPeople = rsvps.reduce((total, rsvp) => {
+                if (rsvp.attending) {
+                    return total + 1 + (rsvp.companion_name ? 1 : 0);
+                }
+                return total;
+            }, 0);
+
+            document.getElementById('confirmedCount').textContent = confirmed;
+            document.getElementById('declinedCount').textContent = declined;
+            document.getElementById('totalGuests').textContent = totalPeople;
+        }
+
+        // Atualizar lista de convidados
+        function updateGuestList(rsvps) {
+            // Store data for filtering
+            allGuestData = rsvps;
+            
+            const guestList = document.getElementById('guestList');
+            guestList.innerHTML = '';
+
+            if (rsvps.length === 0) {
+                guestList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-gray-500">
+                            Nenhuma confirmação ainda
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            rsvps.forEach(rsvp => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100 hover:bg-gray-50';
+                
+                const statusBadge = rsvp.attending 
+                    ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">✅ Confirmado</span>'
+                    : '<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">❌ Recusou</span>';
+
+                const companionText = rsvp.companion_name 
+                    ? `<span class="text-gray-600">+ ${rsvp.companion_name}</span>`
+                    : '<span class="text-gray-400">-</span>';
+
+                const messageText = rsvp.message 
+                    ? `<span class="text-gray-600">${rsvp.message}</span>`
+                    : '<span class="text-gray-400">-</span>';
+
+                const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-medium text-gray-900">${rsvp.guest_name}</td>
+                    <td class="py-3 px-4">${companionText}</td>
+                    <td class="py-3 px-4 text-center">${statusBadge}</td>
+                    <td class="py-3 px-4 max-w-xs truncate">${messageText}</td>
+                    <td class="py-3 px-4 text-center text-sm text-gray-500">${date}</td>
+                `;
+
+                guestList.appendChild(row);
+            });
+        }
+
+        // Funções de navegação
+        function showGuestSection() {
+            guestSection.classList.remove('hidden');
+            clientLoginSection.classList.add('hidden');
+            clientDashboard.classList.add('hidden');
+            successMessage.classList.add('hidden');
+            
+            // Limpar formulário
+            document.getElementById('rsvpForm').reset();
+            document.getElementById('companionSection').classList.add('hidden');
+            
+            // Resetar opções visuais
+            document.querySelectorAll('.attendance-option').forEach(option => {
+                option.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50', 'selected');
+                option.classList.add('border-gray-300');
+            });
+            document.querySelectorAll('.radio-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+        }
+
+        function showClientLogin() {
+            guestSection.classList.add('hidden');
+            clientLoginSection.classList.remove('hidden');
+            clientDashboard.classList.add('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        function showClientDashboard() {
+            guestSection.classList.add('hidden');
+            clientLoginSection.classList.add('hidden');
+            clientDashboard.classList.remove('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        function showSuccessMessage() {
+            guestSection.classList.add('hidden');
+            clientLoginSection.classList.add('hidden');
+            clientDashboard.classList.add('hidden');
+            successMessage.classList.remove('hidden');
+        }
+
+        function logoutClient() {
+            currentClientId = null;
+            localStorage.removeItem(`clientToken_${CLIENT_ID}`);
+            document.getElementById('clientLoginForm').reset();
+            showGuestSection();
+            showNotification('Logout realizado com sucesso!', 'success');
+        }
+
+        // Contador regressivo
+        function startCountdown() {
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = eventDate - now;
+
+                if (distance < 0) {
+                    document.getElementById('days').textContent = '00';
+                    document.getElementById('hours').textContent = '00';
+                    document.getElementById('minutes').textContent = '00';
+                    document.getElementById('seconds').textContent = '00';
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Criar corações flutuantes
+        function createFloatingHearts() {
+            const heartsContainer = document.getElementById('heartsContainer');
+            
+            function createHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = ['💕', '💖', '💗', '💝'][Math.floor(Math.random() * 4)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 8 + 's';
+                heart.style.animationDuration = (Math.random() * 3 + 8) + 's';
+                
+                heartsContainer.appendChild(heart);
+                
+                setTimeout(() => {
+                    if (heartsContainer.contains(heart)) {
+                        heartsContainer.removeChild(heart);
+                    }
+                }, 11000);
+            }
+            
+            setInterval(createHeart, 3000);
+            
+            // Criar alguns corações iniciais
+            for (let i = 0; i < 3; i++) {
+                setTimeout(createHeart, i * 1000);
+            }
+        }
+
+        // Client Tools Functions
+        function exportToPDF() {
+            showLoading(true);
+            
+            // Get current guest data
+            const guestData = Array.from(document.querySelectorAll('#guestList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return null;
+                
+                return {
+                    name: cells[0]?.textContent?.trim() || '',
+                    companion: cells[1]?.textContent?.trim() || '',
+                    status: cells[2]?.textContent?.trim() || '',
+                    message: cells[3]?.textContent?.trim() || '',
+                    date: cells[4]?.textContent?.trim() || ''
+                };
+            }).filter(Boolean);
+
+            // Create PDF content
+            const pdfContent = generatePDFContent(guestData);
+            
+            // Create and download PDF
+            const blob = new Blob([pdfContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lista-convidados-casamento.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showLoading(false);
+            showNotification('Lista exportada com sucesso! 📄', 'success');
+        }
+
+        function generatePDFContent(guestData) {
+            const confirmedCount = guestData.filter(g => g.status.includes('Confirmado')).length;
+            const declinedCount = guestData.filter(g => g.status.includes('Recusou')).length;
+            const totalPeople = guestData.reduce((total, guest) => {
+                if (guest.status.includes('Confirmado')) {
+                    return total + 1 + (guest.companion && guest.companion !== '-' ? 1 : 0);
+                }
+                return total;
+            }, 0);
+
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Convidados - Casamento Ana & João</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .stats { display: flex; justify-content: space-around; margin-bottom: 30px; }
+        .stat-box { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; }
+        .confirmed { color: green; }
+        .declined { color: red; }
+        .footer { margin-top: 30px; text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Lista de Convidados</h1>
+        <h2>Casamento Ana & João</h2>
+        <p>15 de Junho de 2024 • 17:00 • Igreja São José</p>
+        <p>Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <h3>${confirmedCount}</h3>
+            <p>Confirmados</p>
+        </div>
+        <div class="stat-box">
+            <h3>${declinedCount}</h3>
+            <p>Recusaram</p>
+        </div>
+        <div class="stat-box">
+            <h3>${totalPeople}</h3>
+            <p>Total de Pessoas</p>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Acompanhante</th>
+                <th>Status</th>
+                <th>Mensagem</th>
+                <th>Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${guestData.map(guest => `
+                <tr>
+                    <td>${guest.name}</td>
+                    <td>${guest.companion}</td>
+                    <td class="${guest.status.includes('Confirmado') ? 'confirmed' : 'declined'}">${guest.status}</td>
+                    <td>${guest.message}</td>
+                    <td>${guest.date}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Sistema de Confirmação de Presença - Casamento Ana & João</p>
+    </div>
+</body>
+</html>`;
+        }
+
+        function sendReminders() {
+            showNotification('Funcionalidade de lembretes será implementada em breve! 📧', 'info');
+        }
+
+        function editEvent() {
+            showNotification('Editor de evento será implementado em breve! ✏️', 'info');
+        }
+
+        function showAnalytics() {
+            showNotification('Análises detalhadas serão implementadas em breve! 📊', 'info');
+        }
+
+        function shareEvent() {
+            const url = window.location.href;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('Link copiado para a área de transferência! 🔗', 'success');
+                });
+            } else {
+                showNotification('Link: ' + url, 'info');
+            }
+        }
+
+        // Filter and search functionality
+        let allGuestData = [];
+
+        function filterGuests() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchGuests').value.toLowerCase();
+            
+            let filteredData = allGuestData;
+
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filteredData = filteredData.filter(guest => {
+                    switch (statusFilter) {
+                        case 'confirmed':
+                            return guest.attending;
+                        case 'declined':
+                            return !guest.attending;
+                        case 'with-companion':
+                            return guest.companion_name && guest.companion_name.trim() !== '';
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            // Apply search filter
+            if (searchTerm) {
+                filteredData = filteredData.filter(guest => 
+                    guest.guest_name.toLowerCase().includes(searchTerm) ||
+                    (guest.companion_name && guest.companion_name.toLowerCase().includes(searchTerm)) ||
+                    (guest.message && guest.message.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            updateGuestList(filteredData);
+        }
+
+        // Funções utilitárias
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+            
+            if (type === 'success') {
+                notification.classList.add('bg-green-500', 'text-white');
+            } else if (type === 'error') {
+                notification.classList.add('bg-red-500', 'text-white');
+            } else {
+                notification.classList.add('bg-blue-500', 'text-white');
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c70e3795ea77dd',t:'MTc1NDc0MDQzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
