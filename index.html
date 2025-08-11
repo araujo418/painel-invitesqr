@@ -3,1453 +3,1949 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmação de Presença - Casamento</title>
+    <title>Editor de Convites PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
-        
-        .font-dancing { font-family: 'Dancing Script', cursive; }
-        .font-inter { font-family: 'Inter', sans-serif; }
-        
-        .white-bg {
-            background: white;
-            min-height: 100vh;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        .card-white {
-            background: white;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .btn-primary {
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s ease;
+            min-height: 100vh;
+            padding: 10px;
+            margin: 0;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-        }
-        
-        .countdown-box {
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 20px;
-            padding: 1.5rem;
-            text-align: center;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .floating-hearts {
-            position: fixed;
+
+        .container {
+            max-width: 100%;
             width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            overflow: hidden;
         }
-        
-        .heart {
-            position: absolute;
-            color: rgba(156, 163, 175, 0.4);
-            font-size: 20px;
-            animation: float 8s linear infinite;
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
-        }
-        
-        .radio-option {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .radio-option:hover {
-            transform: translateY(-2px);
-        }
-        
-        .radio-option.selected {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stats-card {
+
+        .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 15px;
-            padding: 1.5rem;
+            padding: 30px 20px;
             text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 20px 15px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #56ab2f;
+            background: #f0fff0;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .editor-section {
+            display: none;
+        }
+
+        .pdf-preview {
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            background: white;
+        }
+
+        .pdf-canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: crosshair;
+        }
+
+        .text-overlay {
+            position: absolute;
+            background: rgba(255, 255, 0, 0.3);
+            border: 2px dashed #ff6b6b;
+            padding: 8px;
+            cursor: move;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            color: #333;
+            min-width: 120px;
+            min-height: 44px;
+            text-align: center;
+            border-radius: 6px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .text-overlay:hover {
+            background: rgba(255, 255, 0, 0.5);
+        }
+
+        .text-overlay.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 18px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 18px;
+            transition: border-color 0.3s;
+            min-height: 50px;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+            min-height: 50px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(86, 171, 47, 0.3);
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+        }
+
+        .btn-whatsapp:hover {
+            background: #128C7E;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .controls button {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .font-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .font-controls input, .font-controls select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .content {
+                padding: 15px 12px;
+            }
+            
+            .header {
+                padding: 25px 15px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .upload-area {
+                padding: 30px 15px;
+            }
+            
+            .btn {
+                font-size: 16px;
+                padding: 16px;
+                min-height: 48px;
+            }
+            
+            input[type="text"] {
+                font-size: 16px;
+                padding: 16px;
+                min-height: 48px;
+            }
         }
     </style>
 </head>
-<body class="white-bg font-inter">
-    <div class="floating-hearts" id="heartsContainer"></div>
-    
-    <div class="container mx-auto px-4 py-8 relative z-10">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="font-dancing text-6xl md:text-8xl text-gray-800 mb-4">
-                Ana & João
-            </h1>
-            <p class="text-gray-700 text-xl md:text-2xl font-light mb-6">
-                Você está convidado para nosso casamento! 💕
-            </p>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Editor de Convites</h1>
+            <p>Personalize seus convites em 3 passos simples</p>
+        </div>
+        
+        <div class="content">
+            <div id="successMessage" class="success" style="display: none;"></div>
             
-            <!-- Countdown Timer -->
-            <div class="countdown-box max-w-2xl mx-auto">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4">⏰ Contagem Regressiva</h3>
-                <div class="grid grid-cols-4 gap-4 text-center">
-                    <div>
-                        <div id="days" class="text-3xl font-bold text-purple-600">00</div>
-                        <div class="text-sm text-gray-600">Dias</div>
+            <!-- Tela de Login -->
+            <div id="loginSection" class="login-section">
+                <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 30px; border-radius: 20px; margin-bottom: 25px; border: 2px solid #667eea; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">🔐</div>
+                    <h2 style="color: #667eea; margin: 0 0 15px 0; font-size: 24px;">Acesso Restrito</h2>
+                    <p style="color: #666; margin-bottom: 25px; font-size: 16px;">Digite seu token de acesso para usar o editor de convites</p>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <input type="text" id="tokenInput" placeholder="Digite seu token de acesso..." style="width: 100%; padding: 18px; border: 2px solid #667eea; border-radius: 12px; font-size: 18px; text-align: center; font-weight: bold; letter-spacing: 2px;">
                     </div>
-                    <div>
-                        <div id="hours" class="text-3xl font-bold text-purple-600">00</div>
-                        <div class="text-sm text-gray-600">Horas</div>
+                    
+                    <button class="btn btn-primary" onclick="validateToken()" style="width: 100%; margin-bottom: 15px;">
+                        🚀 Entrar no Editor
+                    </button>
+                    
+                    <div id="loginError" style="display: none; background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-top: 15px; border: 1px solid #f5c6cb;">
+                        ❌ Token inválido ou expirado
                     </div>
-                    <div>
-                        <div id="minutes" class="text-3xl font-bold text-purple-600">00</div>
-                        <div class="text-sm text-gray-600">Minutos</div>
-                    </div>
-                    <div>
-                        <div id="seconds" class="text-3xl font-bold text-purple-600">00</div>
-                        <div class="text-sm text-gray-600">Segundos</div>
+                    
+                    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #ddd;">
+                        <p style="color: #888; font-size: 14px; margin: 0;">
+                            💡 <strong>Não tem um token?</strong><br>
+                            Entre em contato conosco para obter acesso
+                        </p>
                     </div>
                 </div>
-                <p class="text-gray-700 mt-4">
-                    📅 15 de Junho de 2024 • 🕕 17:00 • 📍 Igreja São José
-                </p>
             </div>
-        </div>
-
-        <!-- Client Access Button - Top Right -->
-        <div class="absolute top-4 right-4 z-20">
-            <button id="clientAccessBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition-all border border-gray-300 text-sm">
-                🔐 Área do Cliente
-            </button>
-        </div>
-
-        <!-- Guest RSVP Section -->
-        <div id="guestSection" class="max-w-2xl mx-auto">
-            <div class="card-white rounded-3xl shadow-lg p-8 md:p-12">
-                <div class="text-center mb-8">
-                    <div class="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span class="text-3xl">💌</span>
+            
+            <!-- Contador de Limites -->
+            <div id="limitsDisplay" style="background: linear-gradient(135deg, #fff3e0 0%, #e8f5e8 100%); padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #ff9800; display: none; text-align: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="color: #ff9800; font-weight: bold; font-size: 16px;">
+                        📊 Seus Limites de Convites
                     </div>
-                    <h2 class="text-3xl font-semibold text-gray-800 mb-4">
-                        Confirme sua Presença
-                    </h2>
-                    <p class="text-gray-600 mb-8">
-                        Preencha os dados abaixo para confirmar sua presença em nosso grande dia
-                    </p>
-                </div>
-
-                <form id="rsvpForm" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Seu Nome Completo *
-                        </label>
-                        <input 
-                            type="text" 
-                            id="guestName" 
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            placeholder="Digite seu nome completo"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-4">
-                            Você confirmará presença? *
-                        </label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <label class="radio-option">
-                                <input type="radio" name="attending" value="true" class="sr-only" required>
-                                <div class="attendance-option border-2 border-gray-300 rounded-xl p-6 text-center transition-all">
-                                    <div class="text-4xl mb-3">✅</div>
-                                    <div class="font-semibold text-gray-700">Sim, estarei lá!</div>
-                                    <div class="text-sm text-gray-500 mt-1">Mal posso esperar!</div>
-                                </div>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="attending" value="false" class="sr-only" required>
-                                <div class="attendance-option border-2 border-gray-300 rounded-xl p-6 text-center transition-all">
-                                    <div class="text-4xl mb-3">❌</div>
-                                    <div class="font-semibold text-gray-700">Não poderei ir</div>
-                                    <div class="text-sm text-gray-500 mt-1">Infelizmente...</div>
-                                </div>
-                            </label>
+                    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                        <div style="background: white; padding: 8px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <span style="color: #28a745; font-weight: bold; font-size: 18px;" id="remainingCount">0</span>
+                            <span style="color: #666; font-size: 14px;"> restantes</span>
+                        </div>
+                        <div style="background: white; padding: 8px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <span style="color: #666; font-size: 14px;">Usados: </span>
+                            <span style="color: #dc3545; font-weight: bold;" id="usedCount">0</span>
+                            <span style="color: #666; font-size: 14px;"> de </span>
+                            <span style="color: #667eea; font-weight: bold;" id="maxCount">0</span>
                         </div>
                     </div>
-
-                    <div id="companionSection" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Quantos acompanhantes? (opcional)
-                        </label>
-                        <select 
-                            id="guestCount" 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        >
-                            <option value="0">Apenas eu</option>
-                            <option value="1">Eu + 1 acompanhante</option>
-                            <option value="2">Eu + 2 acompanhantes</option>
-                            <option value="3">Eu + 3 acompanhantes</option>
-                            <option value="4">Eu + 4 acompanhantes</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Mensagem Especial (opcional)
-                        </label>
-                        <textarea 
-                            id="message" 
-                            rows="4"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                            placeholder="Deixe uma mensagem carinhosa para os noivos..."
-                        ></textarea>
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        class="w-full btn-primary text-white font-semibold py-4 px-6 rounded-xl text-lg"
-                    >
-                        Enviar Confirmação
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Client Login Section -->
-        <div id="clientLoginSection" class="max-w-md mx-auto hidden">
-            <div class="card-white rounded-3xl shadow-lg p-8">
-                <div class="text-center mb-8">
-                    <div class="w-20 h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span class="text-3xl">🔐</span>
-                    </div>
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-                        Área do Cliente
-                    </h2>
-                    <p class="text-gray-600 mb-6">
-                        Digite seu token de acesso para ver as confirmações
-                    </p>
                 </div>
-
-                <form id="clientLoginForm" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Token de Acesso
-                        </label>
-                        <input 
-                            type="text" 
-                            id="clientToken" 
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            placeholder="Digite seu token"
-                        >
-                    </div>
-
-                    <button 
-                        type="submit" 
-                        class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-xl"
-                    >
-                        Acessar Dashboard
-                    </button>
-                </form>
-
-                <div class="mt-6 text-center">
-                    <button id="backToGuestBtn" class="text-gray-500 hover:text-gray-700 font-medium">
-                        ← Voltar para confirmação
-                    </button>
+                <div id="limitWarning" style="margin-top: 10px; padding: 8px; background: #f8d7da; color: #721c24; border-radius: 8px; display: none; font-size: 14px;">
+                    ⚠️ <strong>Limite quase esgotado!</strong> Entre em contato para renovar seu plano.
                 </div>
             </div>
-        </div>
 
-        <!-- Client Dashboard Section -->
-        <div id="clientDashboard" class="max-w-6xl mx-auto hidden">
-            <div class="card-white rounded-3xl shadow-lg p-8">
-                <div class="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 class="text-3xl font-semibold text-gray-800">Dashboard do Cliente</h2>
-                        <p class="text-gray-600">Gerencie as confirmações do seu evento</p>
+            <!-- Guia de Passos -->
+            <div id="stepsGuide" style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 2px solid #667eea; display: none;">
+                <h3 style="color: #667eea; margin: 0 0 15px 0; text-align: center; font-size: 18px;">🎯 Como usar (muito fácil!):</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="background: #667eea; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">1</div>
+                        <span style="color: #333; font-weight: 500;">📁 Clique abaixo para escolher seu arquivo PDF</span>
                     </div>
-                    <div class="flex gap-4">
-                        <button id="exportPdfBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-all">
-                            📄 Exportar PDF
-                        </button>
-                        <button id="logoutBtn" class="text-gray-500 hover:text-gray-700 font-medium">
-                            Sair
-                        </button>
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 10px;">
+                        <div style="background: #ccc; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">2</div>
+                        <span style="color: #666;">✏️ Digite os nomes dos convidados</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 10px;">
+                        <div style="background: #ccc; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">3</div>
+                        <span style="color: #666;">📥 Baixe seus convites personalizados</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área de Upload -->
+            <div class="upload-section" id="uploadSection" style="display: none;">
+                <div class="upload-area" onclick="document.getElementById('pdfFile').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">PASSO 1: Clique aqui para escolher seu PDF</div>
+                    <div class="upload-hint">Ou arraste o arquivo aqui</div>
+                </div>
+                <input type="file" id="pdfFile" accept=".pdf" />
+            </div>
+
+            <!-- Editor -->
+            <div class="editor-section" id="editorSection">
+                <!-- Passo 2 Ativo -->
+                <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #28a745;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="background: #28a745; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">2</div>
+                        <h3 style="color: #28a745; margin: 0; font-size: 18px;">✏️ PASSO 2: Adicione os nomes</h3>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="text" id="guestName" placeholder="Digite o nome do convidado e pressione Enter..." onkeypress="handleEnterKey(event)" style="width: 100%; padding: 15px; border: 2px solid #28a745; border-radius: 10px; font-size: 16px; font-weight: 500;">
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn btn-success" onclick="addTextToPDF()" style="background: #28a745; flex: 2;">➕ Adicionar Nome</button>
+                        <button class="btn btn-secondary" onclick="clearAllText()" style="flex: 1;">🗑️ Limpar</button>
                     </div>
                 </div>
 
-                <!-- Client Tools -->
-                <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🛠️ Ferramentas Exclusivas do Cliente</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <button id="sendRemindersBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
-                            <div class="text-2xl mb-2">📧</div>
-                            <div class="text-sm font-medium text-gray-700">Enviar Lembretes</div>
-                        </button>
-                        <button id="editEventBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
-                            <div class="text-2xl mb-2">✏️</div>
-                            <div class="text-sm font-medium text-gray-700">Editar Evento</div>
-                        </button>
-                        <button id="guestAnalyticsBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
-                            <div class="text-2xl mb-2">📊</div>
-                            <div class="text-sm font-medium text-gray-700">Análises</div>
-                        </button>
-                        <button id="shareEventBtn" class="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-center transition-all">
-                            <div class="text-2xl mb-2">🔗</div>
-                            <div class="text-sm font-medium text-gray-700">Compartilhar</div>
-                        </button>
+                <!-- Dicas Simples -->
+                <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                    <div style="color: #856404; font-size: 14px; line-height: 1.5;">
+                        <strong>💡 Muito simples:</strong><br>
+                        • Digite um nome e pressione <strong>Enter</strong><br>
+                        • Arraste os nomes para cima/baixo no convite<br>
+                        • Clique em um nome para <strong>editar, mudar cor/tamanho</strong><br>
+                        • Use <strong>Enter</strong> para salvar alterações
                     </div>
                 </div>
 
-                <!-- Statistics -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="stats-card">
-                        <div class="text-3xl mb-2">✅</div>
-                        <div class="text-2xl font-bold" id="confirmedCount">0</div>
-                        <div class="text-sm opacity-90">Confirmados</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="text-3xl mb-2">❌</div>
-                        <div class="text-2xl font-bold" id="declinedCount">0</div>
-                        <div class="text-sm opacity-90">Recusaram</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="text-3xl mb-2">👥</div>
-                        <div class="text-2xl font-bold" id="totalGuests">0</div>
-                        <div class="text-sm opacity-90">Total de Pessoas</div>
-                    </div>
-                </div>
-
-                <!-- Guest List -->
-                <div class="bg-white rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-semibold text-gray-800">Lista de Convidados</h3>
-                        <div class="flex gap-4">
-                            <select id="statusFilter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                                <option value="all">Todos</option>
-                                <option value="confirmed">Confirmados</option>
-                                <option value="declined">Recusaram</option>
-                                <option value="with-companion">Com Acompanhante</option>
+                <!-- Controles de Formatação (mais visíveis) -->
+                <div id="formatControls" style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; border: 2px dashed #dee2e6; display: none;">
+                    <div style="color: #495057; font-weight: bold; margin-bottom: 10px; text-align: center;">🎨 Personalizar texto selecionado:</div>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #666;">🔤 Fonte:</label>
+                            <select id="fontFamily" onchange="updateSelectedElement()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; margin-bottom: 15px;">
+                                <option value="Arial" selected>Arial (Clássica)</option>
+                                <option value="Times New Roman">Times New Roman (Elegante)</option>
+                                <option value="Georgia">Georgia (Sofisticada)</option>
+                                <option value="Verdana">Verdana (Moderna)</option>
+                                <option value="Helvetica">Helvetica (Limpa)</option>
+                                <option value="Trebuchet MS">Trebuchet MS (Amigável)</option>
+                                <option value="Impact">Impact (Forte)</option>
+                                <option value="Comic Sans MS">Comic Sans MS (Divertida)</option>
+                                <option value="Courier New">Courier New (Máquina)</option>
+                                <option value="Brush Script MT">Brush Script MT (Manuscrita)</option>
                             </select>
-                            <input 
-                                type="text" 
-                                id="searchGuests" 
-                                placeholder="Buscar convidado..."
-                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-48"
-                            >
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #666;">📏 Tamanho:</label>
+                                <select id="fontSize" onchange="updateSelectedElement()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                                    <option value="12">Pequeno</option>
+                                    <option value="16" selected>Normal</option>
+                                    <option value="20">Grande</option>
+                                    <option value="24">Muito Grande</option>
+                                    <option value="28">Gigante</option>
+                                    <option value="32">Extra Grande</option>
+                                    <option value="36">Gigante</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #666;">🎨 Cor:</label>
+                                <div style="display: flex; gap: 5px; align-items: center;">
+                                    <input type="color" id="textColor" value="#000000" onchange="updateSelectedElement()" style="width: 40px; height: 35px; border: none; border-radius: 5px; cursor: pointer;">
+                                    <span id="colorLabel" style="font-size: 12px; color: #666;">Preto</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-gray-200">
-                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Nome</th>
-                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Acompanhante</th>
-                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Status</th>
-                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Mensagem</th>
-                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Data</th>
-                                    <th class="text-center py-3 px-4 font-medium text-gray-700">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="guestList">
-                                <!-- Guest list will be populated here -->
-                            </tbody>
-                        </table>
+                </div>
+
+                <div class="page-controls" style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                    <button onclick="previousPage()" id="prevBtn" class="btn-page" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">← Anterior</button>
+                    <span id="pageInfo" style="font-weight: bold; color: #333;">Página 1 de 1</span>
+                    <button onclick="nextPage()" id="nextBtn" class="btn-page" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Próxima →</button>
+                </div>
+
+                <div id="selectedInfo" style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 14px; display: none; border: 2px solid #667eea;">
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #667eea;">✏️ Editando:</strong> <span id="selectedText" style="font-weight: bold;"></span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <input type="text" id="editNameInput" placeholder="Digite o novo nome..." onkeypress="handleEditEnterKey(event)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 8px;">
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="updateSelectedName()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">✅ Salvar Nome</button>
+                        <button onclick="deleteSelected()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">🗑️ Excluir</button>
+                        <button onclick="deselectElement()" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">❌ Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="pdf-preview" id="pdfPreview">
+                    <div id="loadingIndicator" style="display: none; text-align: center; padding: 50px; color: #667eea;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                        <div>Carregando PDF...</div>
+                    </div>
+                    <canvas id="pdfCanvas" class="pdf-canvas"></canvas>
+                </div>
+
+
+
+                <!-- Passo 3 -->
+                <div style="background: linear-gradient(135deg, #fff3e0 0%, #e8f5e8 100%); padding: 20px; border-radius: 15px; margin: 20px 0; border: 2px solid #ff9800;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="background: #ff9800; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">3</div>
+                        <h3 style="color: #ff9800; margin: 0; font-size: 18px;">📥 PASSO 3: Baixar convites</h3>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="showPDFPreview()" style="background: #28a745; margin-bottom: 10px;">👁️ Ver Prévia e Baixar PDF</button>
+                    <button class="btn btn-whatsapp" onclick="shareWhatsApp()" style="margin-bottom: 10px;">📱 Compartilhar no WhatsApp</button>
+                    <button class="btn btn-secondary" onclick="resetEditor()">🔄 Fazer Outro Convite</button>
+                    <button class="btn" onclick="logout()" style="background: #dc3545; color: white; margin-top: 10px;">🚪 Sair do Sistema</button>
+                </div>
+                
+                <!-- Modal de Prévia do PDF -->
+                <div id="pdfPreviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
+                    <div style="background: white; margin: 20px auto; max-width: 90%; max-height: 90%; border-radius: 15px; position: relative; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
+                            <h2 style="color: #667eea; margin: 0;">📄 Prévia do PDF Final</h2>
+                            <button onclick="closePDFPreview()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 16px;">✕ Fechar</button>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <p style="color: #666; margin-bottom: 15px;">Esta é a prévia de como seu PDF ficará. Você ainda pode ajustar as posições dos nomes!</p>
+                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <button onclick="previousPreviewPage()" id="prevPreviewBtn" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">← Anterior</button>
+                                <span id="previewPageInfo" style="padding: 8px 15px; background: #f8f9fa; border-radius: 5px; font-weight: bold;">Página 1 de 1</span>
+                                <button onclick="nextPreviewPage()" id="nextPreviewBtn" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Próxima →</button>
+                            </div>
+                        </div>
+                        
+                        <div id="previewContainer" style="border: 2px solid #ddd; border-radius: 10px; margin: 20px 0; background: white; text-align: center; min-height: 400px; position: relative;">
+                            <canvas id="previewCanvas" style="max-width: 100%; height: auto; cursor: crosshair;"></canvas>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="generateFinalPDF()" style="background: #28a745; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold;">📥 Baixar PDF</button>
+                            <button onclick="closePDFPreview()" style="background: #6c757d; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer;">↩️ Voltar ao Editor</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Success Message -->
-        <div id="successMessage" class="max-w-2xl mx-auto hidden">
-            <div class="card-white rounded-3xl shadow-lg p-8 text-center">
-                <div class="w-24 h-24 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span class="text-4xl">🎉</span>
-                </div>
-                <h2 class="text-3xl font-semibold text-gray-800 mb-4">
-                    Confirmação Enviada!
-                </h2>
-                <p class="text-gray-600 mb-8">
-                    Obrigado por confirmar sua presença. Mal podemos esperar para celebrar com você!
-                </p>
-                <button 
-                    id="newRsvpBtn"
-                    class="btn-primary text-white font-semibold py-3 px-6 rounded-xl"
-                >
-                    Nova Confirmação
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Event Modal -->
-    <div id="editEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-gradient-to-r from-purple-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span class="text-2xl">✏️</span>
-                </div>
-                <h3 class="text-2xl font-semibold text-gray-800">Editar Evento</h3>
-                <p class="text-gray-600 mt-2">Atualize as informações do seu casamento</p>
-            </div>
-
-            <form id="editEventForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Nome do Casal *
-                    </label>
-                    <input 
-                        type="text" 
-                        id="editCoupleName" 
-                        required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        placeholder="Ex: Ana & João"
-                    >
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Nome da Noiva
-                    </label>
-                    <input 
-                        type="text" 
-                        id="editBrideName" 
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        placeholder="Nome da noiva"
-                    >
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Nome do Noivo
-                    </label>
-                    <input 
-                        type="text" 
-                        id="editGroomName" 
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        placeholder="Nome do noivo"
-                    >
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Data do Evento *
-                    </label>
-                    <input 
-                        type="date" 
-                        id="editEventDate" 
-                        required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    >
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Horário do Evento
-                    </label>
-                    <input 
-                        type="time" 
-                        id="editEventTime" 
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    >
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Local do Evento
-                    </label>
-                    <input 
-                        type="text" 
-                        id="editEventLocation" 
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        placeholder="Ex: Igreja São José"
-                    >
-                </div>
-
-                <div class="flex gap-4 pt-4">
-                    <button 
-                        type="button" 
-                        id="cancelEditBtn"
-                        class="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-200 transition-all"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        type="submit" 
-                        class="flex-1 btn-primary text-white font-semibold py-3 px-6 rounded-xl"
-                    >
-                        Salvar Alterações
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl p-8 text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p class="text-gray-600">Processando...</p>
         </div>
     </div>
 
     <script>
-        // 🗄️ CONFIGURAÇÃO DO SUPABASE
-        // Este sistema funciona 100% integrado com Supabase:
-        // 1. Dados dos clientes ficam na tabela 'wedding_clients'
-        // 2. Confirmações dos convidados ficam na tabela 'wedding_confirmations'
-        // 3. Cada cliente tem um client_id único gerado pelo painel administrativo
-        // 4. O painel gera links únicos no formato: /c/client-id
-        const supabaseUrl = 'https://qlbpqpxhswyicxyffhws.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsYnBxcHhoc3d5aWN4eWZmaHdzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDczMzYyMiwiZXhwIjoyMDcwMzA5NjIyfQ.YOUR_SERVICE_ROLE_KEY_HERE';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://hmbyjclwuozkcclhhlak.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtYnlqY2x3dW96a2NjbGhobGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4OTgzMjgsImV4cCI6MjA3MDQ3NDMyOH0.nWa9dazt2cPAwbTHROIiyXWookV2L7Hi7p3GS5pq_Ko';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Variáveis globais
+        let currentUser = null;
+        let userLimits = {
+            maxInvites: 0,
+            usedInvites: 0,
+            remainingInvites: 0
+        };
+        let originalPDF = null;
+        let pdfDoc = null;
+        let canvas = null;
+        let ctx = null;
+        let textElements = [];
+        let selectedElement = null;
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let scale = 1;
+        let currentPage = 1;
+        let totalPages = 1;
+        let previewCanvas = null;
+        let previewCtx = null;
+        let previewCurrentPage = 1;
+        let isPreviewMode = false;
 
-        // 🔗 EXTRAÇÃO DO CLIENT_ID DA URL
-        // O painel administrativo gera links únicos no formato:
-        // https://seudominio.com/c/client-id-unico
-        // Exemplo: https://araujo418.github.io/painel-invitesqr/c/ana-joao-2024
-        function getClientIdFromURL() {
-            const pathname = window.location.pathname;
-            console.log('🔍 Analisando URL:', pathname);
-            
-            // Padrão principal: /c/client-id ou /qualquer-path/c/client-id
-            const match = pathname.match(/\/c\/([^\/]+)/);
-            if (match) {
-                console.log('✅ Client ID encontrado na URL:', match[1]);
-                return match[1];
-            }
-            
-            // Fallback para parâmetro de query (?client=client-id)
-            const urlParams = new URLSearchParams(window.location.search);
-            const clientParam = urlParams.get('client');
-            if (clientParam) {
-                console.log('✅ Client ID encontrado no parâmetro:', clientParam);
-                return clientParam;
-            }
-            
-            // ⚠️ ATENÇÃO: Este fallback é apenas para demonstração
-            // Em produção, deve retornar erro se não encontrar client_id
-            console.warn('⚠️ Client ID não encontrado, usando fallback de demonstração');
-            return 'ana-joao-2024';
-        }
+        // Configurar PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        const CLIENT_ID = getClientIdFromURL();
-
-        // 📊 ESTRUTURA DAS TABELAS SUPABASE
-        // 
-        // Tabela: wedding_clients
-        // - id (uuid, primary key)
-        // - client_id (text, unique) - ID único gerado pelo painel
-        // - couple_name (text) - Nome do casal (ex: "Ana & João")
-        // - bride_name (text) - Nome da noiva
-        // - groom_name (text) - Nome do noivo
-        // - event_date (date) - Data do casamento
-        // - event_time (time) - Horário do casamento
-        // - event_location (text) - Local do evento
-        // - access_token (text) - Token para acesso do cliente
-        // - status (text) - 'active' ou 'inactive'
-        // - created_at (timestamp)
-        // - updated_at (timestamp)
-        //
-        // Tabela: wedding_confirmations
-        // - id (uuid, primary key)
-        // - client_id (text) - Referência ao cliente
-        // - guest_name (text) - Nome do convidado
-        // - will_attend (boolean) - Confirmou presença?
-        // - guest_count (integer) - Número de acompanhantes
-        // - dietary_restrictions (text) - Restrições alimentares
-        // - message (text) - Mensagem do convidado
-        // - created_at (timestamp)
-
-        // Data do evento será carregada dinamicamente do Supabase
-        let eventDate = new Date('2024-06-15T17:00:00').getTime(); // Fallback inicial
-
-        // Elementos DOM
-        const guestSection = document.getElementById('guestSection');
-        const clientLoginSection = document.getElementById('clientLoginSection');
-        const clientDashboard = document.getElementById('clientDashboard');
-        const successMessage = document.getElementById('successMessage');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-
-        // Estado da aplicação
-        let currentClientId = null;
-        let currentClientData = null;
-
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', function() {
+            canvas = document.getElementById('pdfCanvas');
+            ctx = canvas.getContext('2d', { willReadFrequently: true });
+            previewCanvas = document.getElementById('previewCanvas');
+            previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
             setupEventListeners();
-            startCountdown();
-            createFloatingHearts();
-            checkStoredClientToken();
-            await loadClientInfo();
-            await loadGuestMessages();
+            
+            // Verificar se já está logado
+            checkExistingLogin();
         });
 
-        // Carregar informações do cliente específico do Supabase
-        async function loadClientInfo() {
-            try {
-                showLoading(true);
-                
-                // Buscar dados do cliente específico na tabela wedding_clients
-                const { data: clientData, error: clientError } = await supabase
-                    .from('wedding_clients')
-                    .select('*')
-                    .eq('client_id', CLIENT_ID)
-                    .eq('status', 'active')
-                    .single();
-
-                if (clientError) {
-                    console.error('Cliente não encontrado:', clientError);
-                    
-                    // Mostrar página de erro personalizada
-                    document.body.innerHTML = `
-                        <div class="min-h-screen flex items-center justify-center bg-gray-50">
-                            <div class="text-center p-8">
-                                <div class="text-6xl mb-4">😔</div>
-                                <h1 class="text-2xl font-bold text-gray-800 mb-4">Evento não encontrado</h1>
-                                <p class="text-gray-600 mb-6">O link que você acessou não é válido ou o evento foi removido.</p>
-                                <p class="text-sm text-gray-500">Verifique o link com quem te enviou o convite.</p>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Armazenar dados do cliente globalmente
-                currentClientData = clientData;
-                
-                // Atualizar interface com dados do cliente
-                updateClientInterface(clientData);
-                
-                console.log('✅ Cliente carregado:', clientData.couple_name);
-                
-            } catch (error) {
-                console.error('Erro ao carregar cliente:', error);
-                showNotification('Erro ao carregar dados do evento.', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // Atualizar interface com dados específicos do cliente vindos do Supabase
-        function updateClientInterface(clientData) {
-            console.log('🔄 Atualizando interface com dados:', clientData);
+        // Verificar login existente
+        async function checkExistingLogin() {
+            const savedToken = localStorage.getItem('inviteEditorToken');
+            const savedExpiry = localStorage.getItem('inviteEditorTokenExpiry');
             
-            // Atualizar nomes dos noivos no título principal
-            const coupleNames = document.querySelector('.font-dancing');
-            if (coupleNames && clientData.couple_name) {
-                coupleNames.textContent = clientData.couple_name;
-                console.log('✅ Nome do casal atualizado:', clientData.couple_name);
-            }
-
-            // Atualizar subtítulo personalizado
-            const subtitle = document.querySelector('.text-xl.md\\:text-2xl');
-            if (subtitle && clientData.couple_name) {
-                subtitle.innerHTML = `Você está convidado para nosso casamento! 💕`;
-            }
-
-            // Atualizar data, horário e local do evento
-            if (clientData.event_date) {
-                const eventDateElement = document.querySelector('.countdown-box p');
-                const eventDateTime = new Date(clientData.event_date);
-                
-                // Se tiver horário separado, combinar
-                if (clientData.event_time) {
-                    const [hours, minutes] = clientData.event_time.split(':');
-                    eventDateTime.setHours(parseInt(hours), parseInt(minutes));
-                }
-                
-                const formattedDate = eventDateTime.toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                
-                const formattedTime = clientData.event_time || eventDateTime.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                const location = clientData.event_location || 'Local a definir';
-                
-                if (eventDateElement) {
-                    eventDateElement.innerHTML = `📅 ${formattedDate} • 🕕 ${formattedTime} • 📍 ${location}`;
-                    console.log('✅ Data/hora/local atualizados:', formattedDate, formattedTime, location);
-                }
-                
-                // Atualizar contador regressivo global
-                eventDate = eventDateTime.getTime();
-                console.log('✅ Contador regressivo atualizado para:', new Date(eventDate));
-            }
-
-            // Atualizar título da página dinamicamente
-            const pageTitle = `Confirmação de Presença - ${clientData.couple_name || 'Casamento'}`;
-            document.title = pageTitle;
-            console.log('✅ Título da página atualizado:', pageTitle);
-
-            // Atualizar mensagem de confirmação personalizada
-            const confirmationTitle = document.querySelector('#guestSection h2');
-            if (confirmationTitle) {
-                confirmationTitle.textContent = 'Confirme sua Presença';
-            }
-
-            const confirmationSubtitle = document.querySelector('#guestSection p');
-            if (confirmationSubtitle) {
-                confirmationSubtitle.textContent = 'Preencha os dados abaixo para confirmar sua presença em nosso grande dia';
-            }
-        }
-
-        // Verificar token armazenado
-        function checkStoredClientToken() {
-            const storedToken = localStorage.getItem(`clientToken_${CLIENT_ID}`);
-            if (storedToken) {
-                document.getElementById('clientToken').value = storedToken;
-            }
-        }
-
-        // Configurar event listeners
-        function setupEventListeners() {
-            // Navegação
-            document.getElementById('clientAccessBtn').addEventListener('click', showClientLogin);
-            document.getElementById('backToGuestBtn').addEventListener('click', showGuestSection);
-            document.getElementById('logoutBtn').addEventListener('click', logoutClient);
-            document.getElementById('newRsvpBtn').addEventListener('click', showGuestSection);
-
-            // Client tools
-            document.getElementById('exportPdfBtn').addEventListener('click', exportToPDF);
-            document.getElementById('sendRemindersBtn').addEventListener('click', sendReminders);
-            document.getElementById('editEventBtn').addEventListener('click', editEvent);
-            document.getElementById('guestAnalyticsBtn').addEventListener('click', showAnalytics);
-            document.getElementById('shareEventBtn').addEventListener('click', shareEvent);
-
-            // Filters and search
-            document.getElementById('statusFilter').addEventListener('change', filterGuests);
-            document.getElementById('searchGuests').addEventListener('input', filterGuests);
-
-            // Formulários
-            document.getElementById('rsvpForm').addEventListener('submit', handleGuestRSVP);
-            document.getElementById('clientLoginForm').addEventListener('submit', handleClientLogin);
-            document.getElementById('editEventForm').addEventListener('submit', handleEditEvent);
-            
-            // Modal controls
-            document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
-
-            // Opções de presença
-            document.querySelectorAll('input[name="attending"]').forEach(radio => {
-                radio.addEventListener('change', handleAttendingChange);
-            });
-        }
-
-        // Manipular mudança na opção de presença
-        function handleAttendingChange(e) {
-            // Atualizar visual das opções
-            document.querySelectorAll('.attendance-option').forEach(option => {
-                option.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50', 'selected');
-                option.classList.add('border-gray-300');
-            });
-
-            const selectedOption = e.target.closest('label').querySelector('.attendance-option');
-            const radioOption = e.target.closest('.radio-option');
-            
-            if (e.target.value === 'true') {
-                selectedOption.classList.add('border-green-400', 'bg-green-50', 'selected');
-                radioOption.classList.add('selected');
-                document.getElementById('companionSection').classList.remove('hidden');
-            } else {
-                selectedOption.classList.add('border-red-400', 'bg-red-50', 'selected');
-                radioOption.classList.add('selected');
-                document.getElementById('companionSection').classList.add('hidden');
-                document.getElementById('guestCount').value = '0';
-            }
-        }
-
-        // Carregar recados dos convidados
-        async function loadGuestMessages() {
-            try {
-                // Buscar apenas confirmações com mensagens deste cliente específico
-                const { data, error } = await supabase
-                    .from('wedding_confirmations')
-                    .select('guest_name, message, created_at, will_attend')
-                    .eq('client_id', CLIENT_ID)
-                    .not('message', 'is', null)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                updateMessagesDisplay(data);
-            } catch (error) {
-                console.error('Erro ao carregar recados:', error);
-            }
-        }
-
-        // Atualizar exibição dos recados
-        function updateMessagesDisplay(messages) {
-            const messagesContainer = document.getElementById('messagesContainer');
-            
-            if (!messages || messages.length === 0) {
-                messagesContainer.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <div class="text-4xl mb-4">💌</div>
-                        <p>Ainda não há recados dos convidados</p>
-                        <p class="text-sm mt-2">Seja o primeiro a deixar uma mensagem carinhosa!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            messagesContainer.innerHTML = messages.map(msg => {
-                const date = new Date(msg.created_at).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                const statusIcon = msg.will_attend ? '✅' : '❌';
-                const statusText = msg.will_attend ? 'Confirmou presença' : 'Não poderá comparecer';
-
-                return `
-                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold text-gray-800">${msg.guest_name}</span>
-                                <span class="text-xs px-2 py-1 rounded-full ${msg.will_attend ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-                                    ${statusIcon} ${statusText}
-                                </span>
-                            </div>
-                            <span class="text-xs text-gray-500">${date}</span>
-                        </div>
-                        <p class="text-gray-700 italic leading-relaxed">"${msg.message}"</p>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Manipular confirmação do convidado
-        async function handleGuestRSVP(e) {
-            e.preventDefault();
-            showLoading(true);
-
-            const formData = new FormData(e.target);
-            const guestName = document.getElementById('guestName').value.trim();
-            const attending = formData.get('attending') === 'true';
-            const guestCount = parseInt(document.getElementById('guestCount').value) || 0;
-            const message = document.getElementById('message').value.trim();
-
-            try {
-
-                // Usar o CLIENT_ID específico da URL e estrutura correta
-                const confirmationData = {
-                    client_id: CLIENT_ID,
-                    guest_name: guestName,
-                    will_attend: attending,
-                    guest_count: guestCount,
-                    dietary_restrictions: null, // Pode ser adicionado depois
-                    message: message || null,
-                    created_at: new Date().toISOString()
-                };
-
-                const { error } = await supabase
-                    .from('wedding_confirmations')
-                    .insert([confirmationData]);
-
-                if (error) throw error;
-
-                // Recarregar recados se uma mensagem foi adicionada
-                if (message) {
-                    await loadGuestMessages();
-                }
-
-                showSuccessMessage();
-                showNotification('Confirmação enviada com sucesso! 🎉', 'success');
-            } catch (error) {
-                console.error('Erro ao enviar RSVP:', error);
-                showNotification('Erro ao enviar confirmação. Tente novamente.', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // Manipular login do cliente
-        async function handleClientLogin(e) {
-            e.preventDefault();
-            showLoading(true);
-
-            const token = document.getElementById('clientToken').value.trim();
-
-            try {
-                // Verificar se o token existe para este cliente específico
-                const { data, error } = await supabase
-                    .from('wedding_clients')
-                    .select('*')
-                    .eq('access_token', token)
-                    .eq('client_id', CLIENT_ID)
-                    .eq('status', 'active')
-                    .single();
-
-                if (error || !data) {
-                    throw new Error('Token inválido para este evento');
-                }
-
-                currentClientId = data.client_id;
-                localStorage.setItem(`clientToken_${CLIENT_ID}`, token);
-                
-                await loadClientDashboard();
-                showNotification('Login realizado com sucesso! 🎉', 'success');
-            } catch (error) {
-                console.error('Erro no login:', error);
-                showNotification('Token inválido. Verifique e tente novamente.', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // Carregar dashboard do cliente
-        async function loadClientDashboard() {
-            try {
-                // Buscar apenas confirmações deste cliente específico com ID
-                const { data, error } = await supabase
-                    .from('wedding_confirmations')
-                    .select('id, client_id, guest_name, will_attend, guest_count, message, created_at')
-                    .eq('client_id', CLIENT_ID)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                updateDashboardStats(data);
-                updateGuestList(data);
-                showClientDashboard();
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-                showNotification('Erro ao carregar dados do dashboard.', 'error');
-            }
-        }
-
-        // Atualizar estatísticas do dashboard
-        function updateDashboardStats(confirmations) {
-            const confirmed = confirmations.filter(conf => conf.will_attend).length;
-            const declined = confirmations.filter(conf => !conf.will_attend).length;
-            const totalPeople = confirmations.reduce((total, conf) => {
-                if (conf.will_attend) {
-                    return total + 1 + (conf.guest_count || 0);
-                }
-                return total;
-            }, 0);
-
-            document.getElementById('confirmedCount').textContent = confirmed;
-            document.getElementById('declinedCount').textContent = declined;
-            document.getElementById('totalGuests').textContent = totalPeople;
-        }
-
-        // Atualizar lista de convidados
-        function updateGuestList(confirmations) {
-            // Store data for filtering
-            allGuestData = confirmations;
-            
-            const guestList = document.getElementById('guestList');
-            guestList.innerHTML = '';
-
-            if (confirmations.length === 0) {
-                guestList.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center py-8 text-gray-500">
-                            Nenhuma confirmação ainda
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            confirmations.forEach(conf => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-100 hover:bg-gray-50';
-                
-                const statusBadge = conf.will_attend 
-                    ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">✅ Confirmado</span>'
-                    : '<span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">❌ Recusou</span>';
-
-                const companionText = conf.guest_count > 0
-                    ? `<span class="text-gray-600">+ ${conf.guest_count} acompanhante${conf.guest_count > 1 ? 's' : ''}</span>`
-                    : '<span class="text-gray-400">-</span>';
-
-                const messageText = conf.message 
-                    ? `<span class="text-gray-600">${conf.message}</span>`
-                    : '<span class="text-gray-400">-</span>';
-
-                const date = new Date(conf.created_at).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                row.innerHTML = `
-                    <td class="py-3 px-4 font-medium text-gray-900">${conf.guest_name}</td>
-                    <td class="py-3 px-4">${companionText}</td>
-                    <td class="py-3 px-4 text-center">${statusBadge}</td>
-                    <td class="py-3 px-4 max-w-xs truncate">${messageText}</td>
-                    <td class="py-3 px-4 text-center text-sm text-gray-500">${date}</td>
-                    <td class="py-3 px-4 text-center">
-                        <button 
-                            onclick="removeGuest('${conf.id}', '${conf.guest_name}')"
-                            class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all"
-                            title="Remover confirmação"
-                        >
-                            🗑️
-                        </button>
-                    </td>
-                `;
-
-                guestList.appendChild(row);
-            });
-        }
-
-        // Remover convidado
-        async function removeGuest(guestId, guestName) {
-            if (!confirm(`Tem certeza que deseja remover a confirmação de "${guestName}"?\n\nEsta ação não pode ser desfeita.`)) {
-                return;
-            }
-
-            showLoading(true);
-
-            try {
-                const { error } = await supabase
-                    .from('wedding_confirmations')
-                    .delete()
-                    .eq('id', guestId)
-                    .eq('client_id', CLIENT_ID); // Segurança extra
-
-                if (error) throw error;
-
-                // Recarregar dashboard
-                await loadClientDashboard();
-                
-                // Recarregar recados se necessário
-                await loadGuestMessages();
-
-                showNotification(`Confirmação de "${guestName}" removida com sucesso! 🗑️`, 'success');
-            } catch (error) {
-                console.error('Erro ao remover convidado:', error);
-                showNotification('Erro ao remover confirmação. Tente novamente.', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // Funções de navegação
-        function showGuestSection() {
-            guestSection.classList.remove('hidden');
-            document.getElementById('guestMessagesSection').classList.remove('hidden');
-            clientLoginSection.classList.add('hidden');
-            clientDashboard.classList.add('hidden');
-            successMessage.classList.add('hidden');
-            
-            // Limpar formulário
-            document.getElementById('rsvpForm').reset();
-            document.getElementById('companionSection').classList.add('hidden');
-            document.getElementById('guestCount').value = '0';
-            
-            // Resetar opções visuais
-            document.querySelectorAll('.attendance-option').forEach(option => {
-                option.classList.remove('border-green-400', 'bg-green-50', 'border-red-400', 'bg-red-50', 'selected');
-                option.classList.add('border-gray-300');
-            });
-            document.querySelectorAll('.radio-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-        }
-
-        function showClientLogin() {
-            guestSection.classList.add('hidden');
-            document.getElementById('guestMessagesSection').classList.add('hidden');
-            clientLoginSection.classList.remove('hidden');
-            clientDashboard.classList.add('hidden');
-            successMessage.classList.add('hidden');
-        }
-
-        function showClientDashboard() {
-            guestSection.classList.add('hidden');
-            document.getElementById('guestMessagesSection').classList.add('hidden');
-            clientLoginSection.classList.add('hidden');
-            clientDashboard.classList.remove('hidden');
-            successMessage.classList.add('hidden');
-        }
-
-        function showSuccessMessage() {
-            guestSection.classList.add('hidden');
-            document.getElementById('guestMessagesSection').classList.add('hidden');
-            clientLoginSection.classList.add('hidden');
-            clientDashboard.classList.add('hidden');
-            successMessage.classList.remove('hidden');
-        }
-
-        function logoutClient() {
-            currentClientId = null;
-            localStorage.removeItem(`clientToken_${CLIENT_ID}`);
-            document.getElementById('clientLoginForm').reset();
-            showGuestSection();
-            showNotification('Logout realizado com sucesso!', 'success');
-        }
-
-        // Contador regressivo
-        function startCountdown() {
-            function updateCountdown() {
+            if (savedToken && savedExpiry) {
                 const now = new Date().getTime();
-                const distance = eventDate - now;
-
-                if (distance < 0) {
-                    document.getElementById('days').textContent = '00';
-                    document.getElementById('hours').textContent = '00';
-                    document.getElementById('minutes').textContent = '00';
-                    document.getElementById('seconds').textContent = '00';
-                    return;
-                }
-
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                document.getElementById('days').textContent = days.toString().padStart(2, '0');
-                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-            }
-
-            updateCountdown();
-            setInterval(updateCountdown, 1000);
-        }
-
-        // Criar corações flutuantes
-        function createFloatingHearts() {
-            const heartsContainer = document.getElementById('heartsContainer');
-            
-            function createHeart() {
-                const heart = document.createElement('div');
-                heart.className = 'heart';
-                heart.innerHTML = ['💕', '💖', '💗', '💝'][Math.floor(Math.random() * 4)];
-                heart.style.left = Math.random() * 100 + '%';
-                heart.style.animationDelay = Math.random() * 8 + 's';
-                heart.style.animationDuration = (Math.random() * 3 + 8) + 's';
-                
-                heartsContainer.appendChild(heart);
-                
-                setTimeout(() => {
-                    if (heartsContainer.contains(heart)) {
-                        heartsContainer.removeChild(heart);
+                if (now < parseInt(savedExpiry)) {
+                    // Token ainda válido - buscar dados completos
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from('access_tokens')
+                            .select('*')
+                            .eq('token', savedToken)
+                            .eq('is_active', true)
+                            .single();
+                        
+                        if (data && !error) {
+                            currentUser = data;
+                            await loadUserLimits();
+                            showMainApp();
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao verificar token salvo:', error);
                     }
-                }, 11000);
-            }
-            
-            setInterval(createHeart, 3000);
-            
-            // Criar alguns corações iniciais
-            for (let i = 0; i < 3; i++) {
-                setTimeout(createHeart, i * 1000);
-            }
-        }
-
-        // Client Tools Functions
-        function exportToPDF() {
-            showLoading(true);
-            
-            // Get current guest data
-            const guestData = Array.from(document.querySelectorAll('#guestList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length === 0) return null;
-                
-                return {
-                    name: cells[0]?.textContent?.trim() || '',
-                    companion: cells[1]?.textContent?.trim() || '',
-                    status: cells[2]?.textContent?.trim() || '',
-                    message: cells[3]?.textContent?.trim() || '',
-                    date: cells[4]?.textContent?.trim() || ''
-                };
-            }).filter(Boolean);
-
-            // Create PDF content
-            const pdfContent = generatePDFContent(guestData);
-            
-            // Create and download PDF
-            const blob = new Blob([pdfContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'lista-convidados-casamento.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showLoading(false);
-            showNotification('Lista exportada com sucesso! 📄', 'success');
-        }
-
-        function generatePDFContent(guestData) {
-            const confirmedCount = guestData.filter(g => g.status.includes('Confirmado')).length;
-            const declinedCount = guestData.filter(g => g.status.includes('Recusou')).length;
-            const totalPeople = guestData.reduce((total, guest) => {
-                if (guest.status.includes('Confirmado')) {
-                    return total + 1 + (guest.companion && guest.companion !== '-' ? 1 : 0);
                 }
-                return total;
-            }, 0);
-
-            return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Lista de Convidados - Casamento Ana & João</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .stats { display: flex; justify-content: space-around; margin-bottom: 30px; }
-        .stat-box { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f5f5f5; }
-        .confirmed { color: green; }
-        .declined { color: red; }
-        .footer { margin-top: 30px; text-align: center; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Lista de Convidados</h1>
-        <h2>Casamento Ana & João</h2>
-        <p>15 de Junho de 2024 • 17:00 • Igreja São José</p>
-        <p>Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
-    </div>
-    
-    <div class="stats">
-        <div class="stat-box">
-            <h3>${confirmedCount}</h3>
-            <p>Confirmados</p>
-        </div>
-        <div class="stat-box">
-            <h3>${declinedCount}</h3>
-            <p>Recusaram</p>
-        </div>
-        <div class="stat-box">
-            <h3>${totalPeople}</h3>
-            <p>Total de Pessoas</p>
-        </div>
-    </div>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Acompanhante</th>
-                <th>Status</th>
-                <th>Mensagem</th>
-                <th>Data</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${guestData.map(guest => `
-                <tr>
-                    <td>${guest.name}</td>
-                    <td>${guest.companion}</td>
-                    <td class="${guest.status.includes('Confirmado') ? 'confirmed' : 'declined'}">${guest.status}</td>
-                    <td>${guest.message}</td>
-                    <td>${guest.date}</td>
-                </tr>
-            `).join('')}
-        </tbody>
-    </table>
-    
-    <div class="footer">
-        <p>Sistema de Confirmação de Presença - Casamento Ana & João</p>
-    </div>
-</body>
-</html>`;
+            }
+            
+            // Mostrar tela de login
+            showLoginScreen();
         }
 
-        function sendReminders() {
-            showNotification('Funcionalidade de lembretes será implementada em breve! 📧', 'info');
-        }
-
-        function editEvent() {
-            if (!currentClientData) {
-                showNotification('Erro: Dados do cliente não encontrados.', 'error');
+        // Validar token
+        async function validateToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            
+            if (!token) {
+                showLoginError('Digite um token válido');
                 return;
             }
             
-            // Preencher formulário com dados atuais
-            document.getElementById('editCoupleName').value = currentClientData.couple_name || '';
-            document.getElementById('editBrideName').value = currentClientData.bride_name || '';
-            document.getElementById('editGroomName').value = currentClientData.groom_name || '';
-            document.getElementById('editEventDate').value = currentClientData.event_date || '';
-            document.getElementById('editEventTime').value = currentClientData.event_time || '';
-            document.getElementById('editEventLocation').value = currentClientData.event_location || '';
-            
-            // Mostrar modal
-            document.getElementById('editEventModal').classList.remove('hidden');
-        }
-        
-        function closeEditModal() {
-            document.getElementById('editEventModal').classList.add('hidden');
-        }
-        
-        // Fechar modal ao clicar fora
-        document.getElementById('editEventModal').addEventListener('click', (e) => {
-            if (e.target.id === 'editEventModal') {
-                closeEditModal();
-            }
-        });
-        
-        // Manipular edição do evento
-        async function handleEditEvent(e) {
-            e.preventDefault();
-            showLoading(true);
-
-            const formData = new FormData(e.target);
-            const updatedData = {
-                couple_name: document.getElementById('editCoupleName').value.trim(),
-                bride_name: document.getElementById('editBrideName').value.trim(),
-                groom_name: document.getElementById('editGroomName').value.trim(),
-                event_date: document.getElementById('editEventDate').value,
-                event_time: document.getElementById('editEventTime').value,
-                event_location: document.getElementById('editEventLocation').value.trim(),
-                updated_at: new Date().toISOString()
-            };
-
             try {
-                // Atualizar no Supabase
-                const { error } = await supabase
-                    .from('wedding_clients')
-                    .update(updatedData)
-                    .eq('client_id', CLIENT_ID);
-
-                if (error) throw error;
-
-                // Atualizar dados locais
-                currentClientData = { ...currentClientData, ...updatedData };
+                showSuccess('Validando token...');
                 
-                // Atualizar interface
-                updateClientInterface(currentClientData);
+                // Consultar token no Supabase
+                const { data, error } = await supabaseClient
+                    .from('access_tokens')
+                    .select('*')
+                    .eq('token', token)
+                    .eq('is_active', true)
+                    .single();
                 
-                // Fechar modal
-                closeEditModal();
+                if (error || !data) {
+                    showLoginError('Token inválido ou não encontrado');
+                    return;
+                }
                 
-                showNotification('Evento atualizado com sucesso! 🎉', 'success');
-            } catch (error) {
-                console.error('Erro ao atualizar evento:', error);
-                showNotification('Erro ao atualizar evento. Tente novamente.', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function showAnalytics() {
-            showNotification('Análises detalhadas serão implementadas em breve! 📊', 'info');
-        }
-
-        function shareEvent() {
-            const url = window.location.href;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(() => {
-                    showNotification('Link copiado para a área de transferência! 🔗', 'success');
-                });
-            } else {
-                showNotification('Link: ' + url, 'info');
-            }
-        }
-
-        // Filter and search functionality
-        let allGuestData = [];
-
-        function filterGuests() {
-            const statusFilter = document.getElementById('statusFilter').value;
-            const searchTerm = document.getElementById('searchGuests').value.toLowerCase();
-            
-            let filteredData = allGuestData;
-
-            // Apply status filter
-            if (statusFilter !== 'all') {
-                filteredData = filteredData.filter(conf => {
-                    switch (statusFilter) {
-                        case 'confirmed':
-                            return conf.will_attend;
-                        case 'declined':
-                            return !conf.will_attend;
-                        case 'with-companion':
-                            return conf.guest_count > 0;
-                        default:
-                            return true;
-                    }
-                });
-            }
-
-            // Apply search filter
-            if (searchTerm) {
-                filteredData = filteredData.filter(conf => 
-                    conf.guest_name.toLowerCase().includes(searchTerm) ||
-                    (conf.message && conf.message.toLowerCase().includes(searchTerm))
-                );
-            }
-
-            updateGuestList(filteredData);
-        }
-
-        // Funções utilitárias
-        function showLoading(show) {
-            if (show) {
-                loadingOverlay.classList.remove('hidden');
-            } else {
-                loadingOverlay.classList.add('hidden');
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
-            
-            if (type === 'success') {
-                notification.classList.add('bg-green-500', 'text-white');
-            } else if (type === 'error') {
-                notification.classList.add('bg-red-500', 'text-white');
-            } else {
-                notification.classList.add('bg-blue-500', 'text-white');
-            }
-            
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.classList.remove('translate-x-full');
-            }, 100);
-            
-            setTimeout(() => {
-                notification.classList.add('translate-x-full');
+                // Verificar se o token não expirou
+                const now = new Date();
+                const expiryDate = new Date(data.expires_at);
+                
+                if (now > expiryDate) {
+                    showLoginError('Token expirado');
+                    return;
+                }
+                
+                // Registrar uso do token
+                await supabaseClient
+                    .from('token_usage')
+                    .insert({
+                        token_id: data.id,
+                        used_at: new Date().toISOString(),
+                        ip_address: 'unknown', // Pode ser obtido via API externa
+                        user_agent: navigator.userAgent
+                    });
+                
+                // Salvar token localmente
+                currentUser = data;
+                localStorage.setItem('inviteEditorToken', token);
+                localStorage.setItem('inviteEditorTokenExpiry', expiryDate.getTime().toString());
+                
+                // Carregar limites do usuário
+                await loadUserLimits();
+                
+                showSuccess('Login realizado com sucesso!');
                 setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
-                    }
-                }, 300);
+                    showMainApp();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erro ao validar token:', error);
+                showLoginError('Erro de conexão. Tente novamente.');
+            }
+        }
+
+        // Mostrar erro de login
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
             }, 5000);
         }
+
+        // Mostrar tela de login
+        function showLoginScreen() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('stepsGuide').style.display = 'none';
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('editorSection').style.display = 'none';
+        }
+
+        // Carregar limites do usuário
+        async function loadUserLimits() {
+            try {
+                if (!currentUser) return;
+                
+                // Buscar dados do token com limites
+                const { data: tokenData, error: tokenError } = await supabaseClient
+                    .from('access_tokens')
+                    .select('max_invites, current_invites')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (tokenError) {
+                    console.error('Erro ao carregar limites:', tokenError);
+                    return;
+                }
+                
+                userLimits.maxInvites = tokenData.max_invites || 0;
+                userLimits.usedInvites = tokenData.current_invites || 0;
+                userLimits.remainingInvites = userLimits.maxInvites - userLimits.usedInvites;
+                
+                updateLimitsDisplay();
+                
+            } catch (error) {
+                console.error('Erro ao carregar limites:', error);
+            }
+        }
+        
+        // Atualizar display dos limites
+        function updateLimitsDisplay() {
+            document.getElementById('remainingCount').textContent = userLimits.remainingInvites;
+            document.getElementById('usedCount').textContent = userLimits.usedInvites;
+            document.getElementById('maxCount').textContent = userLimits.maxInvites;
+            
+            // Mostrar aviso se restam poucos convites
+            const limitWarning = document.getElementById('limitWarning');
+            if (userLimits.remainingInvites <= 3 && userLimits.remainingInvites > 0) {
+                limitWarning.style.display = 'block';
+            } else {
+                limitWarning.style.display = 'none';
+            }
+            
+            // Mudar cor do contador baseado na quantidade restante
+            const remainingElement = document.getElementById('remainingCount');
+            if (userLimits.remainingInvites <= 0) {
+                remainingElement.style.color = '#dc3545'; // Vermelho
+            } else if (userLimits.remainingInvites <= 3) {
+                remainingElement.style.color = '#ffc107'; // Amarelo
+            } else {
+                remainingElement.style.color = '#28a745'; // Verde
+            }
+        }
+        
+        // Verificar se pode gerar convite
+        function canGenerateInvite() {
+            if (userLimits.maxInvites === 0) return true; // Ilimitado
+            return userLimits.remainingInvites > 0;
+        }
+        
+        // Incrementar contador de convites usados
+        async function incrementInviteUsage() {
+            try {
+                if (!currentUser || userLimits.maxInvites === 0) return; // Não contar se ilimitado
+                
+                // Atualizar no banco
+                const { error } = await supabaseClient
+                    .from('access_tokens')
+                    .update({ 
+                        current_invites: userLimits.usedInvites + 1 
+                    })
+                    .eq('id', currentUser.id);
+                
+                if (error) {
+                    console.error('Erro ao atualizar contador:', error);
+                    return;
+                }
+                
+                // Atualizar localmente
+                userLimits.usedInvites++;
+                userLimits.remainingInvites = userLimits.maxInvites - userLimits.usedInvites;
+                updateLimitsDisplay();
+                
+                // Registrar na tabela de PDFs gerados
+                await supabaseClient
+                    .from('pdf_generations')
+                    .insert({
+                        token_id: currentUser.id,
+                        generated_at: new Date().toISOString(),
+                        pdf_name: generateAutoFileName(),
+                        names_count: textElements.length,
+                        pages_count: totalPages
+                    });
+                
+            } catch (error) {
+                console.error('Erro ao incrementar uso:', error);
+            }
+        }
+
+        // Mostrar app principal
+        function showMainApp() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('limitsDisplay').style.display = 'block';
+            document.getElementById('stepsGuide').style.display = 'block';
+            document.getElementById('uploadSection').style.display = 'block';
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('inviteEditorToken');
+            localStorage.removeItem('inviteEditorTokenExpiry');
+            currentUser = null;
+            resetEditor();
+            showLoginScreen();
+            showSuccess('Logout realizado com sucesso!');
+        }
+
+        // Adicionar Enter key no campo de token
+        document.addEventListener('DOMContentLoaded', function() {
+            const tokenInput = document.getElementById('tokenInput');
+            if (tokenInput) {
+                tokenInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        validateToken();
+                    }
+                });
+            }
+        });
+
+        function setupEventListeners() {
+            const uploadArea = document.querySelector('.upload-area');
+            const fileInput = document.getElementById('pdfFile');
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type === 'application/pdf') {
+                    handlePDFUpload(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handlePDFUpload(e.target.files[0]);
+                }
+            });
+
+            // Canvas events
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            
+            // Preview canvas events
+            previewCanvas.addEventListener('click', handlePreviewCanvasClick);
+            previewCanvas.addEventListener('mousedown', handlePreviewMouseDown);
+            previewCanvas.addEventListener('mousemove', handlePreviewMouseMove);
+            previewCanvas.addEventListener('mouseup', handlePreviewMouseUp);
+        }
+
+        async function handlePDFUpload(file) {
+            try {
+                console.log('Carregando PDF:', file.name, file.size);
+                showSuccess('Carregando PDF...');
+                
+                const arrayBuffer = await file.arrayBuffer();
+                // Criar uma cópia do ArrayBuffer para evitar problemas de detach
+                originalPDF = arrayBuffer.slice();
+                
+                console.log('ArrayBuffer criado, tamanho:', originalPDF.byteLength);
+                
+                // Carregar PDF com PDF.js para preview
+                const loadingTask = pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapPacked: true
+                });
+                
+                pdfDoc = await loadingTask.promise;
+                totalPages = pdfDoc.numPages;
+                currentPage = 1;
+                console.log('PDF carregado, páginas:', totalPages);
+                
+                // Aguardar um pouco para garantir que o DOM está pronto
+                setTimeout(async () => {
+                    document.getElementById('uploadSection').style.display = 'none';
+                    document.getElementById('editorSection').style.display = 'block';
+                    document.getElementById('loadingIndicator').style.display = 'block';
+                    
+                    // Aguardar o canvas estar visível
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    await renderPDFPreview();
+                    updatePageControls();
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    showSuccess(`PDF carregado com sucesso! ${totalPages} página(s) encontrada(s). Clique no PDF para posicionar os nomes.`);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Erro detalhado:', error);
+                alert('Erro ao carregar PDF: ' + error.message);
+            }
+        }
+
+        async function renderPDFPreview() {
+            try {
+                const page = await pdfDoc.getPage(currentPage);
+                
+                // Aguardar o container estar totalmente renderizado
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // CORREÇÃO: Usar dimensões EXATAS do PDF para manter proporção perfeita
+                const viewport = page.getViewport({ scale: 1.0 });
+                const pdfWidth = viewport.width;
+                const pdfHeight = viewport.height;
+                const pdfRatio = pdfWidth / pdfHeight;
+                
+                // Calcular largura disponível do container
+                const previewContainer = document.getElementById('pdfPreview');
+                const containerStyle = window.getComputedStyle(previewContainer);
+                const borderWidth = parseInt(containerStyle.borderLeftWidth) + parseInt(containerStyle.borderRightWidth);
+                const paddingWidth = parseInt(containerStyle.paddingLeft) + parseInt(containerStyle.paddingRight);
+                const availableWidth = previewContainer.clientWidth - borderWidth - paddingWidth - 20; // Margem extra
+                
+                // Limitar altura máxima
+                const maxHeight = window.innerHeight * 0.5;
+                
+                // Calcular dimensões mantendo proporção EXATA do PDF
+                let displayWidth, displayHeight;
+                
+                if (availableWidth / pdfRatio <= maxHeight) {
+                    // Limitado pela largura
+                    displayWidth = availableWidth;
+                    displayHeight = availableWidth / pdfRatio;
+                } else {
+                    // Limitado pela altura
+                    displayHeight = maxHeight;
+                    displayWidth = maxHeight * pdfRatio;
+                }
+                
+                // Garantir que as dimensões sejam inteiras
+                displayWidth = Math.floor(displayWidth);
+                displayHeight = Math.floor(displayHeight);
+                
+                // Calcular escala baseada nas dimensões finais
+                scale = displayWidth / pdfWidth;
+                
+                // Configurar canvas com dimensões EXATAS calculadas
+                canvas.width = displayWidth;
+                canvas.height = displayHeight;
+                canvas.style.width = displayWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
+                canvas.style.maxWidth = 'none'; // Não permitir redimensionamento automático
+                canvas.style.display = 'block';
+                canvas.style.margin = '0 auto';
+                
+                // Limpar canvas antes de renderizar
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Usar viewport com escala calculada
+                const scaledViewport = page.getViewport({ scale });
+                
+                // Renderizar PDF
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: scaledViewport
+                };
+                
+                console.log(`📐 DIMENSÕES CORRIGIDAS:`);
+                console.log(`PDF original: ${pdfWidth}x${pdfHeight} (ratio: ${pdfRatio.toFixed(3)})`);
+                console.log(`Canvas: ${displayWidth}x${displayHeight} (ratio: ${(displayWidth/displayHeight).toFixed(3)})`);
+                console.log(`Escala única: ${scale.toFixed(4)}`);
+                console.log(`Container disponível: ${availableWidth}px`);
+                
+                await page.render(renderContext).promise;
+                console.log('✅ PDF renderizado com proporções exatas!');
+                
+                // Carregar textos salvos da página atual
+                loadSavedTexts();
+                
+            } catch (error) {
+                console.error('Erro ao renderizar PDF:', error);
+                alert('Erro ao exibir o PDF. Tente outro arquivo.');
+            }
+        }
+
+        function handleCanvasClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            console.log('Clique no canvas:', x, y);
+            
+            // Verificar se clicou em um elemento existente da página atual
+            const currentPageTexts = getCurrentPageTexts();
+            const clickedElement = currentPageTexts.find(el => 
+                x >= el.x && x <= el.x + el.width &&
+                y >= el.y && y <= el.y + el.height
+            );
+            
+            if (clickedElement) {
+                console.log('Elemento clicado:', clickedElement.text);
+                selectElement(clickedElement);
+            } else {
+                // Adicionar novo texto na posição clicada
+                const guestName = document.getElementById('guestName').value.trim();
+                console.log('Nome digitado:', guestName);
+                if (guestName) {
+                    addTextAtPosition(x, y, guestName);
+                } else {
+                    // Se não há nome digitado, focar no campo
+                    document.getElementById('guestName').focus();
+                    showSuccess('Digite um nome no campo acima primeiro!');
+                }
+            }
+        }
+
+        function addTextToPDF() {
+            const guestName = document.getElementById('guestName').value.trim();
+            console.log('Tentando adicionar nome:', guestName);
+            
+            if (!guestName) {
+                showSuccess('Digite o nome do convidado primeiro!');
+                document.getElementById('guestName').focus();
+                return;
+            }
+            
+            // Adicionar no centro do canvas
+            const x = canvas.width / 2;
+            const y = canvas.height / 2;
+            addTextAtPosition(x, y, guestName);
+        }
+
+        async function addTextAtPosition(x, y, text) {
+            console.log('Adicionando texto:', text, 'na posição:', x, y, 'página:', currentPage);
+            
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            const color = document.getElementById('textColor').value;
+            const fontFamily = document.getElementById('fontFamily').value;
+            
+            // Calcular largura exata do texto
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            const textWidth = ctx.measureText(text).width;
+            
+            // SEMPRE centralizar horizontalmente no meio do canvas
+            const centerX = canvas.width / 2;
+            
+            const textElement = {
+                id: Date.now(),
+                text: text,
+                x: centerX - textWidth/2, // SEMPRE perfeitamente centralizado
+                y: y,
+                fontSize: fontSize,
+                fontFamily: fontFamily,
+                color: color,
+                width: textWidth,
+                height: fontSize + 10,
+                page: currentPage, // Associar à página atual
+                originalText: text // Guardar texto original para nome do arquivo
+            };
+            
+            textElements.push(textElement);
+            console.log('Elementos de texto atuais:', textElements.length);
+            
+            await redrawTextElements();
+            selectElement(textElement);
+            autoSave();
+            
+            // Limpar campo de nome após adicionar
+            document.getElementById('guestName').value = '';
+            document.getElementById('guestName').focus();
+            
+            showSuccess(`"${text}" adicionado centralizado! Arraste para ajustar altura.`);
+        }
+
+        let isRendering = false;
+        let pdfImageData = null;
+        
+        async function redrawTextElements() {
+            // Não redesenhar o PDF, apenas os elementos de texto
+            if (!canvas || !ctx || isRendering) return;
+            
+            isRendering = true;
+            
+            try {
+                // Limpar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Redesenhar o PDF uma vez e salvar imagem
+                if (pdfDoc) {
+                    await renderPDFBase();
+                    // Salvar imagem do PDF para uso durante arraste
+                    pdfImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                }
+                
+                // Desenhar linhas guia do centro
+                drawCenterGuides();
+                
+                // Desenhar apenas elementos de texto da página atual
+                const currentPageTexts = getCurrentPageTexts();
+                currentPageTexts.forEach(element => {
+                    ctx.font = `bold ${element.fontSize}px ${element.fontFamily || 'Arial'}`;
+                    ctx.fillStyle = element.color;
+                    ctx.textAlign = 'left'; // Usar alinhamento à esquerda para posicionamento preciso
+                    // CORREÇÃO: Renderizar texto exatamente na posição calculada (já centralizada)
+                    ctx.fillText(element.text, element.x, element.y + element.fontSize);
+                    
+                    // Desenhar borda se selecionado
+                    if (selectedElement && selectedElement.id === element.id) {
+                        ctx.strokeStyle = '#667eea';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.strokeRect(element.x, element.y, element.width, element.height);
+                        ctx.setLineDash([]);
+                    }
+                });
+            } finally {
+                isRendering = false;
+            }
+        }
+        
+        function drawCenterGuides() {
+            if (!canvas || !ctx) return;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Salvar estado atual do contexto
+            ctx.save();
+            
+            // Configurar estilo das linhas guia
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; // Vermelho transparente
+            ctx.lineWidth = 1;
+            ctx.setLineDash([10, 5]); // Linha tracejada
+            
+            // Desenhar linha vertical (centro horizontal)
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+            
+            // Desenhar linha horizontal (centro vertical)
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            
+            // Restaurar estado do contexto
+            ctx.restore();
+        }
+        
+        function redrawTextElementsQuick() {
+            // Versão rápida para arraste - usa imagem salva do PDF
+            if (!canvas || !ctx || !pdfImageData) return;
+            
+            // Restaurar imagem do PDF
+            ctx.putImageData(pdfImageData, 0, 0);
+            
+            // Desenhar linhas guia do centro
+            drawCenterGuides();
+            
+            // Desenhar apenas os elementos de texto da página atual
+            const currentPageTexts = getCurrentPageTexts();
+            currentPageTexts.forEach(element => {
+                ctx.font = `bold ${element.fontSize}px ${element.fontFamily || 'Arial'}`;
+                ctx.fillStyle = element.color;
+                ctx.textAlign = 'left'; // Usar alinhamento à esquerda para posicionamento preciso
+                ctx.fillText(element.text, element.x, element.y + element.fontSize);
+                
+                // Desenhar borda se selecionado
+                if (selectedElement && selectedElement.id === element.id) {
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(element.x, element.y, element.width, element.height);
+                    ctx.setLineDash([]);
+                }
+            });
+        }
+
+        let renderTask = null;
+        
+        async function renderPDFBase() {
+            if (!pdfDoc || !ctx) return;
+            
+            try {
+                // Cancelar renderização anterior se existir
+                if (renderTask) {
+                    renderTask.cancel();
+                }
+                
+                const page = await pdfDoc.getPage(currentPage);
+                const scaledViewport = page.getViewport({ scale });
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: scaledViewport
+                };
+                
+                renderTask = page.render(renderContext);
+                await renderTask.promise;
+                renderTask = null;
+            } catch (error) {
+                if (error.name !== 'RenderingCancelledException') {
+                    console.error('Erro ao renderizar base do PDF:', error);
+                }
+            }
+        }
+
+        function getCurrentPageTexts() {
+            return textElements.filter(el => el.page === currentPage);
+        }
+
+        function updatePageControls() {
+            document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+            
+            // Atualizar estilos dos botões
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
+            nextBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
+            prevBtn.style.cursor = currentPage <= 1 ? 'not-allowed' : 'pointer';
+            nextBtn.style.cursor = currentPage >= totalPages ? 'not-allowed' : 'pointer';
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPDFPreview();
+                updatePageControls();
+                selectedElement = null;
+                document.getElementById('selectedInfo').style.display = 'none';
+                showSuccess(`Página ${currentPage} carregada`);
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPDFPreview();
+                updatePageControls();
+                selectedElement = null;
+                document.getElementById('selectedInfo').style.display = 'none';
+                showSuccess(`Página ${currentPage} carregada`);
+            }
+        }
+
+        function selectElement(element) {
+            selectedElement = element;
+            
+            // Atualizar controles com valores do elemento selecionado
+            document.getElementById('fontSize').value = element.fontSize;
+            document.getElementById('fontFamily').value = element.fontFamily || 'Arial';
+            document.getElementById('textColor').value = element.color;
+            
+            // Mostrar controles de formatação
+            document.getElementById('formatControls').style.display = 'block';
+            
+            // Atualizar label da cor
+            updateColorLabel(element.color);
+            
+            // Mostrar informações do elemento selecionado
+            document.getElementById('selectedText').textContent = element.text;
+            document.getElementById('editNameInput').value = element.text;
+            document.getElementById('selectedInfo').style.display = 'block';
+            
+            redrawTextElements();
+        }
+
+        function updateColorLabel(color) {
+            const colorLabel = document.getElementById('colorLabel');
+            const colorNames = {
+                '#000000': 'Preto',
+                '#ffffff': 'Branco',
+                '#ff0000': 'Vermelho',
+                '#00ff00': 'Verde',
+                '#0000ff': 'Azul',
+                '#ffff00': 'Amarelo',
+                '#ff00ff': 'Rosa',
+                '#00ffff': 'Ciano',
+                '#800080': 'Roxo',
+                '#ffa500': 'Laranja'
+            };
+            
+            colorLabel.textContent = colorNames[color.toLowerCase()] || 'Personalizada';
+        }
+
+        function updateSelectedElement() {
+            if (!selectedElement) return;
+            
+            const newFontSize = parseInt(document.getElementById('fontSize').value);
+            const newFontFamily = document.getElementById('fontFamily').value;
+            const newColor = document.getElementById('textColor').value;
+            
+            selectedElement.fontSize = newFontSize;
+            selectedElement.fontFamily = newFontFamily;
+            selectedElement.color = newColor;
+            selectedElement.height = newFontSize + 10;
+            
+            // Atualizar label da cor
+            updateColorLabel(newColor);
+            
+            // Recalcular largura e recentrar horizontalmente
+            ctx.font = `bold ${newFontSize}px ${newFontFamily}`;
+            const textWidth = ctx.measureText(selectedElement.text).width;
+            selectedElement.width = textWidth;
+            
+            // SEMPRE manter perfeitamente centralizado
+            const centerX = canvas.width / 2;
+            selectedElement.x = centerX - textWidth/2;
+            
+            redrawTextElements();
+            autoSave();
+        }
+
+        function updateSelectedName() {
+            if (!selectedElement) return;
+            
+            const newName = document.getElementById('editNameInput').value.trim();
+            if (!newName) {
+                showSuccess('Digite um nome válido!');
+                return;
+            }
+            
+            // Atualizar o texto do elemento
+            selectedElement.text = newName;
+            
+            // Recalcular largura e recentrar horizontalmente
+            ctx.font = `bold ${selectedElement.fontSize}px ${selectedElement.fontFamily || 'Arial'}`;
+            const textWidth = ctx.measureText(newName).width;
+            selectedElement.width = textWidth;
+            
+            // SEMPRE manter perfeitamente centralizado
+            const centerX = canvas.width / 2;
+            selectedElement.x = centerX - textWidth/2;
+            
+            // Atualizar display
+            document.getElementById('selectedText').textContent = newName;
+            
+            redrawTextElements();
+            autoSave();
+            showSuccess(`Nome alterado para "${newName}"!`);
+        }
+        
+        function deselectElement() {
+            selectedElement = null;
+            document.getElementById('selectedInfo').style.display = 'none';
+            document.getElementById('formatControls').style.display = 'none';
+            redrawTextElements();
+        }
+
+        function deleteSelected() {
+            if (!selectedElement) return;
+            
+            const deletedName = selectedElement.text;
+            textElements = textElements.filter(el => el.id !== selectedElement.id);
+            selectedElement = null;
+            document.getElementById('selectedInfo').style.display = 'none';
+            document.getElementById('formatControls').style.display = 'none';
+            
+            redrawTextElements();
+            autoSave();
+            showSuccess(`"${deletedName}" foi excluído!`);
+        }
+
+        function generateAutoFileName() {
+            // Obter nomes únicos dos elementos de texto (usar texto atual, não original)
+            const uniqueNames = [...new Set(textElements.map(el => el.text))];
+            
+            if (uniqueNames.length > 0) {
+                if (uniqueNames.length === 1) {
+                    // Um nome apenas - usar o nome atual
+                    const sanitizedName = sanitizeFileName(uniqueNames[0]);
+                    return `convite-${sanitizedName}.pdf`;
+                } else {
+                    // Múltiplos nomes - usar o primeiro nome atual
+                    const firstName = uniqueNames[0];
+                    const sanitizedName = sanitizeFileName(firstName);
+                    return `convite-${sanitizedName}-e-outros.pdf`;
+                }
+            } else {
+                // Nome padrão se não há nomes
+                return 'convite-personalizado.pdf';
+            }
+        }
+
+        function sanitizeFileName(name) {
+            // Remover caracteres especiais e espaços, converter para minúsculas
+            return name.toLowerCase()
+                      .replace(/[^a-z0-9\s-]/g, '') // Remover caracteres especiais
+                      .replace(/\s+/g, '-') // Substituir espaços por hífens
+                      .replace(/-+/g, '-') // Remover hífens duplicados
+                      .trim();
+        }
+
+
+
+        function handleMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const currentPageTexts = getCurrentPageTexts();
+            const clickedElement = currentPageTexts.find(el => 
+                x >= el.x && x <= el.x + el.width &&
+                y >= el.y && y <= el.y + el.height
+            );
+            
+            if (clickedElement) {
+                isDragging = true;
+                selectedElement = clickedElement;
+                dragOffset.x = x - clickedElement.x;
+                dragOffset.y = y - clickedElement.y;
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+
+        let animationId = null;
+        let isDragRendering = false;
+        let previewDragRendering = false;
+        
+        function handleMouseMove(e) {
+            if (isDragging && selectedElement) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                selectedElement.x = x - dragOffset.x;
+                selectedElement.y = y - dragOffset.y;
+                
+                // Só renderizar se não estiver já renderizando
+                if (!isDragRendering) {
+                    isDragRendering = true;
+                    requestAnimationFrame(() => {
+                        redrawTextElementsQuick();
+                        isDragRendering = false;
+                    });
+                }
+            }
+        }
+
+        function handleMouseUp() {
+            if (isDragging) {
+                isDragging = false;
+                canvas.style.cursor = 'crosshair';
+                // Fazer uma renderização completa quando terminar o arraste
+                redrawTextElements();
+                autoSave();
+            }
+        }
+
+        function clearAllText() {
+            textElements = [];
+            selectedElement = null;
+            redrawTextElements();
+        }
+
+        async function generateFinalPDF() {
+            if (textElements.length === 0) {
+                showSuccess('Adicione pelo menos um nome antes de gerar o PDF.');
+                return;
+            }
+
+            if (!originalPDF) {
+                showSuccess('Erro: PDF original não encontrado. Faça upload novamente.');
+                return;
+            }
+            
+            // Verificar limite de convites
+            if (!canGenerateInvite()) {
+                showSuccess('❌ Limite de convites esgotado! Entre em contato para renovar seu plano.');
+                return;
+            }
+
+            try {
+                showSuccess('Gerando PDF personalizado...');
+                
+                // Criar uma nova cópia do ArrayBuffer para evitar problemas
+                const pdfData = originalPDF.slice();
+                const pdfLibDoc = await PDFLib.PDFDocument.load(pdfData);
+                const pages = pdfLibDoc.getPages();
+                
+                // Obter dimensões reais do PDF
+                const firstPage = await pdfDoc.getPage(1);
+                const viewport = firstPage.getViewport({ scale: 1.0 });
+                const PDF_WIDTH = viewport.width;
+                const PDF_HEIGHT = viewport.height;
+                
+                console.log(`🎯 CONVERSÃO DE COORDENADAS:`);
+                console.log(`PDF original: ${PDF_WIDTH}x${PDF_HEIGHT}`);
+                console.log(`Canvas: ${canvas.width}x${canvas.height}`);
+                console.log(`Escala usada no canvas: ${scale.toFixed(4)}`);
+                
+                // CORREÇÃO: Usar escala única para conversão perfeita
+                const conversionScale = PDF_WIDTH / canvas.width;
+                
+                console.log(`Escala de conversão: ${conversionScale.toFixed(4)}`);
+                
+                // Processar cada página
+                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    const page = pages[pageNum - 1];
+                    const pageTexts = textElements.filter(el => el.page === pageNum);
+                    
+                    pageTexts.forEach(element => {
+                        // CORREÇÃO: Usar coordenadas EXATAS do canvas (texto já está centralizado)
+                        const canvasTextX = element.x; // Posição X já calculada (lado esquerdo do texto centralizado)
+                        const canvasTextY = element.y + element.fontSize; // Baseline do texto no canvas
+                        
+                        // Converter para coordenadas do PDF usando escala única
+                        const pdfX = canvasTextX * conversionScale;
+                        const pdfY = PDF_HEIGHT - (canvasTextY * conversionScale);
+                        
+                        // Tamanho da fonte no PDF
+                        const pdfFontSize = element.fontSize * conversionScale;
+                        
+                        console.log(`📍 "${element.text}" (Página ${pageNum}):`);
+                        console.log(`  Canvas: (${canvasTextX.toFixed(1)}, ${canvasTextY.toFixed(1)})`);
+                        console.log(`  PDF: (${pdfX.toFixed(1)}, ${pdfY.toFixed(1)})`);
+                        console.log(`  Fonte: ${element.fontSize}px → ${pdfFontSize.toFixed(1)}px`);
+                        
+                        // Usar fonte padrão do PDF-lib (Helvetica é similar ao Arial)
+                        let pdfFont;
+                        try {
+                            // Mapear fontes para as disponíveis no PDF-lib
+                            const fontMap = {
+                                'Arial': 'Helvetica',
+                                'Times New Roman': 'Times-Roman',
+                                'Georgia': 'Times-Roman',
+                                'Verdana': 'Helvetica',
+                                'Helvetica': 'Helvetica',
+                                'Trebuchet MS': 'Helvetica',
+                                'Impact': 'Helvetica-Bold',
+                                'Comic Sans MS': 'Helvetica',
+                                'Courier New': 'Courier',
+                                'Brush Script MT': 'Times-Italic'
+                            };
+                            
+                            const fontName = fontMap[element.fontFamily] || 'Helvetica';
+                            
+                            // Usar fontes padrão do PDF-lib
+                            if (fontName === 'Times-Roman') {
+                                pdfFont = PDFLib.StandardFonts.TimesRoman;
+                            } else if (fontName === 'Times-Italic') {
+                                pdfFont = PDFLib.StandardFonts.TimesRomanItalic;
+                            } else if (fontName === 'Courier') {
+                                pdfFont = PDFLib.StandardFonts.Courier;
+                            } else if (fontName === 'Helvetica-Bold') {
+                                pdfFont = PDFLib.StandardFonts.HelveticaBold;
+                            } else {
+                                pdfFont = PDFLib.StandardFonts.Helvetica;
+                            }
+                        } catch (error) {
+                            pdfFont = PDFLib.StandardFonts.Helvetica; // Fallback
+                        }
+                        
+                        page.drawText(element.text, {
+                            x: pdfX,
+                            y: pdfY,
+                            size: pdfFontSize,
+                            font: pdfFont,
+                            color: PDFLib.rgb(
+                                parseInt(element.color.substr(1, 2), 16) / 255,
+                                parseInt(element.color.substr(3, 2), 16) / 255,
+                                parseInt(element.color.substr(5, 2), 16) / 255
+                            )
+                        });
+                    });
+                }
+                
+                const pdfBytes = await pdfLibDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                
+                // Gerar nome do arquivo automaticamente
+                const finalFileName = generateAutoFileName();
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = finalFileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // Incrementar contador de uso
+                await incrementInviteUsage();
+                
+                showSuccess('PDF gerado e baixado com sucesso!');
+                
+                // Limpar campo de nome após gerar PDF
+                document.getElementById('guestName').value = '';
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showSuccess('Erro ao gerar PDF. Tente fazer upload do arquivo novamente.');
+                
+                // Se der erro, resetar para permitir novo upload
+                setTimeout(() => {
+                    resetEditor();
+                }, 2000);
+            }
+        }
+
+        function shareWhatsApp() {
+            if (textElements.length === 0) {
+                alert('Adicione pelo menos um nome antes de compartilhar.');
+                return;
+            }
+
+            const whatsappUrl = `https://wa.me/`;
+            window.open(whatsappUrl, '_blank');
+            
+            showSuccess('WhatsApp aberto!');
+        }
+
+        function resetEditor() {
+            textElements = [];
+            selectedElement = null;
+            originalPDF = null;
+            pdfDoc = null;
+            currentPage = 1;
+            totalPages = 1;
+            
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('editorSection').style.display = 'none';
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('guestName').value = '';
+            document.getElementById('selectedInfo').style.display = 'none';
+        }
+
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                addTextToPDF();
+            }
+        }
+        
+        function handleEditEnterKey(event) {
+            if (event.key === 'Enter') {
+                updateSelectedName();
+            }
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 4000);
+        }
+
+        // Auto-salvar posições dos textos
+        function autoSave() {
+            if (textElements.length > 0) {
+                localStorage.setItem('inviteTexts', JSON.stringify(textElements));
+            }
+        }
+
+        // Carregar textos salvos - DESABILITADO para sempre começar limpo
+        function loadSavedTexts() {
+            // Não carregar textos salvos - sempre começar com tela limpa
+            textElements = [];
+        }
+
+        // Funções da Prévia do PDF
+        async function showPDFPreview() {
+            if (textElements.length === 0) {
+                showSuccess('Adicione pelo menos um nome antes de visualizar a prévia.');
+                return;
+            }
+
+            if (!originalPDF) {
+                showSuccess('Erro: PDF original não encontrado. Faça upload novamente.');
+                return;
+            }
+
+            try {
+                isPreviewMode = true;
+                previewCurrentPage = 1;
+                document.getElementById('pdfPreviewModal').style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Impedir scroll da página
+                
+                // Aguardar o modal estar visível
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                await renderPreviewPage();
+                updatePreviewPageControls();
+                showSuccess('Prévia carregada! Você pode ajustar as posições dos nomes clicando e arrastando.');
+                
+            } catch (error) {
+                console.error('Erro ao mostrar prévia:', error);
+                showSuccess('Erro ao carregar prévia. Tente novamente.');
+                closePDFPreview();
+            }
+        }
+
+        function closePDFPreview() {
+            document.getElementById('pdfPreviewModal').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restaurar scroll da página
+            isPreviewMode = false;
+        }
+
+        let previewPdfImageData = null;
+        let previewScale = 1;
+        
+        async function renderPreviewPage() {
+            if (!pdfDoc || !previewCtx) return;
+            
+            try {
+                const page = await pdfDoc.getPage(previewCurrentPage);
+                
+                // CORREÇÃO: Usar mesma lógica de proporção do editor principal
+                const viewport = page.getViewport({ scale: 1.0 });
+                const pdfWidth = viewport.width;
+                const pdfHeight = viewport.height;
+                const pdfRatio = pdfWidth / pdfHeight;
+                
+                // Dimensões máximas para a prévia
+                const maxWidth = 700;
+                const maxHeight = 500;
+                
+                // Calcular dimensões mantendo proporção EXATA do PDF
+                let displayWidth, displayHeight;
+                
+                if (maxWidth / pdfRatio <= maxHeight) {
+                    // Limitado pela largura
+                    displayWidth = maxWidth;
+                    displayHeight = maxWidth / pdfRatio;
+                } else {
+                    // Limitado pela altura
+                    displayHeight = maxHeight;
+                    displayWidth = maxHeight * pdfRatio;
+                }
+                
+                // Garantir que as dimensões sejam inteiras
+                displayWidth = Math.floor(displayWidth);
+                displayHeight = Math.floor(displayHeight);
+                
+                // Calcular escala baseada nas dimensões finais
+                previewScale = displayWidth / pdfWidth;
+                
+                // Configurar canvas da prévia com dimensões exatas
+                previewCanvas.width = displayWidth;
+                previewCanvas.height = displayHeight;
+                previewCanvas.style.width = displayWidth + 'px';
+                previewCanvas.style.height = displayHeight + 'px';
+                previewCanvas.style.maxWidth = 'none';
+                
+                console.log(`📐 PRÉVIA - Dimensões corrigidas:`);
+                console.log(`PDF: ${pdfWidth}x${pdfHeight} (ratio: ${pdfRatio.toFixed(3)})`);
+                console.log(`Prévia: ${displayWidth}x${displayHeight} (ratio: ${(displayWidth/displayHeight).toFixed(3)})`);
+                console.log(`Escala prévia: ${previewScale.toFixed(4)}`);
+                
+                // Renderizar PDF base e salvar
+                await renderPreviewPDFBase();
+                previewPdfImageData = previewCtx.getImageData(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                // Desenhar elementos de texto
+                redrawPreviewTextElements();
+                
+            } catch (error) {
+                console.error('Erro ao renderizar prévia:', error);
+            }
+        }
+        
+        async function renderPreviewPDFBase() {
+            if (!pdfDoc || !previewCtx) return;
+            
+            try {
+                const page = await pdfDoc.getPage(previewCurrentPage);
+                const scaledViewport = page.getViewport({ scale: previewScale });
+                
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                const renderContext = {
+                    canvasContext: previewCtx,
+                    viewport: scaledViewport
+                };
+                
+                await page.render(renderContext).promise;
+            } catch (error) {
+                console.error('Erro ao renderizar base da prévia:', error);
+            }
+        }
+        
+        function redrawPreviewTextElements() {
+            if (!previewPdfImageData) return;
+            
+            // Restaurar imagem do PDF
+            previewCtx.putImageData(previewPdfImageData, 0, 0);
+            
+            // Desenhar elementos de texto da página atual
+            const currentPageTexts = textElements.filter(el => el.page === previewCurrentPage);
+            currentPageTexts.forEach(element => {
+                // Usar a mesma escala relativa
+                const scaleRatio = previewScale / scale;
+                const previewX = element.x * scaleRatio;
+                const previewY = element.y * scaleRatio;
+                const previewFontSize = element.fontSize * scaleRatio;
+                const previewWidth = element.width * scaleRatio;
+                
+                previewCtx.font = `bold ${previewFontSize}px ${element.fontFamily || 'Arial'}`;
+                previewCtx.fillStyle = element.color;
+                previewCtx.textAlign = 'left'; // Usar alinhamento à esquerda para posicionamento preciso
+                previewCtx.fillText(element.text, previewX, previewY + previewFontSize);
+                
+                // Desenhar borda se selecionado
+                if (selectedElement && selectedElement.id === element.id) {
+                    previewCtx.strokeStyle = '#667eea';
+                    previewCtx.lineWidth = 2;
+                    previewCtx.setLineDash([5, 5]);
+                    previewCtx.strokeRect(previewX, previewY, previewWidth, previewFontSize + 10);
+                    previewCtx.setLineDash([]);
+                }
+            });
+        }
+
+        function updatePreviewPageControls() {
+            document.getElementById('previewPageInfo').textContent = `Página ${previewCurrentPage} de ${totalPages}`;
+            document.getElementById('prevPreviewBtn').disabled = previewCurrentPage <= 1;
+            document.getElementById('nextPreviewBtn').disabled = previewCurrentPage >= totalPages;
+            
+            const prevBtn = document.getElementById('prevPreviewBtn');
+            const nextBtn = document.getElementById('nextPreviewBtn');
+            
+            prevBtn.style.opacity = previewCurrentPage <= 1 ? '0.5' : '1';
+            nextBtn.style.opacity = previewCurrentPage >= totalPages ? '0.5' : '1';
+        }
+
+        function previousPreviewPage() {
+            if (previewCurrentPage > 1) {
+                previewCurrentPage--;
+                renderPreviewPage();
+                updatePreviewPageControls();
+            }
+        }
+
+        function nextPreviewPage() {
+            if (previewCurrentPage < totalPages) {
+                previewCurrentPage++;
+                renderPreviewPage();
+                updatePreviewPageControls();
+            }
+        }
+
+        // Eventos do canvas da prévia (similares ao editor principal)
+        function handlePreviewCanvasClick(e) {
+            const rect = previewCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Verificar se clicou em um elemento existente
+            const scaleRatio = previewScale / scale;
+            const currentPageTexts = textElements.filter(el => el.page === previewCurrentPage);
+            const clickedElement = currentPageTexts.find(el => {
+                const previewElementX = el.x * scaleRatio;
+                const previewElementY = el.y * scaleRatio;
+                const previewElementWidth = el.width * scaleRatio;
+                const previewElementHeight = el.height * scaleRatio;
+                
+                return x >= previewElementX && x <= previewElementX + previewElementWidth &&
+                       y >= previewElementY && y <= previewElementY + previewElementHeight;
+            });
+            
+            if (clickedElement) {
+                selectElement(clickedElement);
+                redrawPreviewTextElements(); // Redesenhar apenas os textos
+            }
+        }
+
+        function handlePreviewMouseDown(e) {
+            const rect = previewCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const scaleRatio = previewScale / scale;
+            const currentPageTexts = textElements.filter(el => el.page === previewCurrentPage);
+            
+            const clickedElement = currentPageTexts.find(el => {
+                const previewElementX = el.x * scaleRatio;
+                const previewElementY = el.y * scaleRatio;
+                const previewElementWidth = el.width * scaleRatio;
+                const previewElementHeight = el.height * scaleRatio;
+                
+                return x >= previewElementX && x <= previewElementX + previewElementWidth &&
+                       y >= previewElementY && y <= previewElementY + previewElementHeight;
+            });
+            
+            if (clickedElement) {
+                isDragging = true;
+                selectedElement = clickedElement;
+                dragOffset.x = x - (clickedElement.x * scaleRatio);
+                dragOffset.y = y - (clickedElement.y * scaleRatio);
+                previewCanvas.style.cursor = 'grabbing';
+            }
+        }
+
+        function handlePreviewMouseMove(e) {
+            if (isDragging && selectedElement && isPreviewMode) {
+                const rect = previewCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const scaleRatio = previewScale / scale;
+                
+                // Atualizar posição no elemento original (coordenadas do editor)
+                selectedElement.x = (x - dragOffset.x) / scaleRatio;
+                selectedElement.y = (y - dragOffset.y) / scaleRatio;
+                
+                // Redesenhar apenas os elementos de texto (sem piscar)
+                if (!previewDragRendering) {
+                    previewDragRendering = true;
+                    requestAnimationFrame(() => {
+                        redrawPreviewTextElements();
+                        previewDragRendering = false;
+                    });
+                }
+            }
+        }
+
+        function handlePreviewMouseUp() {
+            if (isDragging && isPreviewMode) {
+                isDragging = false;
+                previewCanvas.style.cursor = 'crosshair';
+                autoSave();
+                
+                // Também atualizar o editor principal se estiver na mesma página
+                if (currentPage === previewCurrentPage) {
+                    redrawTextElements();
+                }
+            }
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c77af1c29777e0',t:'MTc1NDc0NDg4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96d78a3cd79977d9',t:'MTc1NDkxMzI4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
