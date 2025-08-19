@@ -3,1949 +3,1126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Convites PDF</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <title>Confirmação de Presença</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 10px;
-            margin: 0;
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .container {
-            max-width: 100%;
-            width: 100%;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .content {
-            padding: 20px 15px;
-        }
-
-        .upload-area {
-            border: 3px dashed #667eea;
-            border-radius: 15px;
-            padding: 40px 20px;
-            text-align: center;
-            background: #f8f9ff;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .upload-area:hover {
-            border-color: #764ba2;
-            background: #f0f2ff;
-        }
-
-        .upload-area.dragover {
-            border-color: #56ab2f;
-            background: #f0fff0;
-        }
-
-        .upload-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: #667eea;
-        }
-
-        .upload-text {
-            font-size: 16px;
-            color: #667eea;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .upload-hint {
-            font-size: 14px;
-            color: #888;
-        }
-
-        .editor-section {
-            display: none;
-        }
-
-        .pdf-preview {
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            margin: 20px 0;
-            position: relative;
-            overflow: hidden;
-            background: white;
-        }
-
-        .pdf-canvas {
-            width: 100%;
-            height: auto;
-            display: block;
-            cursor: crosshair;
-        }
-
-        .text-overlay {
-            position: absolute;
-            background: rgba(255, 255, 0, 0.3);
-            border: 2px dashed #ff6b6b;
-            padding: 8px;
-            cursor: move;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            color: #333;
-            min-width: 120px;
-            min-height: 44px;
-            text-align: center;
-            border-radius: 6px;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .text-overlay:hover {
-            background: rgba(255, 255, 0, 0.5);
-        }
-
-        .text-overlay.selected {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.3);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        input[type="text"], input[type="file"] {
-            width: 100%;
-            padding: 18px;
-            border: 2px solid #e1e5e9;
-            border-radius: 12px;
-            font-size: 18px;
-            transition: border-color 0.3s;
-            min-height: 50px;
-            box-sizing: border-box;
-            -webkit-appearance: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 18px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 12px;
-            min-height: 50px;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-            color: white;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(86, 171, 47, 0.3);
-        }
-
-        .btn-whatsapp {
-            background: #25D366;
-            color: white;
-        }
-
-        .btn-whatsapp:hover {
-            background: #128C7E;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #545b62;
-            transform: translateY(-2px);
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            border: 1px solid #c3e6cb;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .controls button {
-            flex: 1;
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        .font-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .font-controls input, .font-controls select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 5px;
-            }
-            
-            .container {
-                margin: 0;
-                border-radius: 0;
-                min-height: 100vh;
-            }
-            
-            .content {
-                padding: 15px 12px;
-            }
-            
-            .header {
-                padding: 25px 15px;
-            }
-            
-            .header h1 {
-                font-size: 22px;
-            }
-            
-            .upload-area {
-                padding: 30px 15px;
-            }
-            
-            .btn {
-                font-size: 16px;
-                padding: 16px;
-                min-height: 48px;
-            }
-            
-            input[type="text"] {
-                font-size: 16px;
-                padding: 16px;
-                min-height: 48px;
-            }
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: #5aa189; }
+        .card-shadow { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .btn-primary { background: #5aa189; }
+        .btn-primary:hover { background: #4a8f77; }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .message-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .tab-button.active { color: #5aa189; border-color: #5aa189; }
+        .tab-button:not(.active) { color: #6b7280; border-color: transparent; }
+        .tab-content.hidden { display: none; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📄 Editor de Convites</h1>
-            <p>Personalize seus convites em 3 passos simples</p>
+<body class="min-h-screen gradient-bg">
+    <!-- Header com botão de login -->
+    <header class="w-full p-4 flex justify-between items-center">
+        <div class="text-white font-semibold text-xl">
+            <span id="event-title">Confirmação de Presença</span>
         </div>
-        
-        <div class="content">
-            <div id="successMessage" class="success" style="display: none;"></div>
-            
-            <!-- Tela de Login -->
-            <div id="loginSection" class="login-section">
-                <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 30px; border-radius: 20px; margin-bottom: 25px; border: 2px solid #667eea; text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">🔐</div>
-                    <h2 style="color: #667eea; margin: 0 0 15px 0; font-size: 24px;">Acesso Restrito</h2>
-                    <p style="color: #666; margin-bottom: 25px; font-size: 16px;">Digite seu token de acesso para usar o editor de convites</p>
-                    
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <input type="text" id="tokenInput" placeholder="Digite seu token de acesso..." style="width: 100%; padding: 18px; border: 2px solid #667eea; border-radius: 12px; font-size: 18px; text-align: center; font-weight: bold; letter-spacing: 2px;">
+        <button id="login-btn" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-all duration-300 backdrop-filter backdrop-blur-sm">
+            Login Administrador
+        </button>
+    </header>
+
+    <!-- Container principal -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Loading -->
+        <div id="loading" class="flex justify-center items-center min-h-96">
+            <div class="loading w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
+        </div>
+
+        <!-- Página de confirmação para convidados -->
+        <div id="guest-page" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto">
+                <!-- Informações do evento -->
+                <div class="bg-white rounded-2xl card-shadow p-8 mb-8 text-center">
+                    <div class="mb-6">
+                        <h1 id="couple-names" class="text-4xl font-bold text-gray-800 mb-2"></h1>
+                        <p id="event-type" class="text-xl text-gray-600 mb-4"></p>
+                        <p id="event-date" class="text-lg text-gray-500"></p>
                     </div>
                     
-                    <button class="btn btn-primary" onclick="validateToken()" style="width: 100%; margin-bottom: 15px;">
-                        🚀 Entrar no Editor
-                    </button>
-                    
-                    <div id="loginError" style="display: none; background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-top: 15px; border: 1px solid #f5c6cb;">
-                        ❌ Token inválido ou expirado
-                    </div>
-                    
-                    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #ddd;">
-                        <p style="color: #888; font-size: 14px; margin: 0;">
-                            💡 <strong>Não tem um token?</strong><br>
-                            Entre em contato conosco para obter acesso
-                        </p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Contador de Limites -->
-            <div id="limitsDisplay" style="background: linear-gradient(135deg, #fff3e0 0%, #e8f5e8 100%); padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #ff9800; display: none; text-align: center;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <div style="color: #ff9800; font-weight: bold; font-size: 16px;">
-                        📊 Seus Limites de Convites
-                    </div>
-                    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                        <div style="background: white; padding: 8px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                            <span style="color: #28a745; font-weight: bold; font-size: 18px;" id="remainingCount">0</span>
-                            <span style="color: #666; font-size: 14px;"> restantes</span>
+                    <!-- Cronômetro regressivo -->
+                    <div class="mb-6">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">⏰ Faltam apenas:</h3>
                         </div>
-                        <div style="background: white; padding: 8px 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                            <span style="color: #666; font-size: 14px;">Usados: </span>
-                            <span style="color: #dc3545; font-weight: bold;" id="usedCount">0</span>
-                            <span style="color: #666; font-size: 14px;"> de </span>
-                            <span style="color: #667eea; font-weight: bold;" id="maxCount">0</span>
+                        <div id="countdown" class="grid grid-cols-4 gap-4 max-w-lg mx-auto">
+                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-100">
+                                <div id="days" class="text-3xl font-bold mb-1 text-gray-800">0</div>
+                                <div class="text-sm uppercase tracking-wide text-gray-600">Dias</div>
+                            </div>
+                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-100">
+                                <div id="hours" class="text-3xl font-bold mb-1 text-gray-800">0</div>
+                                <div class="text-sm uppercase tracking-wide text-gray-600">Horas</div>
+                            </div>
+                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-100">
+                                <div id="minutes" class="text-3xl font-bold mb-1 text-gray-800">0</div>
+                                <div class="text-sm uppercase tracking-wide text-gray-600">Min</div>
+                            </div>
+                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 animate-pulse border-2 border-gray-100">
+                                <div id="seconds" class="text-3xl font-bold mb-1 text-gray-800">0</div>
+                                <div class="text-sm uppercase tracking-wide text-gray-600">Seg</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div id="limitWarning" style="margin-top: 10px; padding: 8px; background: #f8d7da; color: #721c24; border-radius: 8px; display: none; font-size: 14px;">
-                    ⚠️ <strong>Limite quase esgotado!</strong> Entre em contato para renovar seu plano.
-                </div>
-            </div>
 
-            <!-- Guia de Passos -->
-            <div id="stepsGuide" style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 2px solid #667eea; display: none;">
-                <h3 style="color: #667eea; margin: 0 0 15px 0; text-align: center; font-size: 18px;">🎯 Como usar (muito fácil!):</h3>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                        <div style="background: #667eea; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">1</div>
-                        <span style="color: #333; font-weight: 500;">📁 Clique abaixo para escolher seu arquivo PDF</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 10px;">
-                        <div style="background: #ccc; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">2</div>
-                        <span style="color: #666;">✏️ Digite os nomes dos convidados</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 10px;">
-                        <div style="background: #ccc; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">3</div>
-                        <span style="color: #666;">📥 Baixe seus convites personalizados</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Área de Upload -->
-            <div class="upload-section" id="uploadSection" style="display: none;">
-                <div class="upload-area" onclick="document.getElementById('pdfFile').click()">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-text">PASSO 1: Clique aqui para escolher seu PDF</div>
-                    <div class="upload-hint">Ou arraste o arquivo aqui</div>
-                </div>
-                <input type="file" id="pdfFile" accept=".pdf" />
-            </div>
-
-            <!-- Editor -->
-            <div class="editor-section" id="editorSection">
-                <!-- Passo 2 Ativo -->
-                <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f8ff 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #28a745;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                        <div style="background: #28a745; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">2</div>
-                        <h3 style="color: #28a745; margin: 0; font-size: 18px;">✏️ PASSO 2: Adicione os nomes</h3>
-                    </div>
+                <!-- Formulário de confirmação -->
+                <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Confirme sua Presença</h2>
                     
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <input type="text" id="guestName" placeholder="Digite o nome do convidado e pressione Enter..." onkeypress="handleEnterKey(event)" style="width: 100%; padding: 15px; border: 2px solid #28a745; border-radius: 10px; font-size: 16px; font-weight: 500;">
-                    </div>
-
-                    <div class="controls">
-                        <button class="btn btn-success" onclick="addTextToPDF()" style="background: #28a745; flex: 2;">➕ Adicionar Nome</button>
-                        <button class="btn btn-secondary" onclick="clearAllText()" style="flex: 1;">🗑️ Limpar</button>
-                    </div>
-                </div>
-
-                <!-- Dicas Simples -->
-                <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 15px 0; border-left: 4px solid #ffc107;">
-                    <div style="color: #856404; font-size: 14px; line-height: 1.5;">
-                        <strong>💡 Muito simples:</strong><br>
-                        • Digite um nome e pressione <strong>Enter</strong><br>
-                        • Arraste os nomes para cima/baixo no convite<br>
-                        • Clique em um nome para <strong>editar, mudar cor/tamanho</strong><br>
-                        • Use <strong>Enter</strong> para salvar alterações
-                    </div>
-                </div>
-
-                <!-- Controles de Formatação (mais visíveis) -->
-                <div id="formatControls" style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; border: 2px dashed #dee2e6; display: none;">
-                    <div style="color: #495057; font-weight: bold; margin-bottom: 10px; text-align: center;">🎨 Personalizar texto selecionado:</div>
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                    <form id="rsvp-form" class="space-y-6">
                         <div>
-                            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #666;">🔤 Fonte:</label>
-                            <select id="fontFamily" onchange="updateSelectedElement()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; margin-bottom: 15px;">
-                                <option value="Arial" selected>Arial (Clássica)</option>
-                                <option value="Times New Roman">Times New Roman (Elegante)</option>
-                                <option value="Georgia">Georgia (Sofisticada)</option>
-                                <option value="Verdana">Verdana (Moderna)</option>
-                                <option value="Helvetica">Helvetica (Limpa)</option>
-                                <option value="Trebuchet MS">Trebuchet MS (Amigável)</option>
-                                <option value="Impact">Impact (Forte)</option>
-                                <option value="Comic Sans MS">Comic Sans MS (Divertida)</option>
-                                <option value="Courier New">Courier New (Máquina)</option>
-                                <option value="Brush Script MT">Brush Script MT (Manuscrita)</option>
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Seu Nome</label>
+                            <input type="text" id="guest-name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Digite seu nome completo" style="--tw-ring-color: #5aa189;">
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div>
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #666;">📏 Tamanho:</label>
-                                <select id="fontSize" onchange="updateSelectedElement()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
-                                    <option value="12">Pequeno</option>
-                                    <option value="16" selected>Normal</option>
-                                    <option value="20">Grande</option>
-                                    <option value="24">Muito Grande</option>
-                                    <option value="28">Gigante</option>
-                                    <option value="32">Extra Grande</option>
-                                    <option value="36">Gigante</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #666;">🎨 Cor:</label>
-                                <div style="display: flex; gap: 5px; align-items: center;">
-                                    <input type="color" id="textColor" value="#000000" onchange="updateSelectedElement()" style="width: 40px; height: 35px; border: none; border-radius: 5px; cursor: pointer;">
-                                    <span id="colorLabel" style="font-size: 12px; color: #666;">Preto</span>
-                                </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-4">Você irá ao evento?</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button type="button" id="confirm-yes" class="p-4 border-2 border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all duration-300 text-center">
+                                    <div class="text-2xl mb-2">✅</div>
+                                    <div class="font-medium">Sim, estarei lá!</div>
+                                </button>
+                                <button type="button" id="confirm-no" class="p-4 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
+                                    <div class="text-2xl mb-2">❌</div>
+                                    <div class="font-medium">Não poderei ir</div>
+                                </button>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="page-controls" style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-                    <button onclick="previousPage()" id="prevBtn" class="btn-page" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">← Anterior</button>
-                    <span id="pageInfo" style="font-weight: bold; color: #333;">Página 1 de 1</span>
-                    <button onclick="nextPage()" id="nextBtn" class="btn-page" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Próxima →</button>
-                </div>
-
-                <div id="selectedInfo" style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 14px; display: none; border: 2px solid #667eea;">
-                    <div style="margin-bottom: 10px;">
-                        <strong style="color: #667eea;">✏️ Editando:</strong> <span id="selectedText" style="font-weight: bold;"></span>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <input type="text" id="editNameInput" placeholder="Digite o novo nome..." onkeypress="handleEditEnterKey(event)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 8px;">
-                    </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button onclick="updateSelectedName()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">✅ Salvar Nome</button>
-                        <button onclick="deleteSelected()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">🗑️ Excluir</button>
-                        <button onclick="deselectElement()" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">❌ Cancelar</button>
-                    </div>
-                </div>
-
-                <div class="pdf-preview" id="pdfPreview">
-                    <div id="loadingIndicator" style="display: none; text-align: center; padding: 50px; color: #667eea;">
-                        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
-                        <div>Carregando PDF...</div>
-                    </div>
-                    <canvas id="pdfCanvas" class="pdf-canvas"></canvas>
-                </div>
-
-
-
-                <!-- Passo 3 -->
-                <div style="background: linear-gradient(135deg, #fff3e0 0%, #e8f5e8 100%); padding: 20px; border-radius: 15px; margin: 20px 0; border: 2px solid #ff9800;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                        <div style="background: #ff9800; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">3</div>
-                        <h3 style="color: #ff9800; margin: 0; font-size: 18px;">📥 PASSO 3: Baixar convites</h3>
-                    </div>
-                    
-                    <button class="btn btn-success" onclick="showPDFPreview()" style="background: #28a745; margin-bottom: 10px;">👁️ Ver Prévia e Baixar PDF</button>
-                    <button class="btn btn-whatsapp" onclick="shareWhatsApp()" style="margin-bottom: 10px;">📱 Compartilhar no WhatsApp</button>
-                    <button class="btn btn-secondary" onclick="resetEditor()">🔄 Fazer Outro Convite</button>
-                    <button class="btn" onclick="logout()" style="background: #dc3545; color: white; margin-top: 10px;">🚪 Sair do Sistema</button>
-                </div>
-                
-                <!-- Modal de Prévia do PDF -->
-                <div id="pdfPreviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
-                    <div style="background: white; margin: 20px auto; max-width: 90%; max-height: 90%; border-radius: 15px; position: relative; padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px;">
-                            <h2 style="color: #667eea; margin: 0;">📄 Prévia do PDF Final</h2>
-                            <button onclick="closePDFPreview()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 16px;">✕ Fechar</button>
-                        </div>
-                        
-                        <div style="text-align: center; margin-bottom: 20px;">
-                            <p style="color: #666; margin-bottom: 15px;">Esta é a prévia de como seu PDF ficará. Você ainda pode ajustar as posições dos nomes!</p>
-                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                                <button onclick="previousPreviewPage()" id="prevPreviewBtn" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">← Anterior</button>
-                                <span id="previewPageInfo" style="padding: 8px 15px; background: #f8f9fa; border-radius: 5px; font-weight: bold;">Página 1 de 1</span>
-                                <button onclick="nextPreviewPage()" id="nextPreviewBtn" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Próxima →</button>
+                        <div id="companion-section" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-4">Você levará acompanhante?</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button type="button" id="companion-yes" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
+                                    <div class="font-medium">Sim, com acompanhante</div>
+                                </button>
+                                <button type="button" id="companion-no" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
+                                    <div class="font-medium">Sem acompanhante</div>
+                                </button>
                             </div>
                         </div>
-                        
-                        <div id="previewContainer" style="border: 2px solid #ddd; border-radius: 10px; margin: 20px 0; background: white; text-align: center; min-height: 400px; position: relative;">
-                            <canvas id="previewCanvas" style="max-width: 100%; height: auto; cursor: crosshair;"></canvas>
+
+                        <div id="companion-name-section" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Acompanhante</label>
+                            <input type="text" id="companion-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Nome do seu acompanhante" style="--tw-ring-color: #5aa189;">
                         </div>
-                        
-                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                            <button onclick="generateFinalPDF()" style="background: #28a745; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold;">📥 Baixar PDF</button>
-                            <button onclick="closePDFPreview()" style="background: #6c757d; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer;">↩️ Voltar ao Editor</button>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem para os Noivos (Opcional)</label>
+                            <textarea id="guest-message" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Deixe uma mensagem carinhosa..." style="--tw-ring-color: #5aa189;"></textarea>
+                        </div>
+
+                        <button type="submit" id="submit-btn" class="w-full btn-primary text-white py-4 rounded-lg font-semibold text-lg hover:shadow-lg transition-all duration-300">
+                            Confirmar Presença
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Mensagens dos convidados -->
+                <div class="bg-white rounded-2xl card-shadow p-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">Mensagens dos Convidados</h3>
+                    <div id="messages-container" class="space-y-4 max-h-96 overflow-y-auto">
+                        <!-- Mensagens serão carregadas aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página de administração -->
+        <div id="admin-page" class="hidden fade-in">
+            <div class="max-w-6xl mx-auto">
+                <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-3xl font-bold text-gray-800">Painel do Evento</h1>
+                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-300">
+                            Sair
+                        </button>
+                    </div>
+
+                    <!-- Abas de navegação -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-8">
+                            <button id="guests-tab" class="tab-button active py-2 px-1 border-b-2 font-medium text-sm" style="border-color: #5aa189; color: #5aa189;">
+                                👥 Lista de Convidados
+                            </button>
+                            <button id="messages-tab" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                💬 Mensagens
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Conteúdo da aba de convidados -->
+                    <div id="guests-content" class="tab-content">
+                        <!-- Estatísticas -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white p-6 rounded-lg text-center border-2 border-gray-100 shadow-sm">
+                                <div id="confirmed-count" class="text-3xl font-bold" style="color: #5aa189;">0</div>
+                                <div class="text-gray-700">Confirmados</div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg text-center border-2 border-gray-100 shadow-sm">
+                                <div id="declined-count" class="text-3xl font-bold text-gray-600">0</div>
+                                <div class="text-gray-700">Não Confirmados</div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg text-center border-2 border-gray-100 shadow-sm">
+                                <div id="total-count" class="text-3xl font-bold text-gray-800">0</div>
+                                <div class="text-gray-700">Total de Respostas</div>
+                            </div>
+                        </div>
+
+                        <!-- Botão de download PDF -->
+                        <div class="flex justify-end mb-4">
+                            <button id="download-pdf" class="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg" style="background-color: #5aa189;" onmouseover="this.style.backgroundColor='#4a8f77'" onmouseout="this.style.backgroundColor='#5aa189'">
+                                📄 Baixar Lista em PDF
+                            </button>
+                        </div>
+
+                        <!-- Lista de convidados -->
+                        <div class="mb-8">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Lista de Convidados</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full bg-white rounded-lg overflow-hidden shadow-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acompanhante</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="guests-table" class="bg-white divide-y divide-gray-200">
+                                        <!-- Convidados serão carregados aqui -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conteúdo da aba de mensagens -->
+                    <div id="messages-content" class="tab-content hidden">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">💬 Mensagens dos Convidados</h2>
+                            <p class="text-gray-600">Todas as mensagens carinhosas deixadas pelos seus convidados</p>
+                        </div>
+                        <div id="admin-messages-container" class="space-y-4 max-h-96 overflow-y-auto">
+                            <!-- Mensagens serão carregadas aqui -->
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal de Login -->
+        <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Login Administrador</h2>
+                <form id="login-form">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Token de Acesso</label>
+                        <input type="password" id="admin-token" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Digite o token do evento" style="--tw-ring-color: #5aa189;">
+                    </div>
+                    <div class="flex gap-4">
+                        <button type="button" id="cancel-login" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="flex-1 btn-primary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
+                            Entrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Sucesso -->
+        <div id="success-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
+                <div class="text-6xl mb-4">🎉</div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Presença Confirmada!</h2>
+                <p class="text-gray-600 mb-6">Obrigado por confirmar sua presença. Estamos ansiosos para te ver no evento!</p>
+                <button id="close-success" class="btn-primary text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
+                    Fechar
+                </button>
             </div>
         </div>
     </div>
 
     <script>
         // Configuração do Supabase
-        const SUPABASE_URL = 'https://hmbyjclwuozkcclhhlak.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtYnlqY2x3dW96a2NjbGhobGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4OTgzMjgsImV4cCI6MjA3MDQ3NDMyOH0.nWa9dazt2cPAwbTHROIiyXWookV2L7Hi7p3GS5pq_Ko';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+        const SUPABASE_URL = 'https://bjyvawcwgzghtpzwkwag.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqeXZhd2N3Z3pnaHRwendrd2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MjQ4ODcsImV4cCI6MjA3MTIwMDg4N30.dMnWptSZqPcw2tC6sTmFxLH4_1X1LZkPCSVQBFOCA6Q';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // Variáveis globais
-        let currentUser = null;
-        let userLimits = {
-            maxInvites: 0,
-            usedInvites: 0,
-            remainingInvites: 0
+        let currentEvent = null;
+        let isAdmin = false;
+        let countdownInterval = null;
+
+        // Elementos DOM
+        const elements = {
+            loading: document.getElementById('loading'),
+            guestPage: document.getElementById('guest-page'),
+            adminPage: document.getElementById('admin-page'),
+            loginModal: document.getElementById('login-modal'),
+            successModal: document.getElementById('success-modal'),
+            loginBtn: document.getElementById('login-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            rsvpForm: document.getElementById('rsvp-form'),
+            loginForm: document.getElementById('login-form'),
+            confirmYes: document.getElementById('confirm-yes'),
+            confirmNo: document.getElementById('confirm-no'),
+            companionYes: document.getElementById('companion-yes'),
+            companionNo: document.getElementById('companion-no'),
+            companionSection: document.getElementById('companion-section'),
+            companionNameSection: document.getElementById('companion-name-section')
         };
-        let originalPDF = null;
-        let pdfDoc = null;
-        let canvas = null;
-        let ctx = null;
-        let textElements = [];
-        let selectedElement = null;
-        let isDragging = false;
-        let dragOffset = { x: 0, y: 0 };
-        let scale = 1;
-        let currentPage = 1;
-        let totalPages = 1;
-        let previewCanvas = null;
-        let previewCtx = null;
-        let previewCurrentPage = 1;
-        let isPreviewMode = false;
 
-        // Configurar PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-        document.addEventListener('DOMContentLoaded', function() {
-            canvas = document.getElementById('pdfCanvas');
-            ctx = canvas.getContext('2d', { willReadFrequently: true });
-            previewCanvas = document.getElementById('previewCanvas');
-            previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', async () => {
+            const slug = getSlugFromURL();
+            if (slug) {
+                await loadEvent(slug);
+            } else {
+                showError('Evento não encontrado');
+            }
             setupEventListeners();
-            
-            // Verificar se já está logado
-            checkExistingLogin();
         });
 
-        // Verificar login existente
-        async function checkExistingLogin() {
-            const savedToken = localStorage.getItem('inviteEditorToken');
-            const savedExpiry = localStorage.getItem('inviteEditorTokenExpiry');
+        // Extrair slug da URL
+        function getSlugFromURL() {
+            const path = window.location.pathname;
+            return path.substring(1) || null;
+        }
+
+        // Carregar dados do evento
+        async function loadEvent(slug) {
+            try {
+                let event = null;
+                
+                if (slug && slug !== '') {
+                    // Tentar buscar por slug específico
+                    const { data, error } = await supabase
+                        .from('events')
+                        .select('*')
+                        .eq('slug', slug)
+                        .single();
+                    
+                    if (error || !data) {
+                        console.error('Evento não encontrado para slug:', slug, error);
+                        showError('Evento não encontrado');
+                        return;
+                    }
+                    
+                    event = data;
+                } else {
+                    // Se não há slug, mostrar erro
+                    showError('URL do evento não especificada');
+                    return;
+                }
+
+                currentEvent = event;
+                
+                // Aplicar configurações padrão se não existirem
+                if (!event.allow_companions) event.allow_companions = true;
+                if (!event.max_companions) event.max_companions = 1;
+                if (!event.companion_mode) event.companion_mode = 'yes_no'; // 'yes_no', 'quantity', 'disabled'
+                if (!event.require_companion_names) event.require_companion_names = true;
+                
+                displayEventInfo(event);
+                setupCompanionForm(event);
+                startCountdown(event.event_date);
+                await loadMessages();
+                
+                elements.loading.classList.add('hidden');
+                elements.guestPage.classList.remove('hidden');
+            } catch (error) {
+                console.error('Erro ao carregar evento:', error);
+                showError('Erro ao carregar o evento');
+            }
+        }
+
+        // Exibir informações do evento
+        function displayEventInfo(event) {
+            document.getElementById('couple-names').textContent = event.couple_names;
+            document.getElementById('event-type').textContent = event.event_type;
+            document.getElementById('event-date').textContent = formatDate(event.event_date);
+            document.getElementById('event-title').textContent = `${event.couple_names} - ${event.event_type}`;
+        }
+
+        // Formatar data
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Contador regressivo
+        function startCountdown(eventDate) {
+            const targetDate = new Date(eventDate).getTime();
             
-            if (savedToken && savedExpiry) {
+            countdownInterval = setInterval(() => {
                 const now = new Date().getTime();
-                if (now < parseInt(savedExpiry)) {
-                    // Token ainda válido - buscar dados completos
-                    try {
-                        const { data, error } = await supabaseClient
-                            .from('access_tokens')
-                            .select('*')
-                            .eq('token', savedToken)
-                            .eq('is_active', true)
-                            .single();
-                        
-                        if (data && !error) {
-                            currentUser = data;
-                            await loadUserLimits();
-                            showMainApp();
-                            return;
+                const distance = targetDate - now;
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('countdown').innerHTML = '<div class="col-span-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-6 text-center shadow-lg"><div class="text-3xl mb-2">🎉</div><div class="text-2xl font-bold">O evento já começou!</div></div>';
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = days;
+                document.getElementById('hours').textContent = hours;
+                document.getElementById('minutes').textContent = minutes;
+                document.getElementById('seconds').textContent = seconds;
+            }, 1000);
+        }
+
+        // Configurar formulário de acompanhantes baseado nas configurações do evento
+        function setupCompanionForm(event) {
+            const companionSection = elements.companionSection;
+            const companionNameSection = elements.companionNameSection;
+            
+            // Se acompanhantes não são permitidos, esconder seção
+            if (!event.allow_companions || event.companion_mode === 'disabled') {
+                companionSection.style.display = 'none';
+                return;
+            }
+            
+            // Configurar baseado no modo
+            if (event.companion_mode === 'quantity') {
+                // Modo quantidade - mostrar seletor numérico
+                setupQuantityMode(event.max_companions);
+            } else {
+                // Modo sim/não padrão
+                setupYesNoMode();
+            }
+            
+            // Configurar se nomes são obrigatórios
+            if (!event.require_companion_names) {
+                const companionNameInput = document.getElementById('companion-name');
+                if (companionNameInput) {
+                    companionNameInput.removeAttribute('required');
+                    companionNameInput.placeholder = 'Nome do acompanhante (opcional)';
+                }
+            }
+        }
+        
+        // Configurar modo sim/não para acompanhantes
+        function setupYesNoMode() {
+            const companionSection = elements.companionSection;
+            companionSection.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 mb-4">Você levará acompanhante?</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" id="companion-yes" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
+                        <div class="font-medium">Sim, com acompanhante</div>
+                    </button>
+                    <button type="button" id="companion-no" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
+                        <div class="font-medium">Sem acompanhante</div>
+                    </button>
+                </div>
+            `;
+            
+            // Reconfigurar elementos
+            elements.companionYes = document.getElementById('companion-yes');
+            elements.companionNo = document.getElementById('companion-no');
+            
+            // Reconfigurar listeners
+            elements.companionYes.addEventListener('click', () => selectCompanion(true));
+            elements.companionNo.addEventListener('click', () => selectCompanion(false));
+        }
+        
+        // Configurar modo quantidade para acompanhantes
+        function setupQuantityMode(maxCompanions) {
+            const companionSection = elements.companionSection;
+            let optionsHTML = '';
+            
+            for (let i = 0; i <= maxCompanions; i++) {
+                const label = i === 0 ? 'Sem acompanhante' : 
+                             i === 1 ? '1 acompanhante' : 
+                             `${i} acompanhantes`;
+                optionsHTML += `
+                    <button type="button" data-quantity="${i}" class="companion-quantity-btn p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
+                        <div class="font-medium">${label}</div>
+                    </button>
+                `;
+            }
+            
+            companionSection.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700 mb-4">Quantos acompanhantes você levará?</label>
+                <div class="grid grid-cols-${Math.min(maxCompanions + 1, 4)} gap-2">
+                    ${optionsHTML}
+                </div>
+            `;
+            
+            // Configurar listeners para botões de quantidade
+            document.querySelectorAll('.companion-quantity-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const quantity = parseInt(btn.dataset.quantity);
+                    selectCompanionQuantity(quantity);
+                });
+            });
+        }
+        
+        // Selecionar quantidade de acompanhantes
+        function selectCompanionQuantity(quantity) {
+            // Resetar todos os botões
+            document.querySelectorAll('.companion-quantity-btn').forEach(btn => {
+                btn.classList.remove('border-green-500', 'bg-green-50');
+                btn.style.borderColor = '#d1d5db';
+                btn.style.backgroundColor = 'transparent';
+            });
+            
+            // Ativar botão selecionado
+            const selectedBtn = document.querySelector(`[data-quantity="${quantity}"]`);
+            if (selectedBtn) {
+                selectedBtn.style.borderColor = '#5aa189';
+                selectedBtn.style.backgroundColor = '#f0f9ff';
+            }
+            
+            // Configurar campos de nomes baseado na quantidade
+            setupCompanionNameFields(quantity);
+            
+            // Salvar seleção
+            elements.companionSection.dataset.selectedQuantity = quantity;
+        }
+        
+        // Configurar campos de nomes dos acompanhantes
+        function setupCompanionNameFields(quantity) {
+            const companionNameSection = elements.companionNameSection;
+            
+            if (quantity === 0) {
+                companionNameSection.classList.add('hidden');
+                return;
+            }
+            
+            companionNameSection.classList.remove('hidden');
+            
+            if (quantity === 1) {
+                // Um acompanhante - campo simples
+                companionNameSection.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Acompanhante</label>
+                    <input type="text" id="companion-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Nome do seu acompanhante" style="--tw-ring-color: #5aa189;">
+                `;
+            } else {
+                // Múltiplos acompanhantes - campos múltiplos
+                let fieldsHTML = `<label class="block text-sm font-medium text-gray-700 mb-2">Nomes dos Acompanhantes</label>`;
+                
+                for (let i = 1; i <= quantity; i++) {
+                    fieldsHTML += `
+                        <input type="text" id="companion-name-${i}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 mb-3" placeholder="Nome do ${i}º acompanhante" style="--tw-ring-color: #5aa189;">
+                    `;
+                }
+                
+                companionNameSection.innerHTML = fieldsHTML;
+            }
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Botões de confirmação
+            elements.confirmYes.addEventListener('click', () => selectConfirmation(true));
+            elements.confirmNo.addEventListener('click', () => selectConfirmation(false));
+
+            // Botões de acompanhante
+            elements.companionYes.addEventListener('click', () => selectCompanion(true));
+            elements.companionNo.addEventListener('click', () => selectCompanion(false));
+
+            // Formulários
+            elements.rsvpForm.addEventListener('submit', handleRSVPSubmit);
+            elements.loginForm.addEventListener('submit', handleLogin);
+
+            // Botões de modal
+            elements.loginBtn.addEventListener('click', () => elements.loginModal.classList.remove('hidden'));
+            elements.logoutBtn.addEventListener('click', logout);
+            document.getElementById('cancel-login').addEventListener('click', () => elements.loginModal.classList.add('hidden'));
+            document.getElementById('close-success').addEventListener('click', () => elements.successModal.classList.add('hidden'));
+
+            // Abas do painel admin
+            document.getElementById('guests-tab').addEventListener('click', () => switchTab('guests'));
+            document.getElementById('messages-tab').addEventListener('click', () => switchTab('messages'));
+
+            // Download PDF
+            document.getElementById('download-pdf').addEventListener('click', generatePDF);
+        }
+
+        // Selecionar confirmação
+        function selectConfirmation(confirmed) {
+            elements.confirmYes.classList.remove('border-green-500', 'bg-green-50');
+            elements.confirmNo.classList.remove('border-red-500', 'bg-red-50');
+
+            if (confirmed) {
+                elements.confirmYes.style.borderColor = '#5aa189';
+                elements.confirmYes.style.backgroundColor = '#f0f9ff';
+                elements.companionSection.classList.remove('hidden');
+            } else {
+                elements.confirmNo.style.borderColor = '#6b7280';
+                elements.confirmNo.style.backgroundColor = '#f9fafb';
+                elements.companionSection.classList.add('hidden');
+                elements.companionNameSection.classList.add('hidden');
+            }
+
+            elements.confirmYes.dataset.selected = confirmed;
+            elements.confirmNo.dataset.selected = !confirmed;
+        }
+
+        // Selecionar acompanhante
+        function selectCompanion(hasCompanion) {
+            elements.companionYes.classList.remove('border-purple-500', 'bg-purple-50');
+            elements.companionNo.classList.remove('border-purple-500', 'bg-purple-50');
+
+            if (hasCompanion) {
+                elements.companionYes.classList.add('border-purple-500', 'bg-purple-50');
+                elements.companionNameSection.classList.remove('hidden');
+            } else {
+                elements.companionNo.classList.add('border-purple-500', 'bg-purple-50');
+                elements.companionNameSection.classList.add('hidden');
+            }
+
+            elements.companionYes.dataset.selected = hasCompanion;
+            elements.companionNo.dataset.selected = !hasCompanion;
+        }
+
+        // Submeter confirmação de presença
+        async function handleRSVPSubmit(e) {
+            e.preventDefault();
+
+            const guestName = document.getElementById('guest-name').value;
+            const confirmed = elements.confirmYes.dataset.selected === 'true';
+            const message = document.getElementById('guest-message').value;
+
+            if (!guestName) {
+                alert('Por favor, digite seu nome');
+                return;
+            }
+
+            if (elements.confirmYes.dataset.selected === undefined && elements.confirmNo.dataset.selected === undefined) {
+                alert('Por favor, confirme se você irá ao evento');
+                return;
+            }
+
+            // Coletar dados de acompanhantes baseado no modo configurado
+            let companionData = getCompanionData();
+
+            try {
+                // Salvar RSVP no Supabase
+                const { data: rsvpData, error: rsvpError } = await supabase
+                    .from('rsvps')
+                    .upsert({
+                        event_id: currentEvent.id,
+                        guest_name: guestName,
+                        confirmed: confirmed,
+                        has_companion: companionData.hasCompanion,
+                        companion_count: companionData.count,
+                        companion_name: companionData.names.length === 1 ? companionData.names[0] : null,
+                        companion_names: companionData.names.length > 1 ? JSON.stringify(companionData.names) : null
+                    }, {
+                        onConflict: 'event_id,guest_name'
+                    });
+
+                if (rsvpError) {
+                    console.error('Erro ao salvar RSVP:', rsvpError);
+                    alert('Erro ao salvar confirmação. Tente novamente.');
+                    return;
+                }
+
+                // Salvar mensagem se fornecida
+                if (message && message.trim()) {
+                    const { error: messageError } = await supabase
+                        .from('messages')
+                        .insert({
+                            event_id: currentEvent.id,
+                            guest_name: guestName,
+                            message: message.trim()
+                        });
+
+                    if (messageError) {
+                        console.error('Erro ao salvar mensagem:', messageError);
+                    }
+                }
+
+                await loadMessages(); // Recarregar mensagens
+                elements.successModal.classList.remove('hidden');
+                elements.rsvpForm.reset();
+                resetFormSelections();
+
+            } catch (error) {
+                console.error('Erro ao salvar confirmação:', error);
+                alert('Erro ao salvar confirmação. Tente novamente.');
+            }
+        }
+        
+        // Coletar dados de acompanhantes baseado na configuração
+        function getCompanionData() {
+            const companionData = {
+                hasCompanion: false,
+                count: 0,
+                names: []
+            };
+            
+            // Se acompanhantes não são permitidos
+            if (!currentEvent.allow_companions || currentEvent.companion_mode === 'disabled') {
+                return companionData;
+            }
+            
+            if (currentEvent.companion_mode === 'quantity') {
+                // Modo quantidade
+                const selectedQuantity = elements.companionSection.dataset.selectedQuantity;
+                if (selectedQuantity && parseInt(selectedQuantity) > 0) {
+                    companionData.hasCompanion = true;
+                    companionData.count = parseInt(selectedQuantity);
+                    
+                    // Coletar nomes
+                    if (companionData.count === 1) {
+                        const nameInput = document.getElementById('companion-name');
+                        if (nameInput && nameInput.value.trim()) {
+                            companionData.names.push(nameInput.value.trim());
                         }
-                    } catch (error) {
-                        console.error('Erro ao verificar token salvo:', error);
+                    } else {
+                        for (let i = 1; i <= companionData.count; i++) {
+                            const nameInput = document.getElementById(`companion-name-${i}`);
+                            if (nameInput && nameInput.value.trim()) {
+                                companionData.names.push(nameInput.value.trim());
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Modo sim/não tradicional
+                const hasCompanion = elements.companionYes && elements.companionYes.dataset.selected === 'true';
+                if (hasCompanion) {
+                    companionData.hasCompanion = true;
+                    companionData.count = 1;
+                    
+                    const nameInput = document.getElementById('companion-name');
+                    if (nameInput && nameInput.value.trim()) {
+                        companionData.names.push(nameInput.value.trim());
                     }
                 }
             }
             
-            // Mostrar tela de login
-            showLoginScreen();
+            return companionData;
         }
 
-        // Validar token
-        async function validateToken() {
-            const token = document.getElementById('tokenInput').value.trim();
-            
-            if (!token) {
-                showLoginError('Digite um token válido');
-                return;
-            }
-            
+        // Resetar seleções do formulário
+        function resetFormSelections() {
+            elements.confirmYes.classList.remove('border-green-500', 'bg-green-50');
+            elements.confirmNo.classList.remove('border-red-500', 'bg-red-50');
+            elements.companionYes.classList.remove('border-purple-500', 'bg-purple-50');
+            elements.companionNo.classList.remove('border-purple-500', 'bg-purple-50');
+            elements.companionSection.classList.add('hidden');
+            elements.companionNameSection.classList.add('hidden');
+            delete elements.confirmYes.dataset.selected;
+            delete elements.confirmNo.dataset.selected;
+            delete elements.companionYes.dataset.selected;
+            delete elements.companionNo.dataset.selected;
+        }
+
+        // Carregar mensagens
+        async function loadMessages() {
             try {
-                showSuccess('Validando token...');
-                
-                // Consultar token no Supabase
-                const { data, error } = await supabaseClient
-                    .from('access_tokens')
+                const { data: messages, error } = await supabase
+                    .from('messages')
                     .select('*')
-                    .eq('token', token)
-                    .eq('is_active', true)
-                    .single();
-                
-                if (error || !data) {
-                    showLoginError('Token inválido ou não encontrado');
-                    return;
-                }
-                
-                // Verificar se o token não expirou
-                const now = new Date();
-                const expiryDate = new Date(data.expires_at);
-                
-                if (now > expiryDate) {
-                    showLoginError('Token expirado');
-                    return;
-                }
-                
-                // Registrar uso do token
-                await supabaseClient
-                    .from('token_usage')
-                    .insert({
-                        token_id: data.id,
-                        used_at: new Date().toISOString(),
-                        ip_address: 'unknown', // Pode ser obtido via API externa
-                        user_agent: navigator.userAgent
-                    });
-                
-                // Salvar token localmente
-                currentUser = data;
-                localStorage.setItem('inviteEditorToken', token);
-                localStorage.setItem('inviteEditorTokenExpiry', expiryDate.getTime().toString());
-                
-                // Carregar limites do usuário
-                await loadUserLimits();
-                
-                showSuccess('Login realizado com sucesso!');
-                setTimeout(() => {
-                    showMainApp();
-                }, 1000);
-                
-            } catch (error) {
-                console.error('Erro ao validar token:', error);
-                showLoginError('Erro de conexão. Tente novamente.');
-            }
-        }
+                    .eq('event_id', currentEvent.id)
+                    .order('created_at', { ascending: false });
 
-        // Mostrar erro de login
-        function showLoginError(message) {
-            const errorDiv = document.getElementById('loginError');
-            errorDiv.textContent = '❌ ' + message;
-            errorDiv.style.display = 'block';
-            
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        // Mostrar tela de login
-        function showLoginScreen() {
-            document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('stepsGuide').style.display = 'none';
-            document.getElementById('uploadSection').style.display = 'none';
-            document.getElementById('editorSection').style.display = 'none';
-        }
-
-        // Carregar limites do usuário
-        async function loadUserLimits() {
-            try {
-                if (!currentUser) return;
-                
-                // Buscar dados do token com limites
-                const { data: tokenData, error: tokenError } = await supabaseClient
-                    .from('access_tokens')
-                    .select('max_invites, current_invites')
-                    .eq('id', currentUser.id)
-                    .single();
-                
-                if (tokenError) {
-                    console.error('Erro ao carregar limites:', tokenError);
-                    return;
-                }
-                
-                userLimits.maxInvites = tokenData.max_invites || 0;
-                userLimits.usedInvites = tokenData.current_invites || 0;
-                userLimits.remainingInvites = userLimits.maxInvites - userLimits.usedInvites;
-                
-                updateLimitsDisplay();
-                
-            } catch (error) {
-                console.error('Erro ao carregar limites:', error);
-            }
-        }
-        
-        // Atualizar display dos limites
-        function updateLimitsDisplay() {
-            document.getElementById('remainingCount').textContent = userLimits.remainingInvites;
-            document.getElementById('usedCount').textContent = userLimits.usedInvites;
-            document.getElementById('maxCount').textContent = userLimits.maxInvites;
-            
-            // Mostrar aviso se restam poucos convites
-            const limitWarning = document.getElementById('limitWarning');
-            if (userLimits.remainingInvites <= 3 && userLimits.remainingInvites > 0) {
-                limitWarning.style.display = 'block';
-            } else {
-                limitWarning.style.display = 'none';
-            }
-            
-            // Mudar cor do contador baseado na quantidade restante
-            const remainingElement = document.getElementById('remainingCount');
-            if (userLimits.remainingInvites <= 0) {
-                remainingElement.style.color = '#dc3545'; // Vermelho
-            } else if (userLimits.remainingInvites <= 3) {
-                remainingElement.style.color = '#ffc107'; // Amarelo
-            } else {
-                remainingElement.style.color = '#28a745'; // Verde
-            }
-        }
-        
-        // Verificar se pode gerar convite
-        function canGenerateInvite() {
-            if (userLimits.maxInvites === 0) return true; // Ilimitado
-            return userLimits.remainingInvites > 0;
-        }
-        
-        // Incrementar contador de convites usados
-        async function incrementInviteUsage() {
-            try {
-                if (!currentUser || userLimits.maxInvites === 0) return; // Não contar se ilimitado
-                
-                // Atualizar no banco
-                const { error } = await supabaseClient
-                    .from('access_tokens')
-                    .update({ 
-                        current_invites: userLimits.usedInvites + 1 
-                    })
-                    .eq('id', currentUser.id);
-                
                 if (error) {
-                    console.error('Erro ao atualizar contador:', error);
+                    console.error('Erro ao carregar mensagens:', error);
                     return;
                 }
-                
-                // Atualizar localmente
-                userLimits.usedInvites++;
-                userLimits.remainingInvites = userLimits.maxInvites - userLimits.usedInvites;
-                updateLimitsDisplay();
-                
-                // Registrar na tabela de PDFs gerados
-                await supabaseClient
-                    .from('pdf_generations')
-                    .insert({
-                        token_id: currentUser.id,
-                        generated_at: new Date().toISOString(),
-                        pdf_name: generateAutoFileName(),
-                        names_count: textElements.length,
-                        pages_count: totalPages
-                    });
-                
+
+                displayMessages(messages || []);
             } catch (error) {
-                console.error('Erro ao incrementar uso:', error);
+                console.error('Erro ao carregar mensagens:', error);
             }
         }
 
-        // Mostrar app principal
-        function showMainApp() {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('limitsDisplay').style.display = 'block';
-            document.getElementById('stepsGuide').style.display = 'block';
-            document.getElementById('uploadSection').style.display = 'block';
+        // Exibir mensagens
+        function displayMessages(messages) {
+            const container = document.getElementById('messages-container');
+            const adminContainer = document.getElementById('admin-messages-container');
+            
+            const messagesHTML = messages.map(msg => `
+                <div class="message-card p-4 rounded-lg border-l-4" style="border-left-color: #5aa189;">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold text-gray-800">${msg.guest_name}</h4>
+                        <span class="text-sm text-gray-500">${formatMessageDate(msg.created_at)}</span>
+                    </div>
+                    <p class="text-gray-700">${msg.message}</p>
+                </div>
+            `).join('');
+
+            container.innerHTML = messagesHTML || '<p class="text-gray-500 text-center">Ainda não há mensagens.</p>';
+            if (adminContainer) {
+                adminContainer.innerHTML = messagesHTML || '<p class="text-gray-500 text-center">Ainda não há mensagens.</p>';
+            }
+        }
+
+        // Formatar data da mensagem
+        function formatMessageDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Login do administrador
+        async function handleLogin(e) {
+            e.preventDefault();
+            const token = document.getElementById('admin-token').value;
+
+            if (token === currentEvent.admin_token) {
+                isAdmin = true;
+                elements.loginModal.classList.add('hidden');
+                await showAdminPage();
+            } else {
+                alert('Token inválido');
+            }
+        }
+
+        // Mostrar página de administração
+        async function showAdminPage() {
+            elements.guestPage.classList.add('hidden');
+            elements.adminPage.classList.remove('hidden');
+            await loadAdminData();
+        }
+
+        // Carregar dados de administração
+        async function loadAdminData() {
+            try {
+                const { data: guests, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', currentEvent.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Erro ao carregar convidados:', error);
+                    return;
+                }
+
+                displayGuestStats(guests || []);
+                displayGuestsList(guests || []);
+                await loadMessages();
+            } catch (error) {
+                console.error('Erro ao carregar dados de administração:', error);
+            }
+        }
+
+        // Exibir estatísticas
+        function displayGuestStats(guests) {
+            const confirmed = guests.filter(g => g.confirmed).length;
+            const declined = guests.filter(g => !g.confirmed).length;
+            const total = guests.length;
+
+            document.getElementById('confirmed-count').textContent = confirmed;
+            document.getElementById('declined-count').textContent = declined;
+            document.getElementById('total-count').textContent = total;
+        }
+
+        // Exibir lista de convidados
+        function displayGuestsList(guests) {
+            const tbody = document.getElementById('guests-table');
+            
+            const guestsHTML = guests.map(guest => {
+                // Processar nomes de acompanhantes
+                let companionDisplay = '';
+                if (guest.has_companion) {
+                    if (guest.companion_count > 1 && guest.companion_names) {
+                        // Múltiplos acompanhantes
+                        try {
+                            const names = JSON.parse(guest.companion_names);
+                            companionDisplay = names.map(name => `+ ${name}`).join('<br>');
+                        } catch (e) {
+                            companionDisplay = `+ ${guest.companion_count} acompanhante(s)`;
+                        }
+                    } else if (guest.companion_name) {
+                        // Um acompanhante com nome
+                        companionDisplay = `+ ${guest.companion_name}`;
+                    } else {
+                        // Acompanhante sem nome especificado
+                        const count = guest.companion_count || 1;
+                        companionDisplay = `+ ${count} acompanhante${count > 1 ? 's' : ''}`;
+                    }
+                }
+                
+                return `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${guest.guest_name}</div>
+                            ${companionDisplay ? `<div class="text-sm text-gray-500">${companionDisplay}</div>` : ''}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${guest.confirmed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${guest.confirmed ? 'Confirmado' : 'Não Confirmado'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${guest.has_companion ? `${guest.companion_count || 1}` : 'Não'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${formatMessageDate(guest.created_at)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="deleteGuest(${guest.id})" class="text-red-600 hover:text-red-900">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.innerHTML = guestsHTML || '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Nenhum convidado ainda</td></tr>';
+        }
+
+        // Excluir convidado
+        async function deleteGuest(guestId) {
+            if (confirm('Tem certeza que deseja excluir este convidado?')) {
+                try {
+                    const { error } = await supabase
+                        .from('rsvps')
+                        .delete()
+                        .eq('id', guestId);
+
+                    if (error) {
+                        console.error('Erro ao excluir convidado:', error);
+                        alert('Erro ao excluir convidado');
+                        return;
+                    }
+
+                    await loadAdminData(); // Recarregar dados
+                } catch (error) {
+                    console.error('Erro ao excluir convidado:', error);
+                    alert('Erro ao excluir convidado');
+                }
+            }
         }
 
         // Logout
         function logout() {
-            localStorage.removeItem('inviteEditorToken');
-            localStorage.removeItem('inviteEditorTokenExpiry');
-            currentUser = null;
-            resetEditor();
-            showLoginScreen();
-            showSuccess('Logout realizado com sucesso!');
+            isAdmin = false;
+            elements.adminPage.classList.add('hidden');
+            elements.guestPage.classList.remove('hidden');
         }
 
-        // Adicionar Enter key no campo de token
-        document.addEventListener('DOMContentLoaded', function() {
-            const tokenInput = document.getElementById('tokenInput');
-            if (tokenInput) {
-                tokenInput.addEventListener('keypress', function(event) {
-                    if (event.key === 'Enter') {
-                        validateToken();
+        // Alternar entre abas
+        function switchTab(tabName) {
+            // Remover classe active de todas as abas
+            document.querySelectorAll('.tab-button').forEach(tab => {
+                tab.classList.remove('active');
+                tab.classList.add('text-gray-500', 'border-transparent');
+                tab.style.color = '#6b7280';
+                tab.style.borderColor = 'transparent';
+            });
+
+            // Esconder todo o conteúdo
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Ativar aba selecionada
+            if (tabName === 'guests') {
+                const guestsTab = document.getElementById('guests-tab');
+                guestsTab.classList.add('active');
+                guestsTab.classList.remove('text-gray-500', 'border-transparent');
+                guestsTab.style.color = '#5aa189';
+                guestsTab.style.borderColor = '#5aa189';
+                document.getElementById('guests-content').classList.remove('hidden');
+            } else if (tabName === 'messages') {
+                const messagesTab = document.getElementById('messages-tab');
+                messagesTab.classList.add('active');
+                messagesTab.classList.remove('text-gray-500', 'border-transparent');
+                messagesTab.style.color = '#5aa189';
+                messagesTab.style.borderColor = '#5aa189';
+                document.getElementById('messages-content').classList.remove('hidden');
+            }
+        }
+
+        // Gerar PDF da lista de convidados
+        async function generatePDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Configurações do PDF
+                const pageWidth = doc.internal.pageSize.width;
+                const margin = 20;
+                let yPosition = 30;
+
+                // Título do documento
+                doc.setFontSize(20);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Lista de Convidados - ${currentEvent.couple_names}`, margin, yPosition);
+                
+                yPosition += 10;
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'normal');
+                doc.text(`${currentEvent.event_type} - ${formatDate(currentEvent.event_date)}`, margin, yPosition);
+                
+                yPosition += 20;
+
+                // Buscar dados atualizados
+                const { data: guests, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', currentEvent.id)
+                    .order('confirmed', { ascending: false })
+                    .order('guest_name', { ascending: true });
+
+                if (error) {
+                    alert('Erro ao gerar PDF');
+                    return;
+                }
+
+                const confirmedGuests = guests.filter(g => g.confirmed);
+                const declinedGuests = guests.filter(g => !g.confirmed);
+
+                // Estatísticas
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('📊 RESUMO:', margin, yPosition);
+                yPosition += 8;
+                
+                doc.setFont(undefined, 'normal');
+                doc.text(`✅ Confirmados: ${confirmedGuests.length}`, margin, yPosition);
+                yPosition += 6;
+                doc.text(`❌ Não Confirmados: ${declinedGuests.length}`, margin, yPosition);
+                yPosition += 6;
+                doc.text(`📋 Total de Respostas: ${guests.length}`, margin, yPosition);
+                yPosition += 20;
+
+                // Função para adicionar seção
+                function addSection(title, guestList, emoji) {
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 30;
                     }
-                });
-            }
-        });
 
-        function setupEventListeners() {
-            const uploadArea = document.querySelector('.upload-area');
-            const fileInput = document.getElementById('pdfFile');
+                    doc.setFontSize(16);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`${emoji} ${title} (${guestList.length})`, margin, yPosition);
+                    yPosition += 15;
 
-            // Drag and drop
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0 && files[0].type === 'application/pdf') {
-                    handlePDFUpload(files[0]);
-                }
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    handlePDFUpload(e.target.files[0]);
-                }
-            });
-
-            // Canvas events
-            canvas.addEventListener('click', handleCanvasClick);
-            canvas.addEventListener('mousedown', handleMouseDown);
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('mouseup', handleMouseUp);
-            
-            // Preview canvas events
-            previewCanvas.addEventListener('click', handlePreviewCanvasClick);
-            previewCanvas.addEventListener('mousedown', handlePreviewMouseDown);
-            previewCanvas.addEventListener('mousemove', handlePreviewMouseMove);
-            previewCanvas.addEventListener('mouseup', handlePreviewMouseUp);
-        }
-
-        async function handlePDFUpload(file) {
-            try {
-                console.log('Carregando PDF:', file.name, file.size);
-                showSuccess('Carregando PDF...');
-                
-                const arrayBuffer = await file.arrayBuffer();
-                // Criar uma cópia do ArrayBuffer para evitar problemas de detach
-                originalPDF = arrayBuffer.slice();
-                
-                console.log('ArrayBuffer criado, tamanho:', originalPDF.byteLength);
-                
-                // Carregar PDF com PDF.js para preview
-                const loadingTask = pdfjsLib.getDocument({
-                    data: arrayBuffer,
-                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-                    cMapPacked: true
-                });
-                
-                pdfDoc = await loadingTask.promise;
-                totalPages = pdfDoc.numPages;
-                currentPage = 1;
-                console.log('PDF carregado, páginas:', totalPages);
-                
-                // Aguardar um pouco para garantir que o DOM está pronto
-                setTimeout(async () => {
-                    document.getElementById('uploadSection').style.display = 'none';
-                    document.getElementById('editorSection').style.display = 'block';
-                    document.getElementById('loadingIndicator').style.display = 'block';
-                    
-                    // Aguardar o canvas estar visível
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    
-                    await renderPDFPreview();
-                    updatePageControls();
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    showSuccess(`PDF carregado com sucesso! ${totalPages} página(s) encontrada(s). Clique no PDF para posicionar os nomes.`);
-                }, 100);
-                
-            } catch (error) {
-                console.error('Erro detalhado:', error);
-                alert('Erro ao carregar PDF: ' + error.message);
-            }
-        }
-
-        async function renderPDFPreview() {
-            try {
-                const page = await pdfDoc.getPage(currentPage);
-                
-                // Aguardar o container estar totalmente renderizado
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // CORREÇÃO: Usar dimensões EXATAS do PDF para manter proporção perfeita
-                const viewport = page.getViewport({ scale: 1.0 });
-                const pdfWidth = viewport.width;
-                const pdfHeight = viewport.height;
-                const pdfRatio = pdfWidth / pdfHeight;
-                
-                // Calcular largura disponível do container
-                const previewContainer = document.getElementById('pdfPreview');
-                const containerStyle = window.getComputedStyle(previewContainer);
-                const borderWidth = parseInt(containerStyle.borderLeftWidth) + parseInt(containerStyle.borderRightWidth);
-                const paddingWidth = parseInt(containerStyle.paddingLeft) + parseInt(containerStyle.paddingRight);
-                const availableWidth = previewContainer.clientWidth - borderWidth - paddingWidth - 20; // Margem extra
-                
-                // Limitar altura máxima
-                const maxHeight = window.innerHeight * 0.5;
-                
-                // Calcular dimensões mantendo proporção EXATA do PDF
-                let displayWidth, displayHeight;
-                
-                if (availableWidth / pdfRatio <= maxHeight) {
-                    // Limitado pela largura
-                    displayWidth = availableWidth;
-                    displayHeight = availableWidth / pdfRatio;
-                } else {
-                    // Limitado pela altura
-                    displayHeight = maxHeight;
-                    displayWidth = maxHeight * pdfRatio;
-                }
-                
-                // Garantir que as dimensões sejam inteiras
-                displayWidth = Math.floor(displayWidth);
-                displayHeight = Math.floor(displayHeight);
-                
-                // Calcular escala baseada nas dimensões finais
-                scale = displayWidth / pdfWidth;
-                
-                // Configurar canvas com dimensões EXATAS calculadas
-                canvas.width = displayWidth;
-                canvas.height = displayHeight;
-                canvas.style.width = displayWidth + 'px';
-                canvas.style.height = displayHeight + 'px';
-                canvas.style.maxWidth = 'none'; // Não permitir redimensionamento automático
-                canvas.style.display = 'block';
-                canvas.style.margin = '0 auto';
-                
-                // Limpar canvas antes de renderizar
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Usar viewport com escala calculada
-                const scaledViewport = page.getViewport({ scale });
-                
-                // Renderizar PDF
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: scaledViewport
-                };
-                
-                console.log(`📐 DIMENSÕES CORRIGIDAS:`);
-                console.log(`PDF original: ${pdfWidth}x${pdfHeight} (ratio: ${pdfRatio.toFixed(3)})`);
-                console.log(`Canvas: ${displayWidth}x${displayHeight} (ratio: ${(displayWidth/displayHeight).toFixed(3)})`);
-                console.log(`Escala única: ${scale.toFixed(4)}`);
-                console.log(`Container disponível: ${availableWidth}px`);
-                
-                await page.render(renderContext).promise;
-                console.log('✅ PDF renderizado com proporções exatas!');
-                
-                // Carregar textos salvos da página atual
-                loadSavedTexts();
-                
-            } catch (error) {
-                console.error('Erro ao renderizar PDF:', error);
-                alert('Erro ao exibir o PDF. Tente outro arquivo.');
-            }
-        }
-
-        function handleCanvasClick(e) {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            console.log('Clique no canvas:', x, y);
-            
-            // Verificar se clicou em um elemento existente da página atual
-            const currentPageTexts = getCurrentPageTexts();
-            const clickedElement = currentPageTexts.find(el => 
-                x >= el.x && x <= el.x + el.width &&
-                y >= el.y && y <= el.y + el.height
-            );
-            
-            if (clickedElement) {
-                console.log('Elemento clicado:', clickedElement.text);
-                selectElement(clickedElement);
-            } else {
-                // Adicionar novo texto na posição clicada
-                const guestName = document.getElementById('guestName').value.trim();
-                console.log('Nome digitado:', guestName);
-                if (guestName) {
-                    addTextAtPosition(x, y, guestName);
-                } else {
-                    // Se não há nome digitado, focar no campo
-                    document.getElementById('guestName').focus();
-                    showSuccess('Digite um nome no campo acima primeiro!');
-                }
-            }
-        }
-
-        function addTextToPDF() {
-            const guestName = document.getElementById('guestName').value.trim();
-            console.log('Tentando adicionar nome:', guestName);
-            
-            if (!guestName) {
-                showSuccess('Digite o nome do convidado primeiro!');
-                document.getElementById('guestName').focus();
-                return;
-            }
-            
-            // Adicionar no centro do canvas
-            const x = canvas.width / 2;
-            const y = canvas.height / 2;
-            addTextAtPosition(x, y, guestName);
-        }
-
-        async function addTextAtPosition(x, y, text) {
-            console.log('Adicionando texto:', text, 'na posição:', x, y, 'página:', currentPage);
-            
-            const fontSize = parseInt(document.getElementById('fontSize').value);
-            const color = document.getElementById('textColor').value;
-            const fontFamily = document.getElementById('fontFamily').value;
-            
-            // Calcular largura exata do texto
-            ctx.font = `bold ${fontSize}px ${fontFamily}`;
-            const textWidth = ctx.measureText(text).width;
-            
-            // SEMPRE centralizar horizontalmente no meio do canvas
-            const centerX = canvas.width / 2;
-            
-            const textElement = {
-                id: Date.now(),
-                text: text,
-                x: centerX - textWidth/2, // SEMPRE perfeitamente centralizado
-                y: y,
-                fontSize: fontSize,
-                fontFamily: fontFamily,
-                color: color,
-                width: textWidth,
-                height: fontSize + 10,
-                page: currentPage, // Associar à página atual
-                originalText: text // Guardar texto original para nome do arquivo
-            };
-            
-            textElements.push(textElement);
-            console.log('Elementos de texto atuais:', textElements.length);
-            
-            await redrawTextElements();
-            selectElement(textElement);
-            autoSave();
-            
-            // Limpar campo de nome após adicionar
-            document.getElementById('guestName').value = '';
-            document.getElementById('guestName').focus();
-            
-            showSuccess(`"${text}" adicionado centralizado! Arraste para ajustar altura.`);
-        }
-
-        let isRendering = false;
-        let pdfImageData = null;
-        
-        async function redrawTextElements() {
-            // Não redesenhar o PDF, apenas os elementos de texto
-            if (!canvas || !ctx || isRendering) return;
-            
-            isRendering = true;
-            
-            try {
-                // Limpar canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Redesenhar o PDF uma vez e salvar imagem
-                if (pdfDoc) {
-                    await renderPDFBase();
-                    // Salvar imagem do PDF para uso durante arraste
-                    pdfImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                }
-                
-                // Desenhar linhas guia do centro
-                drawCenterGuides();
-                
-                // Desenhar apenas elementos de texto da página atual
-                const currentPageTexts = getCurrentPageTexts();
-                currentPageTexts.forEach(element => {
-                    ctx.font = `bold ${element.fontSize}px ${element.fontFamily || 'Arial'}`;
-                    ctx.fillStyle = element.color;
-                    ctx.textAlign = 'left'; // Usar alinhamento à esquerda para posicionamento preciso
-                    // CORREÇÃO: Renderizar texto exatamente na posição calculada (já centralizada)
-                    ctx.fillText(element.text, element.x, element.y + element.fontSize);
-                    
-                    // Desenhar borda se selecionado
-                    if (selectedElement && selectedElement.id === element.id) {
-                        ctx.strokeStyle = '#667eea';
-                        ctx.lineWidth = 2;
-                        ctx.setLineDash([5, 5]);
-                        ctx.strokeRect(element.x, element.y, element.width, element.height);
-                        ctx.setLineDash([]);
+                    if (guestList.length === 0) {
+                        doc.setFontSize(10);
+                        doc.setFont(undefined, 'italic');
+                        doc.text('Nenhum convidado nesta categoria', margin + 5, yPosition);
+                        yPosition += 15;
+                        return;
                     }
-                });
-            } finally {
-                isRendering = false;
-            }
-        }
-        
-        function drawCenterGuides() {
-            if (!canvas || !ctx) return;
-            
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            // Salvar estado atual do contexto
-            ctx.save();
-            
-            // Configurar estilo das linhas guia
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; // Vermelho transparente
-            ctx.lineWidth = 1;
-            ctx.setLineDash([10, 5]); // Linha tracejada
-            
-            // Desenhar linha vertical (centro horizontal)
-            ctx.beginPath();
-            ctx.moveTo(centerX, 0);
-            ctx.lineTo(centerX, canvas.height);
-            ctx.stroke();
-            
-            // Desenhar linha horizontal (centro vertical)
-            ctx.beginPath();
-            ctx.moveTo(0, centerY);
-            ctx.lineTo(canvas.width, centerY);
-            ctx.stroke();
-            
-            // Restaurar estado do contexto
-            ctx.restore();
-        }
-        
-        function redrawTextElementsQuick() {
-            // Versão rápida para arraste - usa imagem salva do PDF
-            if (!canvas || !ctx || !pdfImageData) return;
-            
-            // Restaurar imagem do PDF
-            ctx.putImageData(pdfImageData, 0, 0);
-            
-            // Desenhar linhas guia do centro
-            drawCenterGuides();
-            
-            // Desenhar apenas os elementos de texto da página atual
-            const currentPageTexts = getCurrentPageTexts();
-            currentPageTexts.forEach(element => {
-                ctx.font = `bold ${element.fontSize}px ${element.fontFamily || 'Arial'}`;
-                ctx.fillStyle = element.color;
-                ctx.textAlign = 'left'; // Usar alinhamento à esquerda para posicionamento preciso
-                ctx.fillText(element.text, element.x, element.y + element.fontSize);
-                
-                // Desenhar borda se selecionado
-                if (selectedElement && selectedElement.id === element.id) {
-                    ctx.strokeStyle = '#667eea';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([5, 5]);
-                    ctx.strokeRect(element.x, element.y, element.width, element.height);
-                    ctx.setLineDash([]);
-                }
-            });
-        }
 
-        let renderTask = null;
-        
-        async function renderPDFBase() {
-            if (!pdfDoc || !ctx) return;
-            
-            try {
-                // Cancelar renderização anterior se existir
-                if (renderTask) {
-                    renderTask.cancel();
-                }
-                
-                const page = await pdfDoc.getPage(currentPage);
-                const scaledViewport = page.getViewport({ scale });
-                
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: scaledViewport
-                };
-                
-                renderTask = page.render(renderContext);
-                await renderTask.promise;
-                renderTask = null;
-            } catch (error) {
-                if (error.name !== 'RenderingCancelledException') {
-                    console.error('Erro ao renderizar base do PDF:', error);
-                }
-            }
-        }
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
 
-        function getCurrentPageTexts() {
-            return textElements.filter(el => el.page === currentPage);
-        }
+                    guestList.forEach((guest, index) => {
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 30;
+                        }
 
-        function updatePageControls() {
-            document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
-            document.getElementById('prevBtn').disabled = currentPage <= 1;
-            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
-            
-            // Atualizar estilos dos botões
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
-            nextBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
-            prevBtn.style.cursor = currentPage <= 1 ? 'not-allowed' : 'pointer';
-            nextBtn.style.cursor = currentPage >= totalPages ? 'not-allowed' : 'pointer';
-        }
-
-        function previousPage() {
-            if (currentPage > 1) {
-                currentPage--;
-                renderPDFPreview();
-                updatePageControls();
-                selectedElement = null;
-                document.getElementById('selectedInfo').style.display = 'none';
-                showSuccess(`Página ${currentPage} carregada`);
-            }
-        }
-
-        function nextPage() {
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderPDFPreview();
-                updatePageControls();
-                selectedElement = null;
-                document.getElementById('selectedInfo').style.display = 'none';
-                showSuccess(`Página ${currentPage} carregada`);
-            }
-        }
-
-        function selectElement(element) {
-            selectedElement = element;
-            
-            // Atualizar controles com valores do elemento selecionado
-            document.getElementById('fontSize').value = element.fontSize;
-            document.getElementById('fontFamily').value = element.fontFamily || 'Arial';
-            document.getElementById('textColor').value = element.color;
-            
-            // Mostrar controles de formatação
-            document.getElementById('formatControls').style.display = 'block';
-            
-            // Atualizar label da cor
-            updateColorLabel(element.color);
-            
-            // Mostrar informações do elemento selecionado
-            document.getElementById('selectedText').textContent = element.text;
-            document.getElementById('editNameInput').value = element.text;
-            document.getElementById('selectedInfo').style.display = 'block';
-            
-            redrawTextElements();
-        }
-
-        function updateColorLabel(color) {
-            const colorLabel = document.getElementById('colorLabel');
-            const colorNames = {
-                '#000000': 'Preto',
-                '#ffffff': 'Branco',
-                '#ff0000': 'Vermelho',
-                '#00ff00': 'Verde',
-                '#0000ff': 'Azul',
-                '#ffff00': 'Amarelo',
-                '#ff00ff': 'Rosa',
-                '#00ffff': 'Ciano',
-                '#800080': 'Roxo',
-                '#ffa500': 'Laranja'
-            };
-            
-            colorLabel.textContent = colorNames[color.toLowerCase()] || 'Personalizada';
-        }
-
-        function updateSelectedElement() {
-            if (!selectedElement) return;
-            
-            const newFontSize = parseInt(document.getElementById('fontSize').value);
-            const newFontFamily = document.getElementById('fontFamily').value;
-            const newColor = document.getElementById('textColor').value;
-            
-            selectedElement.fontSize = newFontSize;
-            selectedElement.fontFamily = newFontFamily;
-            selectedElement.color = newColor;
-            selectedElement.height = newFontSize + 10;
-            
-            // Atualizar label da cor
-            updateColorLabel(newColor);
-            
-            // Recalcular largura e recentrar horizontalmente
-            ctx.font = `bold ${newFontSize}px ${newFontFamily}`;
-            const textWidth = ctx.measureText(selectedElement.text).width;
-            selectedElement.width = textWidth;
-            
-            // SEMPRE manter perfeitamente centralizado
-            const centerX = canvas.width / 2;
-            selectedElement.x = centerX - textWidth/2;
-            
-            redrawTextElements();
-            autoSave();
-        }
-
-        function updateSelectedName() {
-            if (!selectedElement) return;
-            
-            const newName = document.getElementById('editNameInput').value.trim();
-            if (!newName) {
-                showSuccess('Digite um nome válido!');
-                return;
-            }
-            
-            // Atualizar o texto do elemento
-            selectedElement.text = newName;
-            
-            // Recalcular largura e recentrar horizontalmente
-            ctx.font = `bold ${selectedElement.fontSize}px ${selectedElement.fontFamily || 'Arial'}`;
-            const textWidth = ctx.measureText(newName).width;
-            selectedElement.width = textWidth;
-            
-            // SEMPRE manter perfeitamente centralizado
-            const centerX = canvas.width / 2;
-            selectedElement.x = centerX - textWidth/2;
-            
-            // Atualizar display
-            document.getElementById('selectedText').textContent = newName;
-            
-            redrawTextElements();
-            autoSave();
-            showSuccess(`Nome alterado para "${newName}"!`);
-        }
-        
-        function deselectElement() {
-            selectedElement = null;
-            document.getElementById('selectedInfo').style.display = 'none';
-            document.getElementById('formatControls').style.display = 'none';
-            redrawTextElements();
-        }
-
-        function deleteSelected() {
-            if (!selectedElement) return;
-            
-            const deletedName = selectedElement.text;
-            textElements = textElements.filter(el => el.id !== selectedElement.id);
-            selectedElement = null;
-            document.getElementById('selectedInfo').style.display = 'none';
-            document.getElementById('formatControls').style.display = 'none';
-            
-            redrawTextElements();
-            autoSave();
-            showSuccess(`"${deletedName}" foi excluído!`);
-        }
-
-        function generateAutoFileName() {
-            // Obter nomes únicos dos elementos de texto (usar texto atual, não original)
-            const uniqueNames = [...new Set(textElements.map(el => el.text))];
-            
-            if (uniqueNames.length > 0) {
-                if (uniqueNames.length === 1) {
-                    // Um nome apenas - usar o nome atual
-                    const sanitizedName = sanitizeFileName(uniqueNames[0]);
-                    return `convite-${sanitizedName}.pdf`;
-                } else {
-                    // Múltiplos nomes - usar o primeiro nome atual
-                    const firstName = uniqueNames[0];
-                    const sanitizedName = sanitizeFileName(firstName);
-                    return `convite-${sanitizedName}-e-outros.pdf`;
-                }
-            } else {
-                // Nome padrão se não há nomes
-                return 'convite-personalizado.pdf';
-            }
-        }
-
-        function sanitizeFileName(name) {
-            // Remover caracteres especiais e espaços, converter para minúsculas
-            return name.toLowerCase()
-                      .replace(/[^a-z0-9\s-]/g, '') // Remover caracteres especiais
-                      .replace(/\s+/g, '-') // Substituir espaços por hífens
-                      .replace(/-+/g, '-') // Remover hífens duplicados
-                      .trim();
-        }
-
-
-
-        function handleMouseDown(e) {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const currentPageTexts = getCurrentPageTexts();
-            const clickedElement = currentPageTexts.find(el => 
-                x >= el.x && x <= el.x + el.width &&
-                y >= el.y && y <= el.y + el.height
-            );
-            
-            if (clickedElement) {
-                isDragging = true;
-                selectedElement = clickedElement;
-                dragOffset.x = x - clickedElement.x;
-                dragOffset.y = y - clickedElement.y;
-                canvas.style.cursor = 'grabbing';
-            }
-        }
-
-        let animationId = null;
-        let isDragRendering = false;
-        let previewDragRendering = false;
-        
-        function handleMouseMove(e) {
-            if (isDragging && selectedElement) {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                selectedElement.x = x - dragOffset.x;
-                selectedElement.y = y - dragOffset.y;
-                
-                // Só renderizar se não estiver já renderizando
-                if (!isDragRendering) {
-                    isDragRendering = true;
-                    requestAnimationFrame(() => {
-                        redrawTextElementsQuick();
-                        isDragRendering = false;
-                    });
-                }
-            }
-        }
-
-        function handleMouseUp() {
-            if (isDragging) {
-                isDragging = false;
-                canvas.style.cursor = 'crosshair';
-                // Fazer uma renderização completa quando terminar o arraste
-                redrawTextElements();
-                autoSave();
-            }
-        }
-
-        function clearAllText() {
-            textElements = [];
-            selectedElement = null;
-            redrawTextElements();
-        }
-
-        async function generateFinalPDF() {
-            if (textElements.length === 0) {
-                showSuccess('Adicione pelo menos um nome antes de gerar o PDF.');
-                return;
-            }
-
-            if (!originalPDF) {
-                showSuccess('Erro: PDF original não encontrado. Faça upload novamente.');
-                return;
-            }
-            
-            // Verificar limite de convites
-            if (!canGenerateInvite()) {
-                showSuccess('❌ Limite de convites esgotado! Entre em contato para renovar seu plano.');
-                return;
-            }
-
-            try {
-                showSuccess('Gerando PDF personalizado...');
-                
-                // Criar uma nova cópia do ArrayBuffer para evitar problemas
-                const pdfData = originalPDF.slice();
-                const pdfLibDoc = await PDFLib.PDFDocument.load(pdfData);
-                const pages = pdfLibDoc.getPages();
-                
-                // Obter dimensões reais do PDF
-                const firstPage = await pdfDoc.getPage(1);
-                const viewport = firstPage.getViewport({ scale: 1.0 });
-                const PDF_WIDTH = viewport.width;
-                const PDF_HEIGHT = viewport.height;
-                
-                console.log(`🎯 CONVERSÃO DE COORDENADAS:`);
-                console.log(`PDF original: ${PDF_WIDTH}x${PDF_HEIGHT}`);
-                console.log(`Canvas: ${canvas.width}x${canvas.height}`);
-                console.log(`Escala usada no canvas: ${scale.toFixed(4)}`);
-                
-                // CORREÇÃO: Usar escala única para conversão perfeita
-                const conversionScale = PDF_WIDTH / canvas.width;
-                
-                console.log(`Escala de conversão: ${conversionScale.toFixed(4)}`);
-                
-                // Processar cada página
-                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                    const page = pages[pageNum - 1];
-                    const pageTexts = textElements.filter(el => el.page === pageNum);
-                    
-                    pageTexts.forEach(element => {
-                        // CORREÇÃO: Usar coordenadas EXATAS do canvas (texto já está centralizado)
-                        const canvasTextX = element.x; // Posição X já calculada (lado esquerdo do texto centralizado)
-                        const canvasTextY = element.y + element.fontSize; // Baseline do texto no canvas
+                        const guestText = `${index + 1}. ${guest.guest_name}`;
+                        let companionText = '';
                         
-                        // Converter para coordenadas do PDF usando escala única
-                        const pdfX = canvasTextX * conversionScale;
-                        const pdfY = PDF_HEIGHT - (canvasTextY * conversionScale);
-                        
-                        // Tamanho da fonte no PDF
-                        const pdfFontSize = element.fontSize * conversionScale;
-                        
-                        console.log(`📍 "${element.text}" (Página ${pageNum}):`);
-                        console.log(`  Canvas: (${canvasTextX.toFixed(1)}, ${canvasTextY.toFixed(1)})`);
-                        console.log(`  PDF: (${pdfX.toFixed(1)}, ${pdfY.toFixed(1)})`);
-                        console.log(`  Fonte: ${element.fontSize}px → ${pdfFontSize.toFixed(1)}px`);
-                        
-                        // Usar fonte padrão do PDF-lib (Helvetica é similar ao Arial)
-                        let pdfFont;
-                        try {
-                            // Mapear fontes para as disponíveis no PDF-lib
-                            const fontMap = {
-                                'Arial': 'Helvetica',
-                                'Times New Roman': 'Times-Roman',
-                                'Georgia': 'Times-Roman',
-                                'Verdana': 'Helvetica',
-                                'Helvetica': 'Helvetica',
-                                'Trebuchet MS': 'Helvetica',
-                                'Impact': 'Helvetica-Bold',
-                                'Comic Sans MS': 'Helvetica',
-                                'Courier New': 'Courier',
-                                'Brush Script MT': 'Times-Italic'
-                            };
-                            
-                            const fontName = fontMap[element.fontFamily] || 'Helvetica';
-                            
-                            // Usar fontes padrão do PDF-lib
-                            if (fontName === 'Times-Roman') {
-                                pdfFont = PDFLib.StandardFonts.TimesRoman;
-                            } else if (fontName === 'Times-Italic') {
-                                pdfFont = PDFLib.StandardFonts.TimesRomanItalic;
-                            } else if (fontName === 'Courier') {
-                                pdfFont = PDFLib.StandardFonts.Courier;
-                            } else if (fontName === 'Helvetica-Bold') {
-                                pdfFont = PDFLib.StandardFonts.HelveticaBold;
+                        // Processar acompanhantes para o PDF
+                        if (guest.has_companion) {
+                            if (guest.companion_count > 1 && guest.companion_names) {
+                                try {
+                                    const names = JSON.parse(guest.companion_names);
+                                    companionText = ` + ${names.join(', ')}`;
+                                } catch (e) {
+                                    companionText = ` + ${guest.companion_count} acompanhante(s)`;
+                                }
+                            } else if (guest.companion_name) {
+                                companionText = ` + ${guest.companion_name}`;
                             } else {
-                                pdfFont = PDFLib.StandardFonts.Helvetica;
+                                const count = guest.companion_count || 1;
+                                companionText = ` + ${count} acompanhante${count > 1 ? 's' : ''}`;
                             }
-                        } catch (error) {
-                            pdfFont = PDFLib.StandardFonts.Helvetica; // Fallback
                         }
                         
-                        page.drawText(element.text, {
-                            x: pdfX,
-                            y: pdfY,
-                            size: pdfFontSize,
-                            font: pdfFont,
-                            color: PDFLib.rgb(
-                                parseInt(element.color.substr(1, 2), 16) / 255,
-                                parseInt(element.color.substr(3, 2), 16) / 255,
-                                parseInt(element.color.substr(5, 2), 16) / 255
-                            )
-                        });
+                        const dateText = ` (${formatMessageDate(guest.created_at)})`;
+                        
+                        doc.text(guestText, margin + 5, yPosition);
+                        
+                        if (companionText) {
+                            doc.setFont(undefined, 'italic');
+                            doc.text(companionText, margin + 5 + doc.getTextWidth(guestText), yPosition);
+                            doc.setFont(undefined, 'normal');
+                        }
+                        
+                        doc.setFontSize(8);
+                        doc.setTextColor(100);
+                        doc.text(dateText, pageWidth - margin - doc.getTextWidth(dateText), yPosition);
+                        doc.setTextColor(0);
+                        doc.setFontSize(10);
+                        
+                        yPosition += 8;
                     });
+
+                    yPosition += 10;
                 }
-                
-                const pdfBytes = await pdfLibDoc.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                
-                // Gerar nome do arquivo automaticamente
-                const finalFileName = generateAutoFileName();
-                
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = finalFileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                // Incrementar contador de uso
-                await incrementInviteUsage();
-                
-                showSuccess('PDF gerado e baixado com sucesso!');
-                
-                // Limpar campo de nome após gerar PDF
-                document.getElementById('guestName').value = '';
-                
+
+                // Adicionar seções
+                addSection('CONVIDADOS CONFIRMADOS', confirmedGuests, '✅');
+                addSection('CONVIDADOS NÃO CONFIRMADOS', declinedGuests, '❌');
+
+                // Rodapé
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, doc.internal.pageSize.height - 10);
+                    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, margin, doc.internal.pageSize.height - 10);
+                }
+
+                // Salvar PDF
+                const fileName = `Lista_Convidados_${currentEvent.couple_names.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+
             } catch (error) {
-                console.error('Erro:', error);
-                showSuccess('Erro ao gerar PDF. Tente fazer upload do arquivo novamente.');
-                
-                // Se der erro, resetar para permitir novo upload
-                setTimeout(() => {
-                    resetEditor();
-                }, 2000);
+                console.error('Erro ao gerar PDF:', error);
+                alert('Erro ao gerar PDF. Tente novamente.');
             }
         }
 
-        function shareWhatsApp() {
-            if (textElements.length === 0) {
-                alert('Adicione pelo menos um nome antes de compartilhar.');
-                return;
-            }
-
-            const whatsappUrl = `https://wa.me/`;
-            window.open(whatsappUrl, '_blank');
-            
-            showSuccess('WhatsApp aberto!');
-        }
-
-        function resetEditor() {
-            textElements = [];
-            selectedElement = null;
-            originalPDF = null;
-            pdfDoc = null;
-            currentPage = 1;
-            totalPages = 1;
-            
-            document.getElementById('uploadSection').style.display = 'block';
-            document.getElementById('editorSection').style.display = 'none';
-            document.getElementById('pdfFile').value = '';
-            document.getElementById('guestName').value = '';
-            document.getElementById('selectedInfo').style.display = 'none';
-        }
-
-        function handleEnterKey(event) {
-            if (event.key === 'Enter') {
-                addTextToPDF();
-            }
-        }
-        
-        function handleEditEnterKey(event) {
-            if (event.key === 'Enter') {
-                updateSelectedName();
-            }
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-            setTimeout(() => {
-                successDiv.style.display = 'none';
-            }, 4000);
-        }
-
-        // Auto-salvar posições dos textos
-        function autoSave() {
-            if (textElements.length > 0) {
-                localStorage.setItem('inviteTexts', JSON.stringify(textElements));
-            }
-        }
-
-        // Carregar textos salvos - DESABILITADO para sempre começar limpo
-        function loadSavedTexts() {
-            // Não carregar textos salvos - sempre começar com tela limpa
-            textElements = [];
-        }
-
-        // Funções da Prévia do PDF
-        async function showPDFPreview() {
-            if (textElements.length === 0) {
-                showSuccess('Adicione pelo menos um nome antes de visualizar a prévia.');
-                return;
-            }
-
-            if (!originalPDF) {
-                showSuccess('Erro: PDF original não encontrado. Faça upload novamente.');
-                return;
-            }
-
-            try {
-                isPreviewMode = true;
-                previewCurrentPage = 1;
-                document.getElementById('pdfPreviewModal').style.display = 'block';
-                document.body.style.overflow = 'hidden'; // Impedir scroll da página
-                
-                // Aguardar o modal estar visível
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                await renderPreviewPage();
-                updatePreviewPageControls();
-                showSuccess('Prévia carregada! Você pode ajustar as posições dos nomes clicando e arrastando.');
-                
-            } catch (error) {
-                console.error('Erro ao mostrar prévia:', error);
-                showSuccess('Erro ao carregar prévia. Tente novamente.');
-                closePDFPreview();
-            }
-        }
-
-        function closePDFPreview() {
-            document.getElementById('pdfPreviewModal').style.display = 'none';
-            document.body.style.overflow = 'auto'; // Restaurar scroll da página
-            isPreviewMode = false;
-        }
-
-        let previewPdfImageData = null;
-        let previewScale = 1;
-        
-        async function renderPreviewPage() {
-            if (!pdfDoc || !previewCtx) return;
-            
-            try {
-                const page = await pdfDoc.getPage(previewCurrentPage);
-                
-                // CORREÇÃO: Usar mesma lógica de proporção do editor principal
-                const viewport = page.getViewport({ scale: 1.0 });
-                const pdfWidth = viewport.width;
-                const pdfHeight = viewport.height;
-                const pdfRatio = pdfWidth / pdfHeight;
-                
-                // Dimensões máximas para a prévia
-                const maxWidth = 700;
-                const maxHeight = 500;
-                
-                // Calcular dimensões mantendo proporção EXATA do PDF
-                let displayWidth, displayHeight;
-                
-                if (maxWidth / pdfRatio <= maxHeight) {
-                    // Limitado pela largura
-                    displayWidth = maxWidth;
-                    displayHeight = maxWidth / pdfRatio;
-                } else {
-                    // Limitado pela altura
-                    displayHeight = maxHeight;
-                    displayWidth = maxHeight * pdfRatio;
-                }
-                
-                // Garantir que as dimensões sejam inteiras
-                displayWidth = Math.floor(displayWidth);
-                displayHeight = Math.floor(displayHeight);
-                
-                // Calcular escala baseada nas dimensões finais
-                previewScale = displayWidth / pdfWidth;
-                
-                // Configurar canvas da prévia com dimensões exatas
-                previewCanvas.width = displayWidth;
-                previewCanvas.height = displayHeight;
-                previewCanvas.style.width = displayWidth + 'px';
-                previewCanvas.style.height = displayHeight + 'px';
-                previewCanvas.style.maxWidth = 'none';
-                
-                console.log(`📐 PRÉVIA - Dimensões corrigidas:`);
-                console.log(`PDF: ${pdfWidth}x${pdfHeight} (ratio: ${pdfRatio.toFixed(3)})`);
-                console.log(`Prévia: ${displayWidth}x${displayHeight} (ratio: ${(displayWidth/displayHeight).toFixed(3)})`);
-                console.log(`Escala prévia: ${previewScale.toFixed(4)}`);
-                
-                // Renderizar PDF base e salvar
-                await renderPreviewPDFBase();
-                previewPdfImageData = previewCtx.getImageData(0, 0, previewCanvas.width, previewCanvas.height);
-                
-                // Desenhar elementos de texto
-                redrawPreviewTextElements();
-                
-            } catch (error) {
-                console.error('Erro ao renderizar prévia:', error);
-            }
-        }
-        
-        async function renderPreviewPDFBase() {
-            if (!pdfDoc || !previewCtx) return;
-            
-            try {
-                const page = await pdfDoc.getPage(previewCurrentPage);
-                const scaledViewport = page.getViewport({ scale: previewScale });
-                
-                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-                
-                const renderContext = {
-                    canvasContext: previewCtx,
-                    viewport: scaledViewport
-                };
-                
-                await page.render(renderContext).promise;
-            } catch (error) {
-                console.error('Erro ao renderizar base da prévia:', error);
-            }
-        }
-        
-        function redrawPreviewTextElements() {
-            if (!previewPdfImageData) return;
-            
-            // Restaurar imagem do PDF
-            previewCtx.putImageData(previewPdfImageData, 0, 0);
-            
-            // Desenhar elementos de texto da página atual
-            const currentPageTexts = textElements.filter(el => el.page === previewCurrentPage);
-            currentPageTexts.forEach(element => {
-                // Usar a mesma escala relativa
-                const scaleRatio = previewScale / scale;
-                const previewX = element.x * scaleRatio;
-                const previewY = element.y * scaleRatio;
-                const previewFontSize = element.fontSize * scaleRatio;
-                const previewWidth = element.width * scaleRatio;
-                
-                previewCtx.font = `bold ${previewFontSize}px ${element.fontFamily || 'Arial'}`;
-                previewCtx.fillStyle = element.color;
-                previewCtx.textAlign = 'left'; // Usar alinhamento à esquerda para posicionamento preciso
-                previewCtx.fillText(element.text, previewX, previewY + previewFontSize);
-                
-                // Desenhar borda se selecionado
-                if (selectedElement && selectedElement.id === element.id) {
-                    previewCtx.strokeStyle = '#667eea';
-                    previewCtx.lineWidth = 2;
-                    previewCtx.setLineDash([5, 5]);
-                    previewCtx.strokeRect(previewX, previewY, previewWidth, previewFontSize + 10);
-                    previewCtx.setLineDash([]);
-                }
-            });
-        }
-
-        function updatePreviewPageControls() {
-            document.getElementById('previewPageInfo').textContent = `Página ${previewCurrentPage} de ${totalPages}`;
-            document.getElementById('prevPreviewBtn').disabled = previewCurrentPage <= 1;
-            document.getElementById('nextPreviewBtn').disabled = previewCurrentPage >= totalPages;
-            
-            const prevBtn = document.getElementById('prevPreviewBtn');
-            const nextBtn = document.getElementById('nextPreviewBtn');
-            
-            prevBtn.style.opacity = previewCurrentPage <= 1 ? '0.5' : '1';
-            nextBtn.style.opacity = previewCurrentPage >= totalPages ? '0.5' : '1';
-        }
-
-        function previousPreviewPage() {
-            if (previewCurrentPage > 1) {
-                previewCurrentPage--;
-                renderPreviewPage();
-                updatePreviewPageControls();
-            }
-        }
-
-        function nextPreviewPage() {
-            if (previewCurrentPage < totalPages) {
-                previewCurrentPage++;
-                renderPreviewPage();
-                updatePreviewPageControls();
-            }
-        }
-
-        // Eventos do canvas da prévia (similares ao editor principal)
-        function handlePreviewCanvasClick(e) {
-            const rect = previewCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            // Verificar se clicou em um elemento existente
-            const scaleRatio = previewScale / scale;
-            const currentPageTexts = textElements.filter(el => el.page === previewCurrentPage);
-            const clickedElement = currentPageTexts.find(el => {
-                const previewElementX = el.x * scaleRatio;
-                const previewElementY = el.y * scaleRatio;
-                const previewElementWidth = el.width * scaleRatio;
-                const previewElementHeight = el.height * scaleRatio;
-                
-                return x >= previewElementX && x <= previewElementX + previewElementWidth &&
-                       y >= previewElementY && y <= previewElementY + previewElementHeight;
-            });
-            
-            if (clickedElement) {
-                selectElement(clickedElement);
-                redrawPreviewTextElements(); // Redesenhar apenas os textos
-            }
-        }
-
-        function handlePreviewMouseDown(e) {
-            const rect = previewCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const scaleRatio = previewScale / scale;
-            const currentPageTexts = textElements.filter(el => el.page === previewCurrentPage);
-            
-            const clickedElement = currentPageTexts.find(el => {
-                const previewElementX = el.x * scaleRatio;
-                const previewElementY = el.y * scaleRatio;
-                const previewElementWidth = el.width * scaleRatio;
-                const previewElementHeight = el.height * scaleRatio;
-                
-                return x >= previewElementX && x <= previewElementX + previewElementWidth &&
-                       y >= previewElementY && y <= previewElementY + previewElementHeight;
-            });
-            
-            if (clickedElement) {
-                isDragging = true;
-                selectedElement = clickedElement;
-                dragOffset.x = x - (clickedElement.x * scaleRatio);
-                dragOffset.y = y - (clickedElement.y * scaleRatio);
-                previewCanvas.style.cursor = 'grabbing';
-            }
-        }
-
-        function handlePreviewMouseMove(e) {
-            if (isDragging && selectedElement && isPreviewMode) {
-                const rect = previewCanvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                const scaleRatio = previewScale / scale;
-                
-                // Atualizar posição no elemento original (coordenadas do editor)
-                selectedElement.x = (x - dragOffset.x) / scaleRatio;
-                selectedElement.y = (y - dragOffset.y) / scaleRatio;
-                
-                // Redesenhar apenas os elementos de texto (sem piscar)
-                if (!previewDragRendering) {
-                    previewDragRendering = true;
-                    requestAnimationFrame(() => {
-                        redrawPreviewTextElements();
-                        previewDragRendering = false;
-                    });
-                }
-            }
-        }
-
-        function handlePreviewMouseUp() {
-            if (isDragging && isPreviewMode) {
-                isDragging = false;
-                previewCanvas.style.cursor = 'crosshair';
-                autoSave();
-                
-                // Também atualizar o editor principal se estiver na mesma página
-                if (currentPage === previewCurrentPage) {
-                    redrawTextElements();
-                }
-            }
+        // Mostrar erro
+        function showError(message) {
+            elements.loading.classList.add('hidden');
+            document.body.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center gradient-bg">
+                    <div class="bg-white rounded-2xl p-8 text-center card-shadow">
+                        <div class="text-6xl mb-4">😔</div>
+                        <h1 class="text-2xl font-bold text-gray-800 mb-4">Oops!</h1>
+                        <p class="text-gray-600">${message}</p>
+                    </div>
+                </div>
+            `;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96d78a3cd79977d9',t:'MTc1NDkxMzI4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'971b91d232bc77e3',t:'MTc1NTYyNjYyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
