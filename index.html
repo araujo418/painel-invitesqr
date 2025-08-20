@@ -451,7 +451,7 @@
                         <label class="block text-gray-700 font-medium mb-2">URL Personalizada *</label>
                         <div class="flex">
                             <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                                invites.com/
+                                seusite.github.io/invites?site=
                             </span>
                             <input type="text" id="customUrl" required 
                                    class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
@@ -490,7 +490,7 @@
                 <div class="mt-8 text-4xl pulse-heart">💕</div>
                 <div class="mt-6">
                     <span id="siteUrl" class="bg-white bg-opacity-20 px-4 py-2 rounded-full text-sm">
-                        invites.com/ana-e-carlos
+                        seusite.github.io/invites?site=ana-e-carlos
                     </span>
                 </div>
             </div>
@@ -886,7 +886,7 @@
             document.getElementById('footerDate').textContent = `${formattedDate} • Com amor 💕`;
             
             // URL
-            document.getElementById('siteUrl').textContent = `invites.com/${data.custom_url}`;
+            document.getElementById('siteUrl').textContent = `seusite.github.io/invites?site=${data.custom_url}`;
             
             // Update RSVP form based on settings
             updateRSVPForm(data);
@@ -1257,7 +1257,7 @@
                 const createdWedding = await createWedding(weddingData);
                 
                 // Show success message
-                alert(`🎉 Parabéns! Seu site foi criado com sucesso!\n\nURL: invites.com/${createdWedding.custom_url}\n\nVocê pode compartilhar este link com seus convidados!\n\nGuarde bem seu usuário e senha para acessar os dados dos convidados!`);
+                alert(`🎉 Parabéns! Seu site foi criado com sucesso!\n\nURL: seusite.github.io/invites?site=${createdWedding.custom_url}\n\nVocê pode compartilhar este link com seus convidados!\n\nGuarde bem seu usuário e senha para acessar os dados dos convidados!`);
                 
                 // Show the wedding site
                 showWeddingSite(createdWedding);
@@ -1600,5 +1600,5 @@
             document.getElementById('companionOptions').classList.toggle('hidden', !this.checked);
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97212494027f77dd',t:'MTc1NTY4NTA2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972135e4e74377d9',t:'MTc1NTY4NTc3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
