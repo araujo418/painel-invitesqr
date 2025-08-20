@@ -19,11 +19,22 @@
 <body class="bg-gray-50">
     <!-- Configuração do Supabase -->
     <script>
-        // ⚠️ CONFIGURAÇÃO REAL DO PROJETO
-        // URL base do GitHub Pages: araujo418.github.io/painel-invitesqr/?site=...
-        const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4NzAsImV4cCI6MjA1MDU0ODg3MH0.demo_key_for_presentation';
+        // ✅ CONEXÃO ATIVA COM SUPABASE
+        const DEMO_MODE = false;
+        
+        // Configuração do Supabase
+        const supabaseUrl = 'https://ixwjdhddlbvfrfxeqjpj.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4d2pkaGRkbGJ2ZnJmeGVxanBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQxMjQxMDAsImV4cCI6MjAzOTcwMDEwMH0.o2G5ueeegatfGpycdNzi3-8aFGYNM_tZ1ykjlXQclgY';
+        
+        // Inicializar cliente Supabase
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Simulação de banco de dados local (apenas para fallback)
+        let demoDatabase = {
+            weddings: [],
+            rsvps: [],
+            messages: []
+        };
         
         // Configuração do GitHub Pages
         const GITHUB_BASE_URL = 'https://araujo418.github.io/painel-invitesqr/';
@@ -36,6 +47,8 @@
         let isGitHubPages = window.location.hostname.includes('github.io');
         let currentSiteUrl = siteParam;
     </script>
+
+
 
     <!-- Navegação -->
     <nav class="bg-white shadow-sm border-b">
@@ -1583,14 +1596,15 @@
             }
         }
 
-        // ========== FUNÇÕES DO SUPABASE ==========
+        // ========== FUNÇÕES DO BANCO DE DADOS ==========
         async function createWedding(weddingData) {
             try {
+                // Inserir no Supabase usando a tabela 'clientes'
                 const { data, error } = await supabase
-                    .from('weddings')
+                    .from('clientes')
                     .insert([{
                         username: weddingData.username,
-                        password: weddingData.password, // ⚠️ Sem hash por simplicidade
+                        password: weddingData.password,
                         groom_name: weddingData.groomName,
                         bride_name: weddingData.brideName,
                         wedding_date: weddingData.date,
@@ -1617,10 +1631,10 @@
         async function loginAdmin(username, password) {
             try {
                 const { data, error } = await supabase
-                    .from('weddings')
+                    .from('clientes')
                     .select('*')
                     .eq('username', username)
-                    .eq('password', password) // ⚠️ Comparação direta sem hash
+                    .eq('password', password)
                     .single();
                 
                 if (error) throw error;
@@ -1634,7 +1648,7 @@
         async function getWeddingByUrl(customUrl) {
             try {
                 const { data, error } = await supabase
-                    .from('weddings')
+                    .from('clientes')
                     .select('*')
                     .eq('custom_url', customUrl)
                     .single();
@@ -1650,9 +1664,9 @@
         async function createRSVP(rsvpData) {
             try {
                 const { data, error } = await supabase
-                    .from('rsvps')
+                    .from('convidados')
                     .insert([{
-                        wedding_id: rsvpData.weddingId,
+                        cliente_id: rsvpData.weddingId,
                         guest_name: rsvpData.guestName,
                         companion_name: rsvpData.companionName || null,
                         guest_count: rsvpData.guestCount || 1,
@@ -1673,11 +1687,12 @@
         async function createMessage(messageData) {
             try {
                 const { data, error } = await supabase
-                    .from('messages')
+                    .from('convidados')
                     .insert([{
-                        wedding_id: messageData.weddingId,
+                        cliente_id: messageData.weddingId,
                         guest_name: messageData.name,
-                        message: messageData.message
+                        message: messageData.message,
+                        attendance: null // Mensagem sem confirmação de presença
                     }])
                     .select()
                     .single();
@@ -1693,9 +1708,10 @@
         async function getMessages(weddingId) {
             try {
                 const { data, error } = await supabase
-                    .from('messages')
+                    .from('convidados')
                     .select('*')
-                    .eq('wedding_id', weddingId)
+                    .eq('cliente_id', weddingId)
+                    .not('message', 'is', null)
                     .order('created_at', { ascending: false });
                 
                 if (error) throw error;
@@ -1709,9 +1725,10 @@
         async function getRSVPs(weddingId) {
             try {
                 const { data, error } = await supabase
-                    .from('rsvps')
+                    .from('convidados')
                     .select('*')
-                    .eq('wedding_id', weddingId)
+                    .eq('cliente_id', weddingId)
+                    .not('attendance', 'is', null)
                     .order('created_at', { ascending: false });
                 
                 if (error) throw error;
@@ -1725,26 +1742,22 @@
         async function checkUrlAvailability(customUrl) {
             try {
                 const { data, error } = await supabase
-                    .from('weddings')
+                    .from('clientes')
                     .select('id')
                     .eq('custom_url', customUrl);
                 
-                // Se há erro na consulta, assumir que está disponível
                 if (error) {
                     console.log('Erro na consulta (URL provavelmente disponível):', error);
                     return { available: true };
                 }
                 
-                // Se data existe e tem registros, URL já existe
                 if (data && data.length > 0) {
                     return { available: false };
                 }
                 
-                // Se não há dados, URL está disponível
                 return { available: true };
             } catch (error) {
                 console.log('Erro geral na verificação de URL:', error);
-                // Em caso de erro, assumir que está disponível para não bloquear o usuário
                 return { available: true };
             }
         }
@@ -1915,41 +1928,43 @@
                 }
             });
 
-            // Event listener para mensagens
-            document.getElementById('messageForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const messageData = {
-                    weddingId: currentWedding?.id || 1, // Para demo
-                    name: document.getElementById('messageName').value,
-                    message: document.getElementById('messageText').value
-                };
-                
-                const result = await createMessage(messageData);
-                if (result.success) {
-                    alert('Mensagem enviada com sucesso!');
-                    document.getElementById('messageForm').reset();
+            // Event listener para mensagens (opcional - não existe no HTML atual)
+            const messageForm = document.getElementById('messageForm');
+            if (messageForm) {
+                messageForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
                     
-                    // Adicionar mensagem à lista imediatamente
-                    const messagesList = document.getElementById('messagesList');
-                    const newMessage = document.createElement('div');
-                    newMessage.className = 'bg-white border rounded-lg p-4 card-shadow';
-                    newMessage.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="font-semibold text-gray-800">${messageData.name}</h4>
-                            <span class="text-sm text-gray-500">Agora</span>
-                        </div>
-                        <p class="text-gray-600">${messageData.message}</p>
-                    `;
-                    messagesList.insertBefore(newMessage, messagesList.firstChild);
-                } else {
-                    alert('Erro ao enviar mensagem: ' + result.error);
-                }
-            });
+                    const messageData = {
+                        weddingId: currentWedding?.id || 1,
+                        name: document.getElementById('messageName').value,
+                        message: document.getElementById('messageText').value
+                    };
+                    
+                    const result = await createMessage(messageData);
+                    if (result.success) {
+                        alert('Mensagem enviada com sucesso!');
+                        document.getElementById('messageForm').reset();
+                        
+                        const messagesList = document.getElementById('messagesList');
+                        const newMessage = document.createElement('div');
+                        newMessage.className = 'bg-white border rounded-lg p-4 card-shadow';
+                        newMessage.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-semibold text-gray-800">${messageData.name}</h4>
+                                <span class="text-sm text-gray-500">Agora</span>
+                            </div>
+                            <p class="text-gray-600">${messageData.message}</p>
+                        `;
+                        messagesList.insertBefore(newMessage, messagesList.firstChild);
+                    } else {
+                        alert('Erro ao enviar mensagem: ' + result.error);
+                    }
+                });
+            }
             
             // Inicializar aplicação (detecta se é site específico ou página inicial)
             initializeApp();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9721bf37f11b77d7',t:'MTc1NTY5MTQwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9721cc48f03977d7',t:'MTc1NTY5MTkzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
