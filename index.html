@@ -5,675 +5,1612 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invites - Crie seu Site de Casamento</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .dancing { font-family: 'Dancing Script', cursive; }
+        .gradient-bg { background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%); }
+        .card-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         
-        .font-dancing { font-family: 'Dancing Script', cursive; }
-        .font-poppins { font-family: 'Poppins', sans-serif; }
-        
-        .gradient-bg {
-            background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);
-        }
-        
-        .card-shadow {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        
-        .message-card {
-            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-            border-left: 4px solid #667eea;
-        }
-        
-        .pulse-heart {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .hidden { display: none; }
-        
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        
-        .tab-active {
-            border-color: #5ba189 !important;
-            color: #5ba189 !important;
-        }
-        
-        .tab-inactive {
-            border-color: transparent !important;
-            color: #6b7280 !important;
-        }
+
     </style>
 </head>
-<body class="font-poppins bg-gray-50 min-h-screen">
-    
-    <!-- Home Page - Create Account -->
-    <div id="homePage" class="min-h-screen">
-        <!-- Hero Section -->
-        <header class="gradient-bg text-white py-20 text-center relative overflow-hidden">
-            <div class="absolute inset-0 bg-black opacity-10"></div>
-            <!-- Login button in top right -->
-            <div class="absolute top-6 right-6 z-20">
-                <button onclick="showLoginForm()" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-full font-medium hover:bg-opacity-30 transition-all text-sm">
-                    Login
-                </button>
-            </div>
-            <div class="relative z-10 max-w-4xl mx-auto px-4">
-                <h1 class="font-dancing text-6xl md:text-8xl font-bold mb-6">Invites</h1>
-                <p class="text-xl md:text-2xl font-light mb-8">Crie seu site de casamento personalizado em minutos</p>
-                <div class="text-4xl pulse-heart mb-8">💕</div>
-                <div class="space-y-4">
-                    <button onclick="showCreateForm()" class="bg-white text-green-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200 card-shadow" style="color: #5ba189;">
-                        ✨ Criar Meu Site de Casamento
+<body class="bg-gray-50">
+    <!-- Configuração do Supabase -->
+    <script>
+        // ⚠️ CONFIGURAÇÃO REAL DO PROJETO
+        // URL base do GitHub Pages: araujo418.github.io/painel-invitesqr/?site=...
+        const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4NzAsImV4cCI6MjA1MDU0ODg3MH0.demo_key_for_presentation';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Configuração do GitHub Pages
+        const GITHUB_BASE_URL = 'https://araujo418.github.io/painel-invitesqr/';
+        
+        // Detectar se estamos carregando um site específico via parâmetro
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteParam = urlParams.get('site');
+        
+        // Estado global da aplicação
+        let isGitHubPages = window.location.hostname.includes('github.io');
+        let currentSiteUrl = siteParam;
+    </script>
+
+    <!-- Navegação -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-green-600 dancing" style="color: #5ba189;">Invites</h1>
+                </div>
+                <div class="flex space-x-4">
+                    <button onclick="showDemo()" class="text-gray-600 px-3 py-2 rounded-md text-sm font-medium" style="color: gray;" onmouseover="this.style.color='#5ba189'" onmouseout="this.style.color='gray'">
+                        Ver Demo
+                    </button>
+                    <button onclick="showLogin()" class="text-gray-600 px-3 py-2 rounded-md text-sm font-medium" style="color: gray;" onmouseover="this.style.color='#5ba189'" onmouseout="this.style.color='gray'">
+                        Login
+                    </button>
+                    <button onclick="showCreateWedding()" class="text-white px-4 py-2 rounded-md text-sm font-medium" style="background-color: #5ba189;" onmouseover="this.style.backgroundColor='#4a8b73'" onmouseout="this.style.backgroundColor='#5ba189'">
+                        Criar Site
                     </button>
                 </div>
             </div>
-        </header>
+        </div>
+    </nav>
 
-        <!-- Features Section -->
-        <section class="py-16 bg-white">
+    <!-- Página Principal -->
+    <div id="homePage" class="min-h-screen">
+        <!-- Hero Section -->
+        <div class="gradient-bg text-white py-20">
+            <div class="max-w-4xl mx-auto text-center px-4">
+                <h1 class="text-5xl md:text-6xl font-bold dancing mb-6">
+                    Crie o Site Perfeito para seu Casamento
+                </h1>
+                <p class="text-xl mb-8 opacity-90">
+                    Uma plataforma completa para confirmações de presença
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="showCreateWedding()" class="bg-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition" style="color: #5ba189;">
+                        Começar Agora
+                    </button>
+                    <button onclick="showDemo()" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold transition" style="border-color: white;" onmouseover="this.style.backgroundColor='white'; this.style.color='#5ba189'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='white'">
+                        Ver Demonstração
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Por que escolher o Invites -->
+        <div class="py-20 bg-white">
             <div class="max-w-6xl mx-auto px-4">
-                <h2 class="font-dancing text-4xl text-center text-gray-800 mb-12">Por que escolher o Invites?</h2>
+                <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">
+                    Por que escolher o Invites?
+                </h2>
+                <p class="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
+                    A plataforma mais completa para confirmações de presença do seu casamento
+                </p>
                 <div class="grid md:grid-cols-3 gap-8">
                     <div class="text-center p-6">
-                        <div class="text-4xl mb-4">🎨</div>
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(91, 161, 137, 0.1);">
+                            <span class="text-2xl">✨</span>
+                        </div>
                         <h3 class="text-xl font-semibold mb-3">Design Elegante</h3>
-                        <p class="text-gray-600">Sites lindos e responsivos que impressionam seus convidados</p>
+                        <p class="text-gray-600">Templates profissionais e personalizáveis que impressionam seus convidados</p>
                     </div>
                     <div class="text-center p-6">
-                        <div class="text-4xl mb-4">⏰</div>
-                        <h3 class="text-xl font-semibold mb-3">Cronômetro Regressivo</h3>
-                        <p class="text-gray-600">Contagem regressiva automática para o grande dia</p>
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(91, 161, 137, 0.1);">
+                            <span class="text-2xl">⏰</span>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Cronômetro Automático</h3>
+                        <p class="text-gray-600">Contagem regressiva em tempo real até o grande dia</p>
                     </div>
                     <div class="text-center p-6">
-                        <div class="text-4xl mb-4">💌</div>
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(91, 161, 137, 0.1);">
+                            <span class="text-2xl">📱</span>
+                        </div>
                         <h3 class="text-xl font-semibold mb-3">Confirmações Online</h3>
-                        <p class="text-gray-600">Receba confirmações e mensagens dos convidados</p>
+                        <p class="text-gray-600">Sistema RSVP inteligente com gestão completa de convidados</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Demo Section -->
-        <section class="py-16 gradient-bg">
-            <div class="max-w-4xl mx-auto px-4 text-center">
-                <h2 class="font-dancing text-4xl text-white mb-8">Veja um exemplo</h2>
-                <button onclick="showDemoSite()" class="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all">
-                    👀 Ver Site de Demonstração
+        <!-- Demonstração -->
+        <div class="py-20 bg-gray-50">
+            <div class="max-w-4xl mx-auto text-center px-4">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">
+                    👀 Veja como funciona
+                </h2>
+                <p class="text-lg text-gray-600 mb-8">
+                    Explore nosso site de demonstração e veja todas as funcionalidades em ação
+                </p>
+                <button onclick="showDemo()" class="text-white px-8 py-4 rounded-lg font-semibold transition text-lg" style="background-color: #5ba189;" onmouseover="this.style.backgroundColor='#4a8b73'" onmouseout="this.style.backgroundColor='#5ba189'">
+                    Ver Site de Demonstração
                 </button>
             </div>
-        </section>
-    </div>
-
-    <!-- Login Form -->
-    <div id="loginForm" class="hidden min-h-screen py-16 gradient-bg">
-        <div class="max-w-md mx-auto px-4">
-            <div class="bg-white rounded-2xl p-8 card-shadow">
-                <div class="text-center mb-8">
-                    <h2 class="font-dancing text-4xl text-gray-800 mb-4">Login</h2>
-                    <p class="text-gray-600">Acesse seu dashboard</p>
-                </div>
-                
-                <form id="adminLoginForm" class="space-y-6">
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Nome de Usuário</label>
-                        <input type="text" id="loginUsername" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Senha</label>
-                        <input type="password" id="loginPassword" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                    </div>
-                    
-                    <div id="loginError" class="text-red-500 text-sm hidden"></div>
-                    
-                    <div class="flex gap-4">
-                        <button type="button" onclick="showHomePage()" 
-                                class="flex-1 bg-gray-500 text-white py-4 rounded-lg font-semibold hover:bg-gray-600 transition-all">
-                            ← Voltar
-                        </button>
-                        <button type="submit" id="loginButton"
-                                class="flex-1 text-white py-4 rounded-lg font-semibold transition-all" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                            🔐 Entrar
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     </div>
 
-    <!-- Admin Dashboard -->
-    <div id="adminDashboard" class="hidden min-h-screen bg-gray-50">
-        <!-- Dashboard Header -->
-        <header class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h1 class="font-dancing text-3xl text-gray-800">Dashboard</h1>
-                        <p id="dashboardWeddingInfo" class="text-gray-600">Ana & Carlos - 15 de Junho de 2024</p>
-                    </div>
-                    <div class="flex gap-4">
-                        <button onclick="viewWeddingSite()" class="px-4 py-2 rounded-lg transition-all text-white" style="background-color: #5ba189; hover:background-color: #4a8b73;">
-                            👀 Ver Site
-                        </button>
-                        <button onclick="logout()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-all">
-                            🚪 Sair
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="max-w-7xl mx-auto px-4 py-8">
-            <!-- Stats Cards -->
-            <div class="grid md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg card-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-full">
-                            <span class="text-2xl">✅</span>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-600">Confirmados</p>
-                            <p id="confirmedCount" class="text-2xl font-bold text-green-600">0</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-6 rounded-lg card-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-red-100 rounded-full">
-                            <span class="text-2xl">❌</span>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-600">Não Confirmados</p>
-                            <p id="declinedCount" class="text-2xl font-bold text-red-600">0</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-6 rounded-lg card-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-full">
-                            <span class="text-2xl">👥</span>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-600">Total Pessoas</p>
-                            <p id="totalPeople" class="text-2xl font-bold text-blue-600">0</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-6 rounded-lg card-shadow">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-purple-100 rounded-full">
-                            <span class="text-2xl">💌</span>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-600">Mensagens</p>
-                            <p id="messagesCount" class="text-2xl font-bold text-purple-600">0</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="bg-white rounded-lg card-shadow">
-                <div class="border-b">
-                    <nav class="flex">
-                        <button onclick="showTab('rsvps')" id="rsvpsTab" class="px-6 py-4 text-sm font-medium border-b-2 tab-active">
-                            📋 Lista de Convidados
-                        </button>
-                        <button onclick="showTab('messages')" id="messagesTab" class="px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700">
-                            💬 Mensagens
-                        </button>
-                        <button onclick="showTab('settings')" id="settingsTab" class="px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700">
-                            ⚙️ Configurações
-                        </button>
-                    </nav>
-                </div>
-
-                <!-- RSVPs Tab -->
-                <div id="rsvpsTabContent" class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-semibold">Lista de Convidados</h3>
-                        <div class="flex gap-2">
-                            <button onclick="exportGuestList('all')" class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-all text-sm">
-                                📊 Todos
-                            </button>
-                            <button onclick="exportGuestList('confirmed')" class="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-all text-sm">
-                                ✅ Confirmados
-                            </button>
-                            <button onclick="exportGuestList('declined')" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all text-sm">
-                                ❌ Não Confirmados
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b">
-                                    <th class="text-left py-3 px-4">Nome</th>
-                                    <th class="text-left py-3 px-4">Acompanhante</th>
-                                    <th class="text-left py-3 px-4">Status</th>
-                                    <th class="text-left py-3 px-4">Data</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rsvpsList">
-                                <tr>
-                                    <td colspan="4" class="text-center py-8 text-gray-500">
-                                        Carregando confirmações...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Messages Tab -->
-                <div id="messagesTabContent" class="p-6 hidden">
-                    <h3 class="text-lg font-semibold mb-6">Mensagens dos Convidados</h3>
-                    
-                    <div id="adminMessagesList" class="space-y-4">
-                        <div class="text-center py-8 text-gray-500">
-                            Carregando mensagens...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Settings Tab -->
-                <div id="settingsTabContent" class="p-6 hidden">
-                    <h3 class="text-lg font-semibold mb-6">Configurações do Site</h3>
-                    
-                    <form id="settingsForm" class="space-y-6">
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noivo(a)</label>
-                                <input type="text" id="settingsGroomName" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noiva(o)</label>
-                                <input type="text" id="settingsBrideName" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                            </div>
-                        </div>
-                        
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">Data do Casamento</label>
-                                <input type="date" id="settingsWeddingDate" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 font-medium mb-2">Horário</label>
-                                <input type="time" id="settingsWeddingTime" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">Local do Evento</label>
-                            <input type="text" id="settingsEventVenue" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <h4 class="font-medium text-gray-800 mb-4">Configurações de Acompanhantes</h4>
-                            
-                            <div class="space-y-4">
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="allowCompanions" class="mr-3" style="accent-color: #5ba189;">
-                                    <label for="allowCompanions" class="text-gray-700">Permitir acompanhantes</label>
-                                </div>
-                                
-                                <div id="companionOptions" class="ml-6 space-y-3 hidden">
-                                    <div class="flex items-center">
-                                        <input type="radio" name="companionType" value="single" id="singleCompanion" class="mr-3" style="accent-color: #5ba189;">
-                                        <label for="singleCompanion" class="text-gray-700">Apenas 1 acompanhante (campo de nome)</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input type="radio" name="companionType" value="multiple" id="multipleCompanions" class="mr-3 text-purple-500">
-                                        <label for="multipleCompanions" class="text-gray-700">Múltiplos acompanhantes (seletor de quantidade)</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-blue-50 p-4 rounded-lg">
-                            <h4 class="font-medium text-gray-800 mb-4">Mensagem de Confirmação</h4>
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-gray-700 font-medium mb-2">Mensagem para quem confirma presença</label>
-                                    <textarea id="confirmMessage" rows="3" 
-                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                              placeholder="Ex: Obrigado por confirmar! Esperamos você no nosso grande dia! 🎉"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-gray-700 font-medium mb-2">Mensagem para quem não pode comparecer</label>
-                                    <textarea id="declineMessage" rows="3" 
-                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                              placeholder="Ex: Obrigado por nos avisar. Sentiremos sua falta! 💙"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex gap-4">
-                            <button type="submit" class="text-white px-6 py-3 rounded-lg font-semibold transition-all" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                                💾 Salvar Configurações
-                            </button>
-                            <button type="button" onclick="resetSettings()" class="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-all">
-                                🔄 Restaurar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Wedding Form -->
-    <div id="createForm" class="hidden min-h-screen py-16 gradient-bg">
+    <!-- Página de Criação de Casamento -->
+    <div id="createWeddingPage" class="hidden min-h-screen py-12">
         <div class="max-w-2xl mx-auto px-4">
-            <div class="bg-white rounded-2xl p-8 card-shadow">
-                <div class="text-center mb-8">
-                    <h2 class="font-dancing text-4xl text-gray-800 mb-4">Crie Seu Site de Casamento</h2>
-                    <p class="text-gray-600">Preencha os dados do seu casamento</p>
-                </div>
-                
-                <form id="weddingForm" class="space-y-6">
+            <div class="bg-white rounded-lg card-shadow p-8">
+                <h2 class="text-3xl font-bold text-center mb-8 dancing" style="color: #5ba189;">
+                    Criar Seu Site de Casamento
+                </h2>
+                <form id="createWeddingForm" class="space-y-6">
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Nome de Usuário *</label>
-                            <input type="text" id="username" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                   placeholder="Ex: ana_carlos">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Noivo</label>
+                            <input type="text" id="groomName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style="--tw-ring-color: #5ba189;">
                         </div>
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Senha *</label>
-                            <input type="password" id="password" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                   placeholder="Mínimo 6 caracteres">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Noiva</label>
+                            <input type="text" id="brideName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style="--tw-ring-color: #5ba189;">
                         </div>
                     </div>
                     
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Data do Casamento</label>
+                        <input type="date" id="weddingDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style="border-color: #d1d5db; --tw-ring-color: #5ba189;">
+                    </div>
+
+
+
+
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">URL Personalizada</label>
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                invites.com/
+                            </span>
+                            <input type="text" id="customUrl" required placeholder="joao-e-maria" class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2" style="--tw-ring-color: #5ba189;">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Será gerada automaticamente baseada nos nomes</p>
+                        <div id="urlStatus" class="text-xs mt-1 hidden"></div>
+                    </div>
+
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noivo(a) *</label>
-                            <input type="text" id="groomName" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Usuário (Login)</label>
+                            <input type="text" id="username" required minlength="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style="--tw-ring-color: #5ba189;">
+                            <p class="text-xs text-gray-500 mt-1">Mínimo 3 caracteres</p>
                         </div>
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noiva(o) *</label>
-                            <input type="text" id="brideName" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                            <input type="password" id="password" required minlength="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2" style="--tw-ring-color: #5ba189;">
+                            <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
                         </div>
                     </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Data do Casamento *</label>
-                        <input type="date" id="weddingDate" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Horário *</label>
-                        <input type="time" id="weddingTime" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">Local do Evento *</label>
-                        <input type="text" id="eventVenue" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                               placeholder="Ex: Salão de Festas Jardim">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">URL do Seu Site</label>
-                        <div class="bg-gray-50 border border-gray-300 rounded-lg p-4">
-                            <div class="flex items-center">
-                                <span class="text-gray-600 text-sm">
-                                    araujo418.github.io/painel-invitesqr/?site=
-                                </span>
-                                <span id="generatedUrl" class="font-medium text-green-600 ml-1">
-                                    será-gerada-automaticamente
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-500 mt-2">
-                                ✨ Sua URL será criada automaticamente baseada nos nomes dos noivos
-                            </p>
-                        </div>
-                        <input type="hidden" id="customUrl" required>
-                    </div>
-                    
-                    <div class="flex gap-4">
-                        <button type="button" onclick="showHomePage()" 
-                                class="flex-1 bg-gray-500 text-white py-4 rounded-lg font-semibold hover:bg-gray-600 transition-all">
-                            ← Voltar
-                        </button>
-                        <button type="submit" id="createButton"
-                                class="flex-1 text-white py-4 rounded-lg font-semibold transform hover:scale-105 transition-all duration-200 card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                            🎉 Criar Site
-                        </button>
-                    </div>
+
+                    <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-md font-semibold hover:bg-purple-700 transition">
+                        Criar Site de Casamento
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Wedding Site Template -->
-    <div id="weddingSite" class="hidden">
-        <!-- Header -->
-        <header class="gradient-bg text-white py-16 text-center relative overflow-hidden">
-            <div class="absolute inset-0 bg-black opacity-10"></div>
-            <!-- Login button in top right -->
-            <div class="absolute top-6 right-6 z-20">
-                <button onclick="showLoginForm()" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-full font-medium hover:bg-opacity-30 transition-all text-sm">
+    <!-- Página de Login -->
+    <div id="loginPage" class="hidden min-h-screen py-12">
+        <div class="max-w-md mx-auto px-4">
+            <div class="bg-white rounded-lg card-shadow p-8">
+                <h2 class="text-3xl font-bold text-center mb-8 dancing text-purple-600">
+                    Acesso dos Noivos
+                </h2>
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                        <input type="text" id="loginUsername" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                        <input type="password" id="loginPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-md font-semibold hover:bg-purple-700 transition">
+                        Entrar no Painel
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Site de Demonstração -->
+    <div id="demoPage" class="hidden min-h-screen">
+        <!-- Header do Site de Casamento -->
+        <div class="relative bg-gradient-to-br from-green-400 via-green-500 to-green-600 text-white py-20">
+            <!-- Overlay escuro -->
+            <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+            
+            <!-- Botão Login no canto superior direito -->
+            <div class="absolute top-4 right-4 z-10">
+                <button onclick="showLogin()" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-30 transition backdrop-blur-sm">
                     Login
                 </button>
             </div>
-            <div class="relative z-10 max-w-4xl mx-auto px-4">
-                <h1 id="coupleNames" class="font-dancing text-6xl md:text-8xl font-bold mb-4">Ana & Carlos</h1>
-                <p class="text-xl md:text-2xl font-light mb-6">Você está convidado para nosso casamento!</p>
-
-                <div class="mt-8 text-4xl pulse-heart">💕</div>
+            
+            <div class="relative z-10 max-w-4xl mx-auto text-center px-4">
+                <div class="mb-6">
+                    <span class="text-6xl animate-pulse">💕</span>
+                </div>
+                <h1 class="text-6xl md:text-7xl font-bold dancing mb-6 couple-names">
+                    João & Maria
+                </h1>
+                <p class="text-2xl mb-8 font-medium">
+                    Você está convidado para nosso casamento!
+                </p>
+                <div class="text-lg opacity-90 wedding-info">
+                    15 de Junho de 2024 • 16:00
+                </div>
             </div>
-        </header>
-
-        <!-- Countdown Timer -->
-        <section class="py-12 bg-white">
-            <div class="max-w-4xl mx-auto px-4 text-center">
-                <h2 class="font-dancing text-4xl text-gray-800 mb-8">Contagem Regressiva</h2>
-                <div id="countdown" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
-                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                        <div id="days" class="text-3xl font-bold">00</div>
-                        <div class="text-sm uppercase tracking-wide">Dias</div>
+        </div>
+        
+        <!-- Contagem Regressiva -->
+        <div class="py-12 bg-gray-50">
+            <div class="max-w-4xl mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Contagem Regressiva</h2>
+                    <p class="text-gray-600">Para o nosso grande dia</p>
+                </div>
+                
+                <div id="countdownCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                    <div class="bg-white rounded-lg shadow-lg p-6 text-center border-t-4 border-purple-500">
+                        <div id="days" class="text-3xl font-bold text-purple-600 mb-2">150</div>
+                        <div class="text-gray-600 font-medium">Dias</div>
                     </div>
-                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                        <div id="hours" class="text-3xl font-bold">00</div>
-                        <div class="text-sm uppercase tracking-wide">Horas</div>
+                    <div class="bg-white rounded-lg shadow-lg p-6 text-center border-t-4 border-blue-500">
+                        <div id="hours" class="text-3xl font-bold text-blue-600 mb-2">12</div>
+                        <div class="text-gray-600 font-medium">Horas</div>
                     </div>
-                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                        <div id="minutes" class="text-3xl font-bold">00</div>
-                        <div class="text-sm uppercase tracking-wide">Minutos</div>
+                    <div class="bg-white rounded-lg shadow-lg p-6 text-center border-t-4 border-green-500">
+                        <div id="minutes" class="text-3xl font-bold text-green-600 mb-2">30</div>
+                        <div class="text-gray-600 font-medium">Minutos</div>
                     </div>
-                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
-                        <div id="seconds" class="text-3xl font-bold">00</div>
-                        <div class="text-sm uppercase tracking-wide">Segundos</div>
+                    <div class="bg-white rounded-lg shadow-lg p-6 text-center border-t-4 border-red-500">
+                        <div id="seconds" class="text-3xl font-bold text-red-600 mb-2">45</div>
+                        <div class="text-gray-600 font-medium">Segundos</div>
+                    </div>
+                </div>
+                
+                <div id="weddingDayMessage" class="hidden text-center mt-8">
+                    <div class="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
+                        <div class="text-4xl mb-4">🎉</div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">O grande dia chegou!</h3>
+                        <p class="text-gray-600">Hoje é o nosso casamento!</p>
+                        <div class="text-4xl mt-4">🎉</div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- RSVP Form -->
-        <section class="py-16 gradient-bg">
-            <div class="max-w-2xl mx-auto px-4">
-                <div class="bg-white rounded-2xl p-8 card-shadow">
-                    <h2 class="font-dancing text-4xl text-center text-gray-800 mb-8">Confirme sua Presença</h2>
-                    
+
+
+        <!-- Seção RSVP -->
+        <div id="rsvpSection" class="py-12 bg-gray-50">
+            <div class="max-w-lg mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold dancing text-purple-600 mb-3">
+                        Confirme sua Presença
+                    </h2>
+                    <p class="text-gray-600 text-sm">Sua confirmação é muito importante para nós!</p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6">
                     <form id="rsvpForm" class="space-y-6">
+                        <!-- Nome do Convidado -->
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Seu Nome *</label>
-                            <input type="text" id="guestName" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            <label class="block text-base font-medium text-gray-700 mb-2">Seu Nome</label>
+                            <input type="text" id="guestName" required placeholder="Digite seu nome completo" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base">
                         </div>
                         
+                        <!-- Opções de Presença -->
+                        <div>
+                            <label class="block text-base font-medium text-gray-700 mb-3">Você virá?</label>
+                            <div class="grid grid-cols-1 gap-3">
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="attendance" value="yes" class="sr-only peer">
+                                    <div class="bg-gray-50 border-2 border-gray-200 rounded-lg p-4 text-center transition-all peer-checked:border-green-500 peer-checked:bg-green-50 active:scale-95">
+                                        <div class="text-2xl mb-2">✅</div>
+                                        <div class="font-semibold text-gray-800 mb-1">Vou comparecer</div>
+                                        <div class="text-xs text-gray-600">Estarei presente no grande dia!</div>
+                                    </div>
+                                </label>
+                                
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="attendance" value="no" class="sr-only peer">
+                                    <div class="bg-gray-50 border-2 border-gray-200 rounded-lg p-4 text-center transition-all peer-checked:border-red-500 peer-checked:bg-red-50 active:scale-95">
+                                        <div class="text-2xl mb-2">❌</div>
+                                        <div class="font-semibold text-gray-800 mb-1">Não poderei ir</div>
+                                        <div class="text-xs text-gray-600">Infelizmente não conseguirei comparecer</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
 
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-4">Confirmação de Presença *</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <label class="relative cursor-pointer">
-                                    <input type="radio" name="attendance" value="sim" required class="sr-only peer">
-                                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all duration-200 hover:border-green-300 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:shadow-lg">
-                                        <div class="text-3xl mb-2">✅</div>
-                                        <div class="font-semibold text-gray-800 peer-checked:text-green-700">Vou comparecer</div>
-                                        <div class="text-sm text-gray-500 mt-1">Estarei presente no grande dia!</div>
-                                    </div>
-                                </label>
-                                <label class="relative cursor-pointer">
-                                    <input type="radio" name="attendance" value="nao" required class="sr-only peer">
-                                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all duration-200 hover:border-red-300 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:shadow-lg">
-                                        <div class="text-3xl mb-2">❌</div>
-                                        <div class="font-semibold text-gray-800 peer-checked:text-red-700">Não poderei ir</div>
-                                        <div class="text-sm text-gray-500 mt-1">Infelizmente não conseguirei comparecer</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div id="companionSection" class="hidden">
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h4 class="font-medium text-blue-800">Vai trazer acompanhante?</h4>
-                                        <p class="text-sm text-blue-600">Clique para adicionar o nome do seu acompanhante</p>
-                                    </div>
-                                    <button type="button" id="addCompanionBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all text-sm">
-                                        + Adicionar
-                                    </button>
+                        <!-- Seção de Acompanhantes -->
+                        <div id="companionSection" class="hidden space-y-4">
+                            <div>
+                                <label class="block text-base font-medium text-gray-700 mb-3">Acompanhantes</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer active:scale-95 transition-all">
+                                        <input type="radio" name="companionType" value="none" checked class="text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-3 text-sm font-medium">Nenhum acompanhante</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer active:scale-95 transition-all">
+                                        <input type="radio" name="companionType" value="one" class="text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-3 text-sm font-medium">1 acompanhante</span>
+                                    </label>
+                                    <label class="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer active:scale-95 transition-all">
+                                        <input type="radio" name="companionType" value="multiple" class="text-purple-600 focus:ring-purple-500">
+                                        <span class="ml-3 text-sm font-medium">Múltiplos acompanhantes</span>
+                                    </label>
                                 </div>
                             </div>
-                            <div id="companionNameField" class="hidden">
-                                <label class="block text-gray-700 font-medium mb-2">Nome do Acompanhante</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="companionName" 
-                                           class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                           placeholder="Digite o nome do acompanhante">
-                                    <button type="button" id="removeCompanionBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all">
-                                        ✕
-                                    </button>
+                            
+                            <!-- Campo para um acompanhante -->
+                            <div id="oneCompanionSection" class="hidden">
+                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Acompanhante</label>
+                                    <input type="text" id="companionName" placeholder="Nome completo do acompanhante" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                                </div>
+                            </div>
+                            
+                            <!-- Seletor para múltiplos acompanhantes -->
+                            <div id="multipleCompanionsSection" class="hidden">
+                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Número de Acompanhantes</label>
+                                    <select id="companionCount" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 mb-3 text-sm">
+                                        <option value="0">Nenhum</option>
+                                        <option value="1">1 pessoa</option>
+                                        <option value="2">2 pessoas</option>
+                                        <option value="3">3 pessoas</option>
+                                        <option value="4">4 pessoas</option>
+                                        <option value="5">5 pessoas</option>
+                                        <option value="6">6 pessoas</option>
+                                        <option value="7">7 pessoas</option>
+                                        <option value="8">8 pessoas</option>
+                                        <option value="9">9 pessoas</option>
+                                        <option value="10">10 pessoas</option>
+                                    </select>
+                                    
+                                    <!-- Campos dinâmicos para nomes dos acompanhantes -->
+                                    <div id="companionNamesContainer" class="space-y-2">
+                                        <!-- Os campos serão adicionados dinamicamente -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div id="guestCountSection" class="hidden">
-                            <label class="block text-gray-700 font-medium mb-2">Número de Acompanhantes</label>
-                            <select id="guestCount" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
-                                <option value="0">Apenas eu</option>
-                                <option value="1">Eu + 1 acompanhante</option>
-                                <option value="2">Eu + 2 acompanhantes</option>
-                                <option value="3">Eu + 3 acompanhantes</option>
-                                <option value="4">Eu + 4 acompanhantes</option>
-                                <option value="5">Eu + 5 acompanhantes</option>
-                            </select>
-                        </div>
-                        
+
+                        <!-- Mensagem para os Noivos -->
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Mensagem para os Noivos</label>
-                            <textarea id="message" rows="4" 
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                      placeholder="Deixe uma mensagem carinhosa..."></textarea>
-                            <p class="text-sm text-gray-500 mt-1">Esta mensagem será exibida publicamente no mural de recados</p>
+                            <label class="block text-base font-medium text-gray-700 mb-2">Mensagem para os Noivos</label>
+                            <textarea id="rsvpMessage" rows="3" placeholder="Deixe uma mensagem carinhosa..." class="w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">💌 Esta mensagem será exibida no mural de recados</p>
                         </div>
-                        
-                        <button type="submit" id="rsvpButton"
-                                class="w-full text-white py-4 rounded-lg font-semibold text-lg transform hover:scale-105 transition-all duration-200 card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+
+                        <!-- Botão de Confirmação -->
+                        <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-lg font-bold text-base hover:from-purple-700 hover:to-purple-800 transition-all active:scale-95 shadow-lg">
                             💌 Confirmar Presença
                         </button>
                     </form>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Messages Wall -->
-        <section class="py-16 bg-gray-50">
-            <div class="max-w-6xl mx-auto px-4">
-                <h2 class="font-dancing text-4xl text-center text-gray-800 mb-12">Mural de Recados</h2>
+        <!-- Seção de Presentes -->
+        <div id="giftsSection" class="py-16 bg-white">
+            <div class="max-w-2xl mx-auto px-4">
+                <div class="text-center mb-10">
+                    <h2 class="text-4xl font-bold dancing text-purple-600 mb-4">
+                        🎁 Lista de Presentes
+                    </h2>
+                    <p class="text-gray-600">A sua presença já é um presente especial para nós</p>
+                </div>
                 
-                <div id="messagesContainer" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="text-center py-8">
-                        <div class="text-4xl mb-4">💌</div>
-                        <p class="text-gray-500">Carregando mensagens...</p>
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl shadow-lg p-6 border border-purple-100">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4">💝</div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">A sua presença já é um presente especial!</h3>
+                        <p class="text-gray-600 text-lg leading-relaxed mb-6">
+                            Mas caso ainda assim desejar nos presentear, pedimos que o faça por transferência bancária.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-purple-500">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-2xl mr-2">🏦</span>
+                            Dados Bancários
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="font-medium text-gray-700 mb-1 sm:mb-0">Titular da Conta:</span>
+                                <span class="font-bold text-gray-900 text-sm sm:text-base" id="accountHolder">João Silva Santos</span>
+                            </div>
+                            
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-medium text-gray-700">IBAN:</span>
+                                    <button onclick="copyIBAN()" class="text-purple-600 hover:text-purple-700 p-1 rounded transition">
+                                        <span class="text-sm">📋</span>
+                                    </button>
+                                </div>
+                                <span class="font-mono text-sm text-gray-900 break-all" id="ibanDisplay">AO06 0040 0000 1234 5678 1011 2</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                            <p class="text-xs text-purple-800 text-center">
+                                <span class="font-semibold">💡 Dica:</span> Toque no ícone 📋 para copiar o IBAN
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-6">
+                        <p class="text-gray-600 italic text-sm">
+                            "O vosso amor e carinho são os maiores presentes que podemos receber!" ❤️
+                        </p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Footer -->
-        <footer class="gradient-bg text-white py-8 text-center">
+        <!-- Mural de Recados -->
+        <div id="messagesSection" class="py-16 bg-gray-50">
             <div class="max-w-4xl mx-auto px-4">
-                <p id="footerNames" class="text-lg mb-2">Ana & Carlos</p>
-                <p id="footerDate" class="text-sm opacity-75">15 de Junho de 2024 • Com amor 💕</p>
-                <div class="mt-6 pt-4 border-t border-white border-opacity-20">
-                    <p class="text-xs opacity-60">Created By Invites 2025</p>
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold dancing text-purple-600 mb-4">
+                        Mural de Recados
+                    </h2>
+                    <p class="text-gray-600">Deixe uma mensagem especial para os noivos</p>
+                </div>
+
+                <!-- Lista de Mensagens -->
+                <div id="messagesList" class="space-y-6 mb-12">
+                    <!-- Mensagens de exemplo -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-purple-600 font-bold text-lg">A</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-gray-800 text-lg">Ana Silva</h4>
+                                    <span class="text-sm text-gray-500">há 2 dias</span>
+                                </div>
+                                <p class="text-gray-700 leading-relaxed">Que alegria saber do casamento de vocês! Desejo toda felicidade do mundo para este novo capítulo. Mal posso esperar para celebrar com vocês! 💕</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-blue-600 font-bold text-lg">C</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-gray-800 text-lg">Carlos Mendes</h4>
+                                    <span class="text-sm text-gray-500">há 1 semana</span>
+                                </div>
+                                <p class="text-gray-700 leading-relaxed">João e Maria, vocês são um casal incrível! Que Deus abençoe esta união e que seja repleta de amor, cumplicidade e muitas alegrias. Parabéns! 🎉</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-green-600 font-bold text-lg">M</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-gray-800 text-lg">Mariana Costa</h4>
+                                    <span class="text-sm text-gray-500">há 3 dias</span>
+                                </div>
+                                <p class="text-gray-700 leading-relaxed">Estou muito emocionada com este momento! Vocês merecem toda felicidade do mundo. Que seja uma união abençoada e cheia de amor! ❤️</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mensagem quando não há recados -->
+                <div id="noMessagesMessage" class="hidden text-center py-12">
+                    <div class="text-6xl mb-4">💌</div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Ainda não há mensagens</h3>
+                    <p class="text-gray-500">Seja o primeiro a deixar um recado especial para os noivos!</p>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Rodapé do Site de Casamento -->
+        <footer class="bg-gradient-to-r from-purple-800 to-purple-900 text-white py-12">
+            <div class="max-w-4xl mx-auto text-center px-4">
+                <div class="mb-6">
+                    <div class="text-4xl mb-4">💕</div>
+                    <h3 class="text-4xl font-bold dancing text-purple-200 couple-names mb-2">João & Maria</h3>
+                    <p class="text-xl text-purple-100 wedding-info">15 de junho de 2024 • Com amor</p>
+                </div>
+                <div class="border-t border-purple-700 pt-6">
+                    <p class="text-sm text-purple-300">
+                        Created by <span class="font-semibold">Invites</span> • 2025
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Dashboard Administrativo -->
+    <div id="dashboardPage" class="hidden min-h-screen bg-gray-50">
+        <!-- Header do Dashboard -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <h1 class="text-2xl font-bold text-purple-600 dancing">Painel Administrativo</h1>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-600">João & Maria</span>
+                        <button onclick="copySiteUrl()" class="text-white px-3 py-1 rounded text-sm font-medium transition" style="background-color: #5ba189;" onmouseover="this.style.backgroundColor='#4a8b73'" onmouseout="this.style.backgroundColor='#5ba189'">
+                            📋 Copiar URL
+                        </button>
+                        <button onclick="showDemo()" class="text-purple-600 hover:text-purple-700">Ver Site</button>
+                        <button onclick="showHome()" class="text-gray-600 hover:text-gray-700">Sair</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegação do Dashboard -->
+        <div class="bg-white border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8">
+                    <button onclick="showDashboardTab('stats')" id="statsTab" class="py-4 px-1 border-b-2 border-purple-500 text-purple-600 font-medium">
+                        Estatísticas
+                    </button>
+                    <button onclick="showDashboardTab('guests')" id="guestsTab" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                        Convidados
+                    </button>
+                    <button onclick="showDashboardTab('messages')" id="messagesTab" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                        Mensagens
+                    </button>
+                    <button onclick="showDashboardTab('settings')" id="settingsTab" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                        Configurações
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conteúdo do Dashboard -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Aba de Estatísticas -->
+            <div id="statsContent" class="dashboard-content">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-lg card-shadow p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <span class="text-green-600 font-semibold">✅</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Confirmados</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-stat="confirmed">47</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg card-shadow p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                    <span class="text-red-600 font-semibold">❌</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Não Confirmados</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-stat="declined">8</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg card-shadow p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-semibold">👥</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Total Pessoas</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-stat="total">62</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg card-shadow p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <span class="text-purple-600 font-semibold">💌</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Mensagens</p>
+                                <p class="text-2xl font-semibold text-gray-900" data-stat="messages">23</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Confirmações por Dia</h3>
+                    <div class="h-64 flex items-end justify-between space-x-2">
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 60px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Seg</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 80px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Ter</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 120px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Qua</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 40px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Qui</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 100px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Sex</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 160px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Sáb</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 bg-purple-500 rounded-t" style="height: 90px;"></div>
+                            <span class="text-xs text-gray-500 mt-2">Dom</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Convidados -->
+            <div id="guestsContent" class="dashboard-content hidden">
+                <div class="bg-white rounded-lg card-shadow">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Lista de Convidados</h3>
+                        <button onclick="exportCSV()" class="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700">
+                            Exportar CSV
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="guestsTable" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acompanhante</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Ana Silva</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Confirmado
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Pedro Silva</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10/05/2024</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Carlos Mendes</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Confirmado
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">08/05/2024</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Lucia Santos</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Não Confirmado
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">12/05/2024</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Mensagens do Dashboard -->
+            <div id="dashboardMessagesContent" class="dashboard-content hidden">
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold mb-6">Mensagens dos Convidados</h3>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-purple-500 pl-4 py-2">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-semibold text-gray-800">Ana Silva</h4>
+                                <span class="text-sm text-gray-500">10/05/2024</span>
+                            </div>
+                            <p class="text-gray-600">Que alegria saber do casamento de vocês! Desejo toda felicidade do mundo para este novo capítulo. Mal posso esperar para celebrar com vocês! 💕</p>
+                        </div>
+                        
+                        <div class="border-l-4 border-purple-500 pl-4 py-2">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-semibold text-gray-800">Carlos Mendes</h4>
+                                <span class="text-sm text-gray-500">08/05/2024</span>
+                            </div>
+                            <p class="text-gray-600">João e Maria, vocês são um casal incrível! Que Deus abençoe esta união e que seja repleta de amor, cumplicidade e muitas alegrias. Parabéns! 🎉</p>
+                        </div>
+                        
+                        <div class="border-l-4 border-purple-500 pl-4 py-2">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-semibold text-gray-800">Roberto Lima</h4>
+                                <span class="text-sm text-gray-500">07/05/2024</span>
+                            </div>
+                            <p class="text-gray-600">Estou muito feliz por vocês! Que este seja o início de uma jornada maravilhosa juntos. Conte comigo para o que precisarem! ❤️</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba de Configurações -->
+            <div id="settingsContent" class="dashboard-content hidden">
+                <!-- URL do Site -->
+                <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">🔗 URL do Seu Site</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-600 mb-1">Compartilhe este link com seus convidados:</p>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-gray-500 text-sm">invites.com/</span>
+                                    <p id="siteUrlDisplay" class="font-mono text-sm break-all" style="color: #5ba189;">
+                                        joao-e-maria
+                                    </p>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">Link completo será copiado ao clicar em "Copiar"</p>
+                            </div>
+                            <button onclick="copySiteUrl()" class="ml-4 text-white px-4 py-2 rounded-md text-sm font-medium transition" style="background-color: #5ba189;" onmouseover="this.style.backgroundColor='#4a8b73'" onmouseout="this.style.backgroundColor='#5ba189'">
+                                📋 Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aviso de Segurança -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <span class="text-yellow-400">⚠️</span>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Aviso de Segurança</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p>• As senhas são armazenadas sem criptografia no banco de dados</p>
+                                <p>• Recomenda-se usar senhas simples e não reutilizar senhas importantes</p>
+                                <p>• Este é um projeto de demonstração - para uso comercial, implemente segurança adequada</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold mb-6">Configurações do Site</h3>
+                    <form class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Noivo</label>
+                                <input type="text" value="João" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Noiva</label>
+                                <input type="text" value="Maria" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Data do Casamento</label>
+                                <input type="date" value="2024-06-15" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Horário</label>
+                                <input type="time" value="16:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Local da Cerimônia</label>
+                            <input type="text" value="Igreja São José, Centro da Cidade" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">URL Personalizada</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                    invites.com/
+                                </span>
+                                <input type="text" value="joao-e-maria" class="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem de Confirmação</label>
+                            <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">Obrigado por confirmar sua presença! Estamos ansiosos para celebrar este momento especial com você.</textarea>
+                        </div>
+
+                        <!-- Configurações de Acompanhantes -->
+                        <div class="border-t pt-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">👥 Configurações de Acompanhantes</h4>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="allowCompanions" checked class="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                                    <label for="allowCompanions" class="text-sm font-medium text-gray-700">
+                                        Permitir que convidados tragam acompanhantes
+                                    </label>
+                                </div>
+                                
+                                <div id="companionsConfig" class="space-y-4 ml-7">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-3">Limite de Acompanhantes</label>
+                                        <div class="space-y-2">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="companionLimit" value="unlimited" checked class="text-purple-600 focus:ring-purple-500">
+                                                <span class="ml-2 text-sm text-gray-700">Sem limite (convidados escolhem quantos quiserem)</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="companionLimit" value="fixed" class="text-purple-600 focus:ring-purple-500">
+                                                <span class="ml-2 text-sm text-gray-700">Limite fixo:</span>
+                                                <select id="maxCompanions" class="ml-2 px-2 py-1 border border-gray-300 rounded text-sm">
+                                                    <option value="1">1 acompanhante</option>
+                                                    <option value="2">2 acompanhantes</option>
+                                                    <option value="3">3 acompanhantes</option>
+                                                    <option value="4">4 acompanhantes</option>
+                                                    <option value="5">5 acompanhantes</option>
+                                                    <option value="10">10 acompanhantes</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" id="requireCompanionNames" checked class="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                                        <label for="requireCompanionNames" class="text-sm font-medium text-gray-700">
+                                            Solicitar nomes dos acompanhantes
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações de Presentes -->
+                        <div class="border-t pt-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">🎁 Configurações de Presentes</h4>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" id="enableGifts" checked class="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                                    <label for="enableGifts" class="text-sm font-medium text-gray-700">
+                                        Mostrar seção de presentes no site
+                                    </label>
+                                </div>
+                                
+                                <div id="giftsConfig" class="space-y-4 ml-7">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Titular da Conta</label>
+                                        <input type="text" id="accountHolderInput" value="João Silva Santos" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+                                        <input type="text" id="ibanInput" value="AO06 0040 0000 1234 5678 1011 2" placeholder="AO06 0000 0000 0000 0000 0000 0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm">
+                                        <p class="text-xs text-gray-500 mt-1">Formato: AO + 23 dígitos (IBAN angolano)</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem Personalizada (Opcional)</label>
+                                        <textarea id="giftMessage" rows="2" placeholder="Mensagem adicional para os convidados..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-purple-700 transition">
+                            Salvar Alterações
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rodapé do Site de Casamento -->
+        <footer class="bg-gradient-to-r from-purple-800 to-purple-900 text-white py-12">
+            <div class="max-w-4xl mx-auto text-center px-4">
+                <div class="mb-6">
+                    <div class="text-4xl mb-4">💕</div>
+                    <h3 class="text-4xl font-bold dancing text-purple-200 couple-names mb-2">João & Maria</h3>
+                    <p class="text-xl text-purple-100 wedding-info">15 de junho de 2024 • Com amor</p>
+                </div>
+                <div class="border-t border-purple-700 pt-6">
+                    <p class="text-sm text-purple-300">
+                        Created by <span class="font-semibold">Invites</span> • 2025
+                    </p>
                 </div>
             </div>
         </footer>
     </div>
 
     <script>
-        // Configuração do Supabase
-        const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co'
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzY3MDIsImV4cCI6MjA3MTI1MjcwMn0.LPMGW_OPKiwTEKhyzl_v2Snb9nVeZg0wP4Ot6zKrCn0'
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+        // Estado da aplicação
+        let currentWedding = null;
+        let currentUser = null;
+        let countdownInterval = null;
 
-        let currentWeddingData = {};
-        let currentAdminData = {};
-        let countdownInterval;
+        // ========== SISTEMA DE ROTEAMENTO GITHUB PAGES ==========
+        function initializeApp() {
+            // Se há parâmetro 'site', carregar site específico
+            if (currentSiteUrl) {
+                loadWeddingSiteByUrl(currentSiteUrl);
+            } else {
+                showHome();
+            }
+        }
+        
+        async function loadWeddingSiteByUrl(customUrl) {
+            try {
+                const result = await getWeddingByUrl(customUrl);
+                if (result.success) {
+                    currentWedding = result.wedding;
+                    showWeddingSite(result.wedding);
+                } else {
+                    // Site não encontrado, mostrar erro
+                    showSiteNotFound();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar site:', error);
+                showSiteNotFound();
+            }
+        }
+        
+        function showSiteNotFound() {
+            hideAllPages();
+            document.body.innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div class="text-center">
+                        <h1 class="text-4xl font-bold text-gray-800 mb-4">Site não encontrado</h1>
+                        <p class="text-gray-600 mb-8">O site de casamento que você está procurando não existe ou foi removido.</p>
+                        <a href="${GITHUB_BASE_URL}" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                            Voltar ao Início
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateSiteUrl(customUrl) {
+            return `${GITHUB_BASE_URL}?site=${customUrl}`;
+        }
 
-        // Funções do Supabase
+        // ========== FUNÇÕES DE NAVEGAÇÃO ==========
+        function showHome() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('hidden');
+        }
+
+        function showCreateWedding() {
+            hideAllPages();
+            document.getElementById('createWeddingPage').classList.remove('hidden');
+            generateUrl();
+        }
+
+        function showLogin() {
+            hideAllPages();
+            document.getElementById('loginPage').classList.remove('hidden');
+        }
+
+        function showDemo() {
+            hideAllPages();
+            document.getElementById('demoPage').classList.remove('hidden');
+            startCountdown('2024-06-15', '16:00');
+        }
+        
+        function clearCompanion() {
+            document.getElementById('companionName').value = '';
+        }
+
+        function showDashboard() {
+            hideAllPages();
+            document.getElementById('dashboardPage').classList.remove('hidden');
+            showDashboardTab('stats');
+            loadDashboardData();
+        }
+
+        function showWeddingSite(weddingData) {
+            hideAllPages();
+            document.getElementById('demoPage').classList.remove('hidden');
+            updateWeddingSiteContent(weddingData);
+            showSection('rsvp');
+            startCountdown(weddingData.wedding_date, weddingData.wedding_time);
+        }
+
+        function hideAllPages() {
+            const pages = ['homePage', 'createWeddingPage', 'loginPage', 'demoPage', 'dashboardPage'];
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('hidden');
+            });
+            
+            // Limpar countdown anterior
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        }
+
+        // ========== FUNÇÕES DO SITE DE CASAMENTO ==========
+        function showSection(section) {
+            const sections = ['rsvpSection', 'messagesSection', 'detailsSection'];
+            sections.forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            document.getElementById(section + 'Section').classList.remove('hidden');
+        }
+
+        function updateWeddingSiteContent(data) {
+            // Atualizar nomes dos noivos
+            const coupleNames = document.querySelectorAll('.couple-names');
+            coupleNames.forEach(element => {
+                element.textContent = `${data.groom_name} & ${data.bride_name}`;
+            });
+            
+            // Atualizar data
+            const weddingInfo = document.querySelectorAll('.wedding-info');
+            const formattedDate = new Date(data.wedding_date).toLocaleDateString('pt-BR');
+            weddingInfo.forEach(element => {
+                element.textContent = `${formattedDate} • Com amor`;
+            });
+            
+            // Configurar seção de presentes
+            updateGiftsSection(data);
+            
+            // Configurar formulário RSVP
+            updateRSVPForm(data);
+        }
+
+        function updateGiftsSection(data) {
+            const giftsSection = document.getElementById('giftsSection');
+            
+            // Mostrar/esconder seção baseado na configuração
+            if (data.gifts_enabled === false) {
+                giftsSection.style.display = 'none';
+            } else {
+                giftsSection.style.display = 'block';
+                
+                // Atualizar dados bancários se disponíveis
+                if (data.account_holder) {
+                    document.getElementById('accountHolder').textContent = data.account_holder;
+                }
+                if (data.iban) {
+                    document.getElementById('ibanDisplay').textContent = data.iban;
+                }
+            }
+        }
+
+
+
+        function updateRSVPForm(data) {
+            const companionSection = document.getElementById('companionSection');
+            if (!data.allow_companions) {
+                companionSection.style.display = 'none';
+            } else {
+                companionSection.style.display = 'block';
+                
+                // Configurar tipo de acompanhante
+                const multipleOption = document.querySelector('input[value="multiple"]').parentElement;
+                if (data.companion_type === 'single') {
+                    multipleOption.style.display = 'none';
+                } else {
+                    multipleOption.style.display = 'block';
+                }
+            }
+        }
+
+        // ========== FUNÇÕES DO DASHBOARD ==========
+        function showDashboardTab(tab) {
+            const tabs = ['statsTab', 'guestsTab', 'messagesTab', 'settingsTab'];
+            tabs.forEach(t => {
+                const tabElement = document.getElementById(t);
+                tabElement.classList.remove('border-purple-500', 'text-purple-600');
+                tabElement.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            const activeTab = document.getElementById(tab + 'Tab');
+            activeTab.classList.remove('border-transparent', 'text-gray-500');
+            activeTab.classList.add('border-purple-500', 'text-purple-600');
+            
+            const contents = document.querySelectorAll('.dashboard-content');
+            contents.forEach(content => content.classList.add('hidden'));
+            
+            const contentMap = {
+                'stats': 'statsContent',
+                'guests': 'guestsContent',
+                'messages': 'dashboardMessagesContent',
+                'settings': 'settingsContent'
+            };
+            
+            document.getElementById(contentMap[tab]).classList.remove('hidden');
+        }
+
+        async function loadDashboardData() {
+            if (!currentWedding) return;
+            
+            // Atualizar URL do site
+            updateSiteUrlDisplay();
+            
+            try {
+                // Carregar RSVPs e mensagens
+                const [rsvpsResult, messagesResult] = await Promise.all([
+                    getRSVPs(currentWedding.id),
+                    getMessages(currentWedding.id)
+                ]);
+                
+                if (rsvpsResult.success) {
+                    updateStatsCards(rsvpsResult.rsvps);
+                    updateGuestsList(rsvpsResult.rsvps);
+                }
+                
+                if (messagesResult.success) {
+                    updateMessagesList(messagesResult.messages);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados do dashboard:', error);
+            }
+        }
+
+        function updateStatsCards(rsvps) {
+            const confirmed = rsvps.filter(r => r.attendance).length;
+            const declined = rsvps.filter(r => !r.attendance).length;
+            const totalPeople = rsvps.reduce((sum, r) => sum + (r.attendance ? r.guest_count : 0), 0);
+            
+            const confirmedEl = document.querySelector('[data-stat="confirmed"]');
+            const declinedEl = document.querySelector('[data-stat="declined"]');
+            const totalEl = document.querySelector('[data-stat="total"]');
+            
+            if (confirmedEl) confirmedEl.textContent = confirmed;
+            if (declinedEl) declinedEl.textContent = declined;
+            if (totalEl) totalEl.textContent = totalPeople;
+        }
+
+        function updateGuestsList(rsvps) {
+            const tbody = document.querySelector('#guestsTable tbody');
+            tbody.innerHTML = '';
+            
+            rsvps.forEach(rsvp => {
+                const row = document.createElement('tr');
+                
+                // Formatear acompanhantes
+                let companionsDisplay = '-';
+                if (rsvp.companion_name) {
+                    const companions = rsvp.companion_name.split(', ');
+                    if (companions.length === 1) {
+                        companionsDisplay = companions[0];
+                    } else {
+                        companionsDisplay = `${companions.length} pessoas: ${companions.join(', ')}`;
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rsvp.guest_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${rsvp.attendance ? 'Confirmado' : 'Não Confirmado'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500" style="max-width: 200px; word-wrap: break-word;">${companionsDisplay}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateMessagesList(messages) {
+            const container = document.getElementById('dashboardMessagesContent').querySelector('.space-y-4');
+            container.innerHTML = '';
+            
+            messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'border-l-4 border-purple-500 pl-4 py-2';
+                messageDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <h4 class="font-semibold text-gray-800">${message.guest_name}</h4>
+                        <span class="text-sm text-gray-500">${getTimeAgo(message.created_at)}</span>
+                    </div>
+                    <p class="text-gray-600">${message.message}</p>
+                `;
+                container.appendChild(messageDiv);
+            });
+        }
+
+        // ========== UTILITÁRIOS ==========
+        function generateCustomUrl(groom, bride) {
+            return (groom + '-e-' + bride)
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+        }
+
+        function updateUrlPreview() {
+            const groomName = document.getElementById('groomName');
+            const brideName = document.getElementById('brideName');
+            const customUrl = document.getElementById('customUrl');
+            const urlStatus = document.getElementById('urlStatus');
+            
+            function updateUrl() {
+                if (groomName.value && brideName.value) {
+                    const url = generateCustomUrl(groomName.value, brideName.value);
+                    customUrl.value = url;
+                    checkUrlAvailabilityStatus(url);
+                }
+            }
+            
+            async function checkUrlAvailabilityStatus(url) {
+                if (url) {
+                    urlStatus.classList.remove('hidden');
+                    urlStatus.innerHTML = '<span class="text-blue-500">Verificando disponibilidade...</span>';
+                    
+                    const result = await checkUrlAvailability(url);
+                    if (result.available) {
+                        urlStatus.innerHTML = '<span class="text-green-500">✓ URL disponível</span>';
+                    } else {
+                        urlStatus.innerHTML = '<span class="text-red-500">✗ URL já existe</span>';
+                    }
+                }
+            }
+            
+            groomName.addEventListener('input', updateUrl);
+            brideName.addEventListener('input', updateUrl);
+            customUrl.addEventListener('input', function() {
+                checkUrlAvailabilityStatus(this.value);
+            });
+        }
+
+        function generateUrl() {
+            updateUrlPreview();
+        }
+
+        function startCountdown(date, time) {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            const weddingDateTime = new Date(`${date}T${time}:00`);
+            
+            function updateCountdown() {
+                const now = new Date();
+                const diff = weddingDateTime - now;
+                
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    const daysEl = document.getElementById('days');
+                    const hoursEl = document.getElementById('hours');
+                    const minutesEl = document.getElementById('minutes');
+                    const secondsEl = document.getElementById('seconds');
+                    
+                    if (daysEl) daysEl.textContent = days;
+                    if (hoursEl) hoursEl.textContent = hours;
+                    if (minutesEl) minutesEl.textContent = minutes;
+                    if (secondsEl) secondsEl.textContent = seconds;
+                } else {
+                    // Casamento já aconteceu - mostrar mensagem especial
+                    const countdownCards = document.getElementById('countdownCards');
+                    const weddingDayMessage = document.getElementById('weddingDayMessage');
+                    
+                    if (countdownCards && weddingDayMessage) {
+                        countdownCards.classList.add('hidden');
+                        weddingDayMessage.classList.remove('hidden');
+                    }
+                    clearInterval(countdownInterval);
+                }
+            }
+            
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        function getTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Agora';
+            if (diffInSeconds < 3600) return `Há ${Math.floor(diffInSeconds / 60)} min`;
+            if (diffInSeconds < 86400) return `Há ${Math.floor(diffInSeconds / 3600)}h`;
+            if (diffInSeconds < 2592000) return `Há ${Math.floor(diffInSeconds / 86400)} dias`;
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function toggleCompanionSection() {
+            const attendanceRadios = document.querySelectorAll('input[name="attendance"]');
+            const companionSection = document.getElementById('companionSection');
+            const companionTypeRadios = document.querySelectorAll('input[name="companionType"]');
+            const oneCompanionSection = document.getElementById('oneCompanionSection');
+            const multipleCompanionsSection = document.getElementById('multipleCompanionsSection');
+            const companionCountSelect = document.getElementById('companionCount');
+            
+            attendanceRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'yes') {
+                        companionSection.classList.remove('hidden');
+                    } else {
+                        companionSection.classList.add('hidden');
+                        oneCompanionSection.classList.add('hidden');
+                        multipleCompanionsSection.classList.add('hidden');
+                    }
+                });
+            });
+            
+            companionTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    oneCompanionSection.classList.add('hidden');
+                    multipleCompanionsSection.classList.add('hidden');
+                    
+                    if (this.value === 'one') {
+                        oneCompanionSection.classList.remove('hidden');
+                    } else if (this.value === 'multiple') {
+                        multipleCompanionsSection.classList.remove('hidden');
+                    }
+                });
+            });
+            
+            // Event listener para mudança no número de acompanhantes
+            if (companionCountSelect) {
+                companionCountSelect.addEventListener('change', function() {
+                    updateCompanionNameFields(parseInt(this.value));
+                });
+            }
+        }
+        
+        function updateCompanionNameFields(count) {
+            const container = document.getElementById('companionNamesContainer');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= count; i++) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.innerHTML = `
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Nome do ${i}º Acompanhante</label>
+                    <input type="text" id="companion${i}Name" placeholder="Nome completo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                `;
+                container.appendChild(fieldDiv);
+            }
+        }
+        
+        function getCompanionNames() {
+            const companionType = document.querySelector('input[name="companionType"]:checked')?.value;
+            let companionNames = [];
+            
+            if (companionType === 'one') {
+                const name = document.getElementById('companionName')?.value;
+                if (name && name.trim()) {
+                    companionNames.push(name.trim());
+                }
+            } else if (companionType === 'multiple') {
+                const count = parseInt(document.getElementById('companionCount')?.value) || 0;
+                for (let i = 1; i <= count; i++) {
+                    const name = document.getElementById(`companion${i}Name`)?.value;
+                    if (name && name.trim()) {
+                        companionNames.push(name.trim());
+                    }
+                }
+            }
+            
+            return companionNames;
+        }
+
+        async function exportGuestList(type = 'all') {
+            if (!currentWedding) return;
+            
+            try {
+                const result = await getRSVPs(currentWedding.id);
+                if (!result.success) return;
+                
+                let rsvps = result.rsvps;
+                
+                // Filtrar por tipo
+                if (type === 'confirmed') {
+                    rsvps = rsvps.filter(r => r.attendance);
+                } else if (type === 'declined') {
+                    rsvps = rsvps.filter(r => !r.attendance);
+                }
+                
+                // Gerar CSV
+                const headers = ['Nome', 'Status', 'Acompanhante', 'Total Pessoas', 'Data', 'Mensagem'];
+                const csvContent = [
+                    headers.join(','),
+                    ...rsvps.map(rsvp => [
+                        `"${rsvp.guest_name}"`,
+                        rsvp.attendance ? 'Confirmado' : 'Não Confirmado',
+                        `"${rsvp.companion_name || '-'}"`,
+                        rsvp.guest_count,
+                        new Date(rsvp.created_at).toLocaleDateString('pt-BR'),
+                        `"${rsvp.message || '-'}"`
+                    ].join(','))
+                ].join('\n');
+                
+                // Download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `convidados_${type}_${currentWedding.custom_url}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Erro ao exportar lista:', error);
+                alert('Erro ao exportar lista de convidados');
+            }
+        }
+
+        // Função de exportação simples para demonstração
+        function exportCSV() {
+            exportGuestList('all');
+        }
+        
+        // Função para adicionar mensagem ao mural
+        async function addMessageToWall(guestName, messageText) {
+            const messagesList = document.getElementById('messagesList');
+            const noMessagesDiv = document.getElementById('noMessagesMessage');
+            
+            // Esconder mensagem de "sem recados"
+            if (noMessagesDiv) {
+                noMessagesDiv.classList.add('hidden');
+            }
+            
+            // Criar nova mensagem
+            const colors = ['purple', 'blue', 'green', 'red', 'yellow', 'indigo'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const initial = guestName.charAt(0).toUpperCase();
+            
+            const newMessage = document.createElement('div');
+            newMessage.className = `bg-white rounded-xl shadow-lg p-6 border-l-4 border-${randomColor}-500`;
+            newMessage.innerHTML = `
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-${randomColor}-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-${randomColor}-600 font-bold text-lg">${initial}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-gray-800 text-lg">${guestName}</h4>
+                            <span class="text-sm text-gray-500">agora</span>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed">${messageText}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Adicionar no topo da lista
+            messagesList.insertBefore(newMessage, messagesList.firstChild);
+        }
+        
+        // Função para copiar IBAN
+        async function copyIBAN() {
+            const ibanElement = document.getElementById('ibanDisplay');
+            const iban = ibanElement.textContent;
+            
+            try {
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(iban);
+                    // Feedback visual
+                    const originalText = ibanElement.textContent;
+                    ibanElement.textContent = '✅ Copiado!';
+                    ibanElement.style.color = '#059669';
+                    
+                    setTimeout(() => {
+                        ibanElement.textContent = originalText;
+                        ibanElement.style.color = '';
+                    }, 2000);
+                } else {
+                    // Fallback para navegadores mais antigos
+                    const textArea = document.createElement('textarea');
+                    textArea.value = iban;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('✅ IBAN copiado para a área de transferência!');
+                }
+            } catch (error) {
+                console.error('Erro ao copiar IBAN:', error);
+                alert('❌ Erro ao copiar IBAN. Tente selecionar e copiar manualmente.');
+            }
+        }
+
+        // Função para copiar URL do site
+        async function copySiteUrl() {
+            if (!currentWedding) return;
+            
+            const siteUrl = generateSiteUrl(currentWedding.custom_url);
+            
+            try {
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(siteUrl);
+                    alert('✅ URL copiada para a área de transferência!');
+                } else {
+                    // Fallback para navegadores mais antigos
+                    const textArea = document.createElement('textarea');
+                    textArea.value = siteUrl;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('✅ URL copiada para a área de transferência!');
+                }
+            } catch (error) {
+                console.error('Erro ao copiar URL:', error);
+                alert('❌ Erro ao copiar URL. Tente selecionar e copiar manualmente.');
+            }
+        }
+        
+        // Atualizar URL no dashboard
+        function updateSiteUrlDisplay() {
+            if (currentWedding) {
+                const urlDisplay = document.getElementById('siteUrlDisplay');
+                if (urlDisplay) {
+                    urlDisplay.textContent = currentWedding.custom_url;
+                }
+            }
+        }
+
+        // ========== FUNÇÕES DO SUPABASE ==========
         async function createWedding(weddingData) {
             try {
                 const { data, error } = await supabase
                     .from('weddings')
                     .insert([{
                         username: weddingData.username,
-                        password: weddingData.password,
+                        password: weddingData.password, // ⚠️ Sem hash por simplicidade
                         groom_name: weddingData.groomName,
                         bride_name: weddingData.brideName,
-                        wedding_date: weddingData.weddingDate,
-                        wedding_time: weddingData.weddingTime,
-                        event_venue: weddingData.eventVenue,
-                        custom_url: weddingData.customUrl
+                        wedding_date: weddingData.date,
+                        custom_url: weddingData.customUrl,
+                        allow_companions: true,
+                        companion_type: 'multiple',
+                        confirm_message: 'Obrigado por confirmar sua presença!',
+                        decline_message: 'Sentimos sua falta, mas entendemos.',
+                        gifts_enabled: weddingData.giftsEnabled,
+                        account_holder: weddingData.accountHolder,
+                        iban: weddingData.iban
                     }])
                     .select()
-                    .single()
+                    .single();
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, wedding: data };
             } catch (error) {
-                console.error('Erro ao criar casamento:', error)
-                throw error
+                console.error('Erro ao criar casamento:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -683,14 +1620,14 @@
                     .from('weddings')
                     .select('*')
                     .eq('username', username)
-                    .eq('password', password)
-                    .single()
+                    .eq('password', password) // ⚠️ Comparação direta sem hash
+                    .single();
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, wedding: data };
             } catch (error) {
-                console.error('Erro ao fazer login:', error)
-                throw error
+                console.error('Erro no login:', error);
+                return { success: false, error: 'Usuário ou senha incorretos' };
             }
         }
 
@@ -700,13 +1637,13 @@
                     .from('weddings')
                     .select('*')
                     .eq('custom_url', customUrl)
-                    .single()
+                    .single();
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, wedding: data };
             } catch (error) {
-                console.error('Erro ao buscar casamento:', error)
-                throw error
+                console.error('Erro ao buscar casamento:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -714,13 +1651,22 @@
             try {
                 const { data, error } = await supabase
                     .from('rsvps')
-                    .insert([rsvpData])
+                    .insert([{
+                        wedding_id: rsvpData.weddingId,
+                        guest_name: rsvpData.guestName,
+                        companion_name: rsvpData.companionName || null,
+                        guest_count: rsvpData.guestCount || 1,
+                        attendance: rsvpData.attendance,
+                        message: rsvpData.message || null
+                    }])
+                    .select()
+                    .single();
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, rsvp: data };
             } catch (error) {
-                console.error('Erro ao criar RSVP:', error)
-                throw error
+                console.error('Erro ao criar RSVP:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -728,15 +1674,19 @@
             try {
                 const { data, error } = await supabase
                     .from('messages')
-                    .insert([messageData])
+                    .insert([{
+                        wedding_id: messageData.weddingId,
+                        guest_name: messageData.name,
+                        message: messageData.message
+                    }])
                     .select()
-                    .single()
+                    .single();
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, message: data };
             } catch (error) {
-                console.error('Erro ao criar mensagem:', error)
-                throw error
+                console.error('Erro ao criar mensagem:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -746,13 +1696,13 @@
                     .from('messages')
                     .select('*')
                     .eq('wedding_id', weddingId)
-                    .order('created_at', { ascending: false })
+                    .order('created_at', { ascending: false });
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, messages: data };
             } catch (error) {
-                console.error('Erro ao buscar mensagens:', error)
-                return []
+                console.error('Erro ao buscar mensagens:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -762,13 +1712,13 @@
                     .from('rsvps')
                     .select('*')
                     .eq('wedding_id', weddingId)
-                    .order('created_at', { ascending: false })
+                    .order('created_at', { ascending: false });
                 
-                if (error) throw error
-                return data
+                if (error) throw error;
+                return { success: true, rsvps: data };
             } catch (error) {
-                console.error('Erro ao buscar RSVPs:', error)
-                return []
+                console.error('Erro ao buscar RSVPs:', error);
+                return { success: false, error: error.message };
             }
         }
 
@@ -778,898 +1728,217 @@
                     .from('weddings')
                     .select('id')
                     .eq('custom_url', customUrl)
-                    .single()
+                    .single();
                 
-                // Se não encontrou nenhum registro, a URL está disponível
-                return error && error.code === 'PGRST116'
+                // Se encontrou dados, URL já existe
+                return { available: false };
             } catch (error) {
-                return false
+                // Se não encontrou, URL está disponível
+                return { available: true };
             }
         }
 
-        // Navigation functions
-        function showHomePage() {
-            document.getElementById('homePage').classList.remove('hidden');
-            document.getElementById('createForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('weddingSite').classList.add('hidden');
-            if (countdownInterval) clearInterval(countdownInterval);
-        }
-
-        function showCreateForm() {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('createForm').classList.remove('hidden');
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('weddingSite').classList.add('hidden');
-        }
-
-        function showLoginForm() {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('createForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('weddingSite').classList.add('hidden');
-        }
-
-        function showAdminDashboard() {
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('createForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.remove('hidden');
-            document.getElementById('weddingSite').classList.add('hidden');
-        }
-
-        function showDemoSite() {
-            // Show demo with sample data
-            const demoData = {
-                id: 'demo',
-                groom_name: 'Carlos',
-                bride_name: 'Ana',
-                wedding_date: '2024-06-15',
-                wedding_time: '18:00',
-                event_venue: 'Salão de Festas Jardim',
-                custom_url: 'ana-e-carlos'
-            };
+        // ========== EVENT LISTENERS ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar funcionalidades
+            toggleCompanionSection();
             
-            showWeddingSite(demoData);
-            addSampleMessages();
-        }
-
-        function showWeddingSite(weddingData) {
-            currentWeddingData = weddingData;
-            
-            document.getElementById('homePage').classList.add('hidden');
-            document.getElementById('createForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('weddingSite').classList.remove('hidden');
-            
-            // Update wedding site content
-            updateWeddingSiteContent(weddingData);
-            
-            // Start countdown
-            startCountdown(weddingData.wedding_date, weddingData.wedding_time);
-            
-            // Load messages if not demo
-            if (weddingData.id !== 'demo') {
-                loadMessages(weddingData.id);
-            }
-        }
-
-        function viewWeddingSite() {
-            showWeddingSite(currentAdminData);
-        }
-
-        function logout() {
-            currentAdminData = {};
-            showHomePage();
-        }
-
-        function updateWeddingSiteContent(data) {
-            const coupleNames = `${data.bride_name} & ${data.groom_name}`;
-            
-            document.getElementById('coupleNames').textContent = coupleNames;
-            document.getElementById('footerNames').textContent = coupleNames;
-            
-            // Format date for footer only
-            const date = new Date(data.wedding_date);
-            const formattedDate = date.toLocaleDateString('pt-BR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            
-            document.getElementById('footerDate').textContent = `${formattedDate} • Com amor 💕`;
-            
-            // URL removed from display
-            
-            // Update RSVP form based on settings
-            updateRSVPForm(data);
-        }
-
-        function updateRSVPForm(data) {
-            const allowCompanions = data.allow_companions !== false; // Default true
-            const companionType = data.companion_type || 'single';
-            
-            const companionSection = document.getElementById('companionSection');
-            const guestCountSection = document.getElementById('guestCountSection');
-            
-            if (!allowCompanions) {
-                // Hide both companion sections
-                companionSection.classList.add('hidden');
-                guestCountSection.classList.add('hidden');
-            } else if (companionType === 'single') {
-                // Show single companion name field
-                companionSection.classList.remove('hidden');
-                guestCountSection.classList.add('hidden');
-                
-                // Setup companion controls
-                setupCompanionControls();
-            } else {
-                // Show multiple companions selector
-                companionSection.classList.add('hidden');
-                guestCountSection.classList.remove('hidden');
-            }
-        }
-
-        function setupCompanionControls() {
-            const addBtn = document.getElementById('addCompanionBtn');
-            const removeBtn = document.getElementById('removeCompanionBtn');
-            const companionNameField = document.getElementById('companionNameField');
-            const companionName = document.getElementById('companionName');
-            
-            // Add companion button
-            addBtn.addEventListener('click', function() {
-                companionNameField.classList.remove('hidden');
-                companionName.focus();
-            });
-            
-            // Remove companion button
-            removeBtn.addEventListener('click', function() {
-                companionNameField.classList.add('hidden');
-                companionName.value = '';
-            });
-        }
-
-        // Show/hide companion section based on attendance
-        function toggleCompanionSection() {
-            const attendance = document.querySelector('input[name="attendance"]:checked');
-            const companionSection = document.getElementById('companionSection');
-            const guestCountSection = document.getElementById('guestCountSection');
-            
-            if (attendance && attendance.value === 'sim') {
-                // Show companion options if attending and companions are allowed
-                const allowCompanions = currentWeddingData.allow_companions !== false;
-                const companionType = currentWeddingData.companion_type || 'single';
-                
-                if (allowCompanions) {
-                    if (companionType === 'single') {
-                        companionSection.classList.remove('hidden');
-                        guestCountSection.classList.add('hidden');
-                    } else {
-                        companionSection.classList.add('hidden');
-                        guestCountSection.classList.remove('hidden');
-                    }
-                }
-            } else {
-                // Hide companion sections if not attending
-                companionSection.classList.add('hidden');
-                guestCountSection.classList.add('hidden');
-                
-                // Reset companion fields
-                document.getElementById('companionName').value = '';
-                document.getElementById('companionNameField').classList.add('hidden');
-                document.getElementById('guestCount').value = '0';
-            }
-        }
-
-        // Admin Login Handler
-        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const loginButton = document.getElementById('loginButton');
-            const loginError = document.getElementById('loginError');
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            // Reset error
-            loginError.classList.add('hidden');
-            
-            // Show loading
-            loginButton.textContent = 'Entrando...';
-            loginButton.classList.add('loading');
-            
-            try {
-                const adminData = await loginAdmin(username, password);
-                currentAdminData = adminData;
-                
-                // Update dashboard info
-                const coupleNames = `${adminData.bride_name} & ${adminData.groom_name}`;
-                const date = new Date(adminData.wedding_date);
-                const formattedDate = date.toLocaleDateString('pt-BR', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                
-                document.getElementById('dashboardWeddingInfo').textContent = `${coupleNames} - ${formattedDate}`;
-                
-                // Load dashboard data
-                await loadDashboardData(adminData.id);
-                
-                // Show dashboard
-                showAdminDashboard();
-                
-            } catch (error) {
-                loginError.textContent = 'Usuário ou senha incorretos.';
-                loginError.classList.remove('hidden');
-            } finally {
-                loginButton.textContent = '🔐 Entrar';
-                loginButton.classList.remove('loading');
-            }
-        });
-
-        // Load Dashboard Data
-        async function loadDashboardData(weddingId) {
-            try {
-                const [rsvps, messages] = await Promise.all([
-                    getRSVPs(weddingId),
-                    getMessages(weddingId)
-                ]);
-                
-                // Calculate stats
-                const confirmed = rsvps.filter(r => r.attendance === true);
-                const declined = rsvps.filter(r => r.attendance === false);
-                const totalPeople = confirmed.reduce((sum, rsvp) => {
-                    return sum + (rsvp.guest_count || 1);
-                }, 0);
-                
-                // Update stats
-                document.getElementById('confirmedCount').textContent = confirmed.length;
-                document.getElementById('declinedCount').textContent = declined.length;
-                document.getElementById('totalPeople').textContent = totalPeople;
-                document.getElementById('messagesCount').textContent = messages.length;
-                
-                // Load RSVP list
-                loadRSVPList(rsvps);
-                
-                // Load admin messages
-                loadAdminMessages(messages);
-                
-            } catch (error) {
-                console.error('Erro ao carregar dados do dashboard:', error);
-            }
-        }
-
-        // Load RSVP List
-        function loadRSVPList(rsvps) {
-            const rsvpsList = document.getElementById('rsvpsList');
-            
-            if (rsvps.length === 0) {
-                rsvpsList.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center py-8 text-gray-500">
-                            Ainda não há confirmações de presença.
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            rsvpsList.innerHTML = '';
-            
-            rsvps.forEach(rsvp => {
-                const row = document.createElement('tr');
-                row.className = 'border-b hover:bg-gray-50';
-                
-                const statusClass = rsvp.attendance ? 'text-green-600' : 'text-red-600';
-                const statusText = rsvp.attendance ? '✅ Confirmado' : '❌ Não vai';
-                
-                let companionText = '-';
-                if (rsvp.companion_name) {
-                    companionText = rsvp.companion_name;
-                } else if (rsvp.guest_count && rsvp.guest_count > 1) {
-                    companionText = `${rsvp.guest_count - 1} acompanhante(s)`;
-                }
-                
-                const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR');
-                
-                row.innerHTML = `
-                    <td class="py-3 px-4 font-medium">${rsvp.guest_name}</td>
-                    <td class="py-3 px-4">${companionText}</td>
-                    <td class="py-3 px-4 ${statusClass}">${statusText}</td>
-                    <td class="py-3 px-4 text-gray-500">${date}</td>
-                `;
-                
-                rsvpsList.appendChild(row);
-            });
-        }
-
-        // Load Admin Messages
-        function loadAdminMessages(messages) {
-            const adminMessagesList = document.getElementById('adminMessagesList');
-            
-            if (messages.length === 0) {
-                adminMessagesList.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        Ainda não há mensagens dos convidados.
-                    </div>
-                `;
-                return;
-            }
-            
-            adminMessagesList.innerHTML = '';
-            
-            messages.forEach(msg => {
-                const displayName = msg.companion_name ? 
-                    `${msg.guest_name} & ${msg.companion_name}` : 
-                    msg.guest_name;
-                const initial = msg.guest_name.charAt(0).toUpperCase();
-                const timeAgo = getTimeAgo(new Date(msg.created_at));
-                
-                const messageCard = document.createElement('div');
-                messageCard.className = 'bg-white p-4 rounded-lg border border-gray-200';
-                messageCard.innerHTML = `
-                    <div class="flex items-center mb-3">
-                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            ${initial}
-                        </div>
-                        <div class="ml-3">
-                            <h4 class="font-medium text-gray-800">${displayName}</h4>
-                            <p class="text-xs text-gray-500">${timeAgo}</p>
-                        </div>
-                    </div>
-                    <p class="text-gray-700 text-sm leading-relaxed">${msg.message}</p>
-                `;
-                
-                adminMessagesList.appendChild(messageCard);
-            });
-        }
-
-        // Tab Management
-        function showTab(tabName) {
-            // Update tab buttons
-            document.getElementById('rsvpsTab').className = tabName === 'rsvps' ? 
-                'px-6 py-4 text-sm font-medium border-b-2 tab-active' : 
-                'px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700';
-            
-            document.getElementById('messagesTab').className = tabName === 'messages' ? 
-                'px-6 py-4 text-sm font-medium border-b-2 tab-active' : 
-                'px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700';
-                
-            document.getElementById('settingsTab').className = tabName === 'settings' ? 
-                'px-6 py-4 text-sm font-medium border-b-2 tab-active' : 
-                'px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700';
-            
-            // Show/hide content
-            document.getElementById('rsvpsTabContent').classList.toggle('hidden', tabName !== 'rsvps');
-            document.getElementById('messagesTabContent').classList.toggle('hidden', tabName !== 'messages');
-            document.getElementById('settingsTabContent').classList.toggle('hidden', tabName !== 'settings');
-            
-            // Load settings when tab is opened
-            if (tabName === 'settings') {
-                loadSettings();
-            }
-        }
-
-        // Export Guest List
-        function exportGuestList(type = 'all') {
-            if (!currentAdminData.id) return;
-            
-            getRSVPs(currentAdminData.id).then(rsvps => {
-                let filteredRsvps = rsvps;
-                let fileName = `convidados_${currentAdminData.custom_url}`;
-                
-                // Filter based on type
-                if (type === 'confirmed') {
-                    filteredRsvps = rsvps.filter(rsvp => rsvp.attendance === true);
-                    fileName += '_confirmados';
-                } else if (type === 'declined') {
-                    filteredRsvps = rsvps.filter(rsvp => rsvp.attendance === false);
-                    fileName += '_nao_confirmados';
-                } else {
-                    fileName += '_todos';
-                }
-                
-                if (filteredRsvps.length === 0) {
-                    const typeText = type === 'confirmed' ? 'confirmados' : 
-                                   type === 'declined' ? 'não confirmados' : 'convidados';
-                    alert(`Não há ${typeText} para exportar.`);
-                    return;
-                }
-                
-                let csvContent = "Nome,Acompanhante,Status,Total Pessoas,Data,Mensagem\n";
-                
-                filteredRsvps.forEach(rsvp => {
-                    let companion = '';
-                    if (rsvp.companion_name) {
-                        companion = rsvp.companion_name;
-                    } else if (rsvp.guest_count && rsvp.guest_count > 1) {
-                        companion = `${rsvp.guest_count - 1} acompanhante(s)`;
-                    }
-                    
-                    const status = rsvp.attendance ? 'Confirmado' : 'Não vai';
-                    const totalPeople = rsvp.guest_count || 1;
-                    const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR');
-                    const message = (rsvp.message || '').replace(/"/g, '""'); // Escape quotes
-                    
-                    csvContent += `"${rsvp.guest_name}","${companion}","${status}","${totalPeople}","${date}","${message}"\n`;
-                });
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `${fileName}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Show success message
-                const typeText = type === 'confirmed' ? 'confirmados' : 
-                               type === 'declined' ? 'não confirmados' : 'todos os convidados';
-                alert(`✅ Lista de ${typeText} exportada com sucesso!`);
-            });
-        }
-
-        // Wedding form handler
-        document.getElementById('weddingForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const createButton = document.getElementById('createButton');
-            const customUrl = document.getElementById('customUrl').value;
-            
-            // Validate required fields
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const groomName = document.getElementById('groomName').value.trim();
-            const brideName = document.getElementById('brideName').value.trim();
-            const weddingDate = document.getElementById('weddingDate').value;
-            const weddingTime = document.getElementById('weddingTime').value;
-            const eventVenue = document.getElementById('eventVenue').value.trim();
-            
-            // Check if all required fields are filled
-            if (!username || !password || !groomName || !brideName || !weddingDate || !weddingTime || !eventVenue) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            // Check password length
-            if (password.length < 6) {
-                alert('A senha deve ter pelo menos 6 caracteres.');
-                return;
-            }
-            
-            // Show loading
-            createButton.textContent = 'Criando...';
-            createButton.classList.add('loading');
-            
-            try {
-                // Generate URL if not set
-                let finalUrl = customUrl;
-                if (!finalUrl) {
-                    finalUrl = generateCustomUrl(groomName, brideName);
-                }
-                
-                // Check URL availability and generate unique URL if needed
-                let isAvailable = await checkUrlAvailability(finalUrl);
-                let counter = 1;
-                
-                // If URL is taken, add numbers until we find an available one
-                while (!isAvailable) {
-                    const baseUrl = customUrl || generateCustomUrl(groomName, brideName);
-                    finalUrl = `${baseUrl}-${counter}`;
-                    isAvailable = await checkUrlAvailability(finalUrl);
-                    counter++;
-                    
-                    // Prevent infinite loop
-                    if (counter > 100) {
-                        throw new Error('Não foi possível gerar uma URL única');
-                    }
-                }
+            // Event listener para criação de casamento
+            document.getElementById('createWeddingForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
                 const weddingData = {
-                    username: username,
-                    password: password,
-                    groomName: groomName,
-                    brideName: brideName,
-                    weddingDate: weddingDate,
-                    weddingTime: weddingTime,
-                    eventVenue: eventVenue,
-                    customUrl: finalUrl
+                    groomName: document.getElementById('groomName').value,
+                    brideName: document.getElementById('brideName').value,
+                    date: document.getElementById('weddingDate').value,
+                    customUrl: document.getElementById('customUrl').value,
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    giftsEnabled: true, // Por padrão ativado
+                    accountHolder: document.getElementById('groomName').value + ' ' + document.getElementById('brideName').value,
+                    iban: 'AO06 0040 0000 1234 5678 1011 2' // IBAN padrão angolano
                 };
                 
-                // Create wedding in database
-                console.log('Tentando criar casamento com dados:', weddingData);
-                const createdWedding = await createWedding(weddingData);
-                console.log('Casamento criado com sucesso:', createdWedding);
-                
-                // Show success message
-                alert(`🎉 Parabéns! Seu site foi criado com sucesso!\n\nURL: araujo418.github.io/painel-invitesqr/?site=${createdWedding.custom_url}\n\nVocê pode compartilhar este link com seus convidados!\n\nGuarde bem seu usuário e senha para acessar os dados dos convidados!`);
-                
-                // Show the wedding site
-                showWeddingSite(createdWedding);
-                
-            } catch (error) {
-                console.error('Erro completo:', error);
-                
-                let errorMessage = 'Erro ao criar o site. Tente novamente.';
-                
-                if (error.message) {
-                    if (error.message.includes('duplicate key')) {
-                        errorMessage = 'Este nome de usuário já existe. Escolha outro.';
-                    } else if (error.message.includes('URL única')) {
-                        errorMessage = 'Não foi possível gerar uma URL única. Tente nomes diferentes.';
-                    } else {
-                        errorMessage = error.message;
-                    }
-                }
-                
-                alert(errorMessage);
-            } finally {
-                createButton.textContent = '🎉 Criar Site';
-                createButton.classList.remove('loading');
-            }
-        });
-
-        // Countdown Timer
-        function startCountdown(weddingDate, weddingTime) {
-            if (countdownInterval) clearInterval(countdownInterval);
-            
-            function updateCountdown() {
-                const weddingDateTime = new Date(`${weddingDate}T${weddingTime}:00`).getTime();
-                const now = new Date().getTime();
-                const distance = weddingDateTime - now;
-
-                if (distance > 0) {
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    document.getElementById('days').textContent = days.toString().padStart(2, '0');
-                    document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-                    document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-                    document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-                } else {
-                    document.getElementById('countdown').innerHTML = '<div class="col-span-4 text-2xl font-bold text-purple-600">🎉 O grande dia chegou! 🎉</div>';
-                    clearInterval(countdownInterval);
-                }
-            }
-
-            countdownInterval = setInterval(updateCountdown, 1000);
-            updateCountdown();
-        }
-
-        // Add event listeners for attendance radio buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add event listeners to attendance radio buttons
-            document.addEventListener('change', function(e) {
-                if (e.target.name === 'attendance') {
-                    toggleCompanionSection();
-                }
-            });
-        });
-
-        // RSVP Form Handler
-        document.getElementById('rsvpForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!currentWeddingData.id || currentWeddingData.id === 'demo') {
-                alert('Esta é uma demonstração. Crie seu próprio site para receber confirmações reais!');
-                return;
-            }
-            
-            const rsvpButton = document.getElementById('rsvpButton');
-            const guestName = document.getElementById('guestName').value;
-            const attendance = document.querySelector('input[name="attendance"]:checked').value;
-            const message = document.getElementById('message').value;
-            
-            // Get companion info based on form type
-            let companionName = null;
-            let guestCount = 1; // Default: just the main guest
-            
-            const allowCompanions = currentWeddingData.allow_companions !== false;
-            const companionType = currentWeddingData.companion_type || 'single';
-            
-            if (allowCompanions && attendance === 'sim') {
-                if (companionType === 'single') {
-                    companionName = document.getElementById('companionName').value || null;
-                    if (companionName) guestCount = 2;
-                } else {
-                    const selectedCount = parseInt(document.getElementById('guestCount').value) || 0;
-                    guestCount = 1 + selectedCount; // Main guest + companions
-                }
-            }
-            
-            // Show loading
-            rsvpButton.textContent = 'Enviando...';
-            rsvpButton.classList.add('loading');
-            
-            try {
-                // Create RSVP
-                await createRSVP({
-                    wedding_id: currentWeddingData.id,
-                    guest_name: guestName,
-                    companion_name: companionName,
-                    guest_count: guestCount,
-                    attendance: attendance === 'sim',
-                    message: message || null
-                });
-                
-                // Create message if provided and attending
-                if (message.trim() && attendance === 'sim') {
-                    const messageData = await createMessage({
-                        wedding_id: currentWeddingData.id,
-                        guest_name: guestName,
-                        companion_name: companionName,
-                        message: message
-                    });
-                    
-                    // Add message to wall immediately
-                    addMessageToWall(messageData);
-                }
-                
-                // Create confirmation message using custom messages if available
-                let confirmationText;
-                if (attendance === 'sim') {
-                    confirmationText = currentWeddingData.confirm_message || 
-                        `Obrigado, ${guestName}! Sua presença foi confirmada com sucesso! 🎉`;
-                } else {
-                    confirmationText = currentWeddingData.decline_message || 
-                        `Obrigado por nos avisar, ${guestName}. Sentiremos sua falta! 💙`;
-                }
-                
-                // Show confirmation
-                alert(confirmationText);
-                
-                // Reset form
-                this.reset();
-                
-            } catch (error) {
-                alert('Erro ao enviar confirmação. Tente novamente.');
-                console.error('Erro:', error);
-            } finally {
-                rsvpButton.textContent = '💌 Confirmar Presença';
-                rsvpButton.classList.remove('loading');
-            }
-        });
-
-        // Load messages from database
-        async function loadMessages(weddingId) {
-            try {
-                const messages = await getMessages(weddingId);
-                const messagesContainer = document.getElementById('messagesContainer');
-                
-                if (messages.length === 0) {
-                    messagesContainer.innerHTML = `
-                        <div class="col-span-full text-center py-8">
-                            <div class="text-4xl mb-4">💌</div>
-                            <p class="text-gray-500">Ainda não há mensagens. Seja o primeiro a deixar um recado!</p>
-                        </div>
-                    `;
+                // Validações
+                if (weddingData.password.length < 6) {
+                    alert('A senha deve ter pelo menos 6 caracteres');
                     return;
                 }
                 
-                messagesContainer.innerHTML = '';
-                messages.forEach(msg => addMessageToWall(msg));
+                const urlCheck = await checkUrlAvailability(weddingData.customUrl);
+                if (!urlCheck.available) {
+                    alert('Esta URL já está em uso. Escolha outra.');
+                    return;
+                }
                 
-            } catch (error) {
-                console.error('Erro ao carregar mensagens:', error);
-            }
-        }
+                const result = await createWedding(weddingData);
+                if (result.success) {
+                    currentWedding = result.wedding;
+                    const siteUrl = generateSiteUrl(result.wedding.custom_url);
+                    
+                    // Mostrar URL do site criado
+                    const message = `🎉 Site de casamento criado com sucesso!\n\n` +
+                                  `📱 URL do seu site:\n${siteUrl}\n\n` +
+                                  `💡 Compartilhe este link com seus convidados!\n\n` +
+                                  `Redirecionando para o painel administrativo...`;
+                    
+                    alert(message);
+                    
+                    // Copiar URL para clipboard se possível
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(siteUrl).catch(() => {});
+                    }
+                    
+                    showDashboard();
+                } else {
+                    alert('Erro ao criar site: ' + result.error);
+                }
+            });
 
-        // Add message to wall
-        function addMessageToWall(messageData) {
-            const messagesContainer = document.getElementById('messagesContainer');
-            const displayName = messageData.companion_name ? 
-                `${messageData.guest_name} & ${messageData.companion_name}` : 
-                messageData.guest_name;
-            const initial = messageData.guest_name.charAt(0).toUpperCase();
-            
-            // Calculate time ago
-            const timeAgo = messageData.created_at ? 
-                getTimeAgo(new Date(messageData.created_at)) : 'agora';
-            
-            const messageCard = document.createElement('div');
-            messageCard.className = 'message-card p-6 rounded-lg card-shadow fade-in';
-            messageCard.innerHTML = `
-                <div class="flex items-center mb-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
-                        ${initial}
-                    </div>
-                    <div class="ml-3">
-                        <h4 class="font-semibold text-gray-800">${displayName}</h4>
-                        <p class="text-sm text-gray-500">${timeAgo}</p>
-                    </div>
-                </div>
-                <p class="text-gray-700 leading-relaxed">${messageData.message}</p>
-            `;
-            
-            // Add to beginning of messages
-            messagesContainer.insertBefore(messageCard, messagesContainer.firstChild);
-        }
-
-        // Helper function to calculate time ago
-        function getTimeAgo(date) {
-            const now = new Date();
-            const diffInSeconds = Math.floor((now - date) / 1000);
-            
-            if (diffInSeconds < 60) return 'agora';
-            if (diffInSeconds < 3600) return `há ${Math.floor(diffInSeconds / 60)} min`;
-            if (diffInSeconds < 86400) return `há ${Math.floor(diffInSeconds / 3600)} horas`;
-            return `há ${Math.floor(diffInSeconds / 86400)} dias`;
-        }
-
-        // Add sample messages for demo
-        function addSampleMessages() {
-            const sampleMessages = [
-                { guest_name: 'Maria Silva', message: 'Que alegria imensa! Vocês são um casal lindo e merecem toda felicidade do mundo. Mal posso esperar para celebrar com vocês! 💕', created_at: new Date(Date.now() - 2 * 60 * 60 * 1000) },
-                { guest_name: 'João Santos', message: 'Carlos, meu amigo, que Deus abençoe essa união! Ana, você ganhou um cara incrível. Estaremos lá para comemorar! 🎉', created_at: new Date(Date.now() - 5 * 60 * 60 * 1000) },
-                { guest_name: 'Lucia', companion_name: 'Pedro', message: 'Estamos muito felizes por vocês! Que essa nova jornada seja repleta de amor, cumplicidade e muitas alegrias. Confirmado! ✨', created_at: new Date(Date.now() - 24 * 60 * 60 * 1000) }
-            ];
-
-            const messagesContainer = document.getElementById('messagesContainer');
-            messagesContainer.innerHTML = '';
-
-            sampleMessages.forEach(msg => addMessageToWall(msg));
-        }
-
-        // Auto-generate URL based on names
-        function generateCustomUrl(groomName, brideName) {
-            const cleanName = (name) => {
-                return name.toLowerCase()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-                    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
-                    .replace(/\s+/g, '-') // Replace spaces with hyphens
-                    .replace(/-+/g, '-') // Remove multiple hyphens
-                    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-            };
-            
-            const cleanGroom = cleanName(groomName);
-            const cleanBride = cleanName(brideName);
-            
-            return `${cleanBride}-e-${cleanGroom}`;
-        }
-        
-        // Update URL preview when names change
-        function updateUrlPreview() {
-            const groomName = document.getElementById('groomName').value;
-            const brideName = document.getElementById('brideName').value;
-            
-            if (groomName && brideName) {
-                const generatedUrl = generateCustomUrl(groomName, brideName);
-                document.getElementById('generatedUrl').textContent = generatedUrl;
-                document.getElementById('customUrl').value = generatedUrl;
-            } else {
-                document.getElementById('generatedUrl').textContent = 'será-gerada-automaticamente';
-                document.getElementById('customUrl').value = '';
-            }
-        }
-        
-        // Add event listeners to name fields
-        document.getElementById('groomName').addEventListener('input', updateUrlPreview);
-        document.getElementById('brideName').addEventListener('input', updateUrlPreview);
-
-        // Check for URL parameter on load
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const weddingUrl = urlParams.get('site');
-            
-            if (weddingUrl) {
-                loadWeddingFromUrl(weddingUrl);
-            }
-        });
-
-        async function loadWeddingFromUrl(customUrl) {
-            try {
-                const wedding = await getWeddingByUrl(customUrl);
-                showWeddingSite(wedding);
-            } catch (error) {
-                console.error('Casamento não encontrado:', error);
-                alert('Site de casamento não encontrado!');
-            }
-        }
-
-        // Settings Management
-        function loadSettings() {
-            if (!currentAdminData.id) return;
-            
-            // Load basic wedding info
-            document.getElementById('settingsGroomName').value = currentAdminData.groom_name || '';
-            document.getElementById('settingsBrideName').value = currentAdminData.bride_name || '';
-            document.getElementById('settingsWeddingDate').value = currentAdminData.wedding_date || '';
-            document.getElementById('settingsWeddingTime').value = currentAdminData.wedding_time || '';
-            document.getElementById('settingsEventVenue').value = currentAdminData.event_venue || '';
-            
-            // Load companion settings
-            const allowCompanions = currentAdminData.allow_companions !== false; // Default true
-            const companionType = currentAdminData.companion_type || 'single';
-            
-            document.getElementById('allowCompanions').checked = allowCompanions;
-            document.getElementById('companionOptions').classList.toggle('hidden', !allowCompanions);
-            
-            if (companionType === 'single') {
-                document.getElementById('singleCompanion').checked = true;
-            } else {
-                document.getElementById('multipleCompanions').checked = true;
-            }
-            
-            // Load custom messages
-            document.getElementById('confirmMessage').value = currentAdminData.confirm_message || '';
-            document.getElementById('declineMessage').value = currentAdminData.decline_message || '';
-        }
-
-        function resetSettings() {
-            loadSettings();
-        }
-
-        // Settings form handler
-        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!currentAdminData.id) return;
-            
-            const submitButton = e.target.querySelector('button[type="submit"]');
-            submitButton.textContent = 'Salvando...';
-            submitButton.classList.add('loading');
-            
-            try {
-                const allowCompanions = document.getElementById('allowCompanions').checked;
-                const companionType = document.querySelector('input[name="companionType"]:checked')?.value || 'single';
+            // Event listener para login
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
-                const updateData = {
-                    groom_name: document.getElementById('settingsGroomName').value,
-                    bride_name: document.getElementById('settingsBrideName').value,
-                    wedding_date: document.getElementById('settingsWeddingDate').value,
-                    wedding_time: document.getElementById('settingsWeddingTime').value,
-                    event_venue: document.getElementById('settingsEventVenue').value,
-                    allow_companions: allowCompanions,
-                    companion_type: companionType,
-                    confirm_message: document.getElementById('confirmMessage').value,
-                    decline_message: document.getElementById('declineMessage').value
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const result = await loginAdmin(username, password);
+                if (result.success) {
+                    currentWedding = result.wedding;
+                    showDashboard();
+                } else {
+                    alert('Usuário ou senha incorretos');
+                }
+            });
+
+            // Event listener para RSVP
+            document.getElementById('rsvpForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const guestName = document.getElementById('guestName').value;
+                const attendanceValue = document.querySelector('input[name="attendance"]:checked')?.value;
+                
+                if (!attendanceValue) {
+                    alert('Por favor, selecione se você virá ou não');
+                    return;
+                }
+                
+                let companionNames = [];
+                let guestCount = 1;
+                
+                if (attendanceValue === 'yes') {
+                    const companionType = document.querySelector('input[name="companionType"]:checked')?.value;
+                    
+                    if (companionType === 'one') {
+                        const singleCompanion = document.getElementById('companionName').value;
+                        if (singleCompanion && singleCompanion.trim()) {
+                            companionNames.push(singleCompanion.trim());
+                            guestCount = 2;
+                        }
+                    } else if (companionType === 'multiple') {
+                        const selectedCount = parseInt(document.getElementById('companionCount').value) || 0;
+                        companionNames = getCompanionNames();
+                        guestCount = 1 + selectedCount; // Convidado principal + acompanhantes
+                    }
+                }
+                
+                const rsvpData = {
+                    weddingId: currentWedding?.id || 1, // Para demo
+                    guestName: guestName,
+                    companionName: companionNames.length > 0 ? companionNames.join(', ') : null,
+                    companionNames: companionNames, // Array com todos os nomes
+                    guestCount: guestCount,
+                    attendance: attendanceValue === 'yes',
+                    message: document.getElementById('rsvpMessage').value || null
                 };
                 
-                const { error } = await supabase
-                    .from('weddings')
-                    .update(updateData)
-                    .eq('id', currentAdminData.id);
-                
-                if (error) throw error;
-                
-                // Update current admin data
-                Object.assign(currentAdminData, updateData);
-                
-                // Update dashboard info
-                const coupleNames = `${updateData.bride_name} & ${updateData.groom_name}`;
-                const date = new Date(updateData.wedding_date);
-                const formattedDate = date.toLocaleDateString('pt-BR', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                
-                document.getElementById('dashboardWeddingInfo').textContent = `${coupleNames} - ${formattedDate}`;
-                
-                alert('✅ Configurações salvas com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro ao salvar configurações:', error);
-                alert('Erro ao salvar configurações. Tente novamente.');
-            } finally {
-                submitButton.textContent = '💾 Salvar Configurações';
-                submitButton.classList.remove('loading');
-            }
-        });
+                const result = await createRSVP(rsvpData);
+                if (result.success) {
+                    // Mensagem personalizada baseada na confirmação
+                    let message = '';
+                    if (attendanceValue === 'yes') {
+                        message = `🎉 Obrigado, ${guestName}! Sua presença foi confirmada com sucesso!\n\nEstamos ansiosos para celebrar este momento especial com você!`;
+                    } else {
+                        message = `💙 Obrigado por nos avisar, ${guestName}. Sentiremos sua falta!\n\nSabemos que você estará conosco em pensamento neste dia especial.`;
+                    }
+                    
+                    alert(message);
+                    
+                    // Se há mensagem, adicionar ao mural automaticamente
+                    const messageText = document.getElementById('rsvpMessage').value;
+                    if (messageText && messageText.trim()) {
+                        await addMessageToWall(guestName, messageText);
+                    }
+                    
+                    // Reset do formulário
+                    document.getElementById('rsvpForm').reset();
+                    document.getElementById('companionSection').classList.add('hidden');
+                    document.getElementById('oneCompanionSection').classList.add('hidden');
+                    document.getElementById('multipleCompanionsSection').classList.add('hidden');
+                } else {
+                    alert('Erro ao enviar confirmação: ' + result.error);
+                }
+            });
 
-        // Companion settings toggle
-        document.getElementById('allowCompanions').addEventListener('change', function() {
-            document.getElementById('companionOptions').classList.toggle('hidden', !this.checked);
+            // Event listener para controlo de acompanhantes
+            const allowCompanionsCheckbox = document.getElementById('allowCompanions');
+            const companionsConfig = document.getElementById('companionsConfig');
+            
+            allowCompanionsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    companionsConfig.style.display = 'block';
+                } else {
+                    companionsConfig.style.display = 'none';
+                }
+            });
+
+            // Event listener para controlo de presentes
+            const enableGiftsCheckbox = document.getElementById('enableGifts');
+            const giftsConfig = document.getElementById('giftsConfig');
+            
+            enableGiftsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    giftsConfig.style.display = 'block';
+                } else {
+                    giftsConfig.style.display = 'none';
+                }
+            });
+
+            // Event listener para mensagens
+            document.getElementById('messageForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const messageData = {
+                    weddingId: currentWedding?.id || 1, // Para demo
+                    name: document.getElementById('messageName').value,
+                    message: document.getElementById('messageText').value
+                };
+                
+                const result = await createMessage(messageData);
+                if (result.success) {
+                    alert('Mensagem enviada com sucesso!');
+                    document.getElementById('messageForm').reset();
+                    
+                    // Adicionar mensagem à lista imediatamente
+                    const messagesList = document.getElementById('messagesList');
+                    const newMessage = document.createElement('div');
+                    newMessage.className = 'bg-white border rounded-lg p-4 card-shadow';
+                    newMessage.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-semibold text-gray-800">${messageData.name}</h4>
+                            <span class="text-sm text-gray-500">Agora</span>
+                        </div>
+                        <p class="text-gray-600">${messageData.message}</p>
+                    `;
+                    messagesList.insertBefore(newMessage, messagesList.firstChild);
+                } else {
+                    alert('Erro ao enviar mensagem: ' + result.error);
+                }
+            });
+            
+            // Inicializar aplicação (detecta se é site específico ou página inicial)
+            initializeApp();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972154cd310077e3',t:'MTc1NTY4NzA0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9721b76e93ac77d7',t:'MTc1NTY5MTA4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
