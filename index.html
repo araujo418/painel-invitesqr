@@ -448,19 +448,21 @@
                     </div>
                     
                     <div>
-                        <label class="block text-gray-700 font-medium mb-2">URL Personalizada *</label>
-                        <div class="flex">
-                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                                seusite.github.io/invites?site=
-                            </span>
-                            <input type="text" id="customUrl" required 
-                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                                   placeholder="ana-e-carlos"
-                                   pattern="[a-z0-9-]+"
-                                   title="Apenas letras minúsculas, números e hífens">
+                        <label class="block text-gray-700 font-medium mb-2">URL do Seu Site</label>
+                        <div class="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <span class="text-gray-600 text-sm">
+                                    araujo418.github.io/painel-invitesqr/?site=
+                                </span>
+                                <span id="generatedUrl" class="font-medium text-green-600 ml-1">
+                                    será-gerada-automaticamente
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-2">
+                                ✨ Sua URL será criada automaticamente baseada nos nomes dos noivos
+                            </p>
                         </div>
-                        <p class="text-sm text-gray-500 mt-1">Apenas letras minúsculas, números e hífens (ex: ana-e-carlos)</p>
-                        <div id="urlError" class="text-red-500 text-sm mt-1 hidden"></div>
+                        <input type="hidden" id="customUrl" required>
                     </div>
                     
                     <div class="flex gap-4">
@@ -490,7 +492,7 @@
                 <div class="mt-8 text-4xl pulse-heart">💕</div>
                 <div class="mt-6">
                     <span id="siteUrl" class="bg-white bg-opacity-20 px-4 py-2 rounded-full text-sm">
-                        seusite.github.io/invites?site=ana-e-carlos
+                        araujo418.github.io/painel-invitesqr/?site=ana-e-carlos
                     </span>
                 </div>
             </div>
@@ -886,7 +888,7 @@
             document.getElementById('footerDate').textContent = `${formattedDate} • Com amor 💕`;
             
             // URL
-            document.getElementById('siteUrl').textContent = `seusite.github.io/invites?site=${data.custom_url}`;
+            document.getElementById('siteUrl').textContent = `araujo418.github.io/painel-invitesqr/?site=${data.custom_url}`;
             
             // Update RSVP form based on settings
             updateRSVPForm(data);
@@ -1234,13 +1236,25 @@
             createButton.classList.add('loading');
             
             try {
-                // Check URL availability
-                const isAvailable = await checkUrlAvailability(customUrl);
-                if (!isAvailable) {
-                    urlError.textContent = 'Esta URL já está em uso. Escolha outra.';
-                    urlError.classList.remove('hidden');
-                    return;
+                // Check URL availability and generate unique URL if needed
+                let finalUrl = customUrl;
+                let isAvailable = await checkUrlAvailability(finalUrl);
+                let counter = 1;
+                
+                // If URL is taken, add numbers until we find an available one
+                while (!isAvailable) {
+                    finalUrl = `${customUrl}-${counter}`;
+                    isAvailable = await checkUrlAvailability(finalUrl);
+                    counter++;
+                    
+                    // Prevent infinite loop
+                    if (counter > 100) {
+                        throw new Error('Não foi possível gerar uma URL única');
+                    }
                 }
+                
+                // Update the final URL
+                document.getElementById('customUrl').value = finalUrl;
                 
                 const weddingData = {
                     username: document.getElementById('username').value,
@@ -1250,14 +1264,14 @@
                     weddingDate: document.getElementById('weddingDate').value,
                     weddingTime: document.getElementById('weddingTime').value,
                     eventVenue: document.getElementById('eventVenue').value,
-                    customUrl: customUrl
+                    customUrl: finalUrl
                 };
                 
                 // Create wedding in database
                 const createdWedding = await createWedding(weddingData);
                 
                 // Show success message
-                alert(`🎉 Parabéns! Seu site foi criado com sucesso!\n\nURL: seusite.github.io/invites?site=${createdWedding.custom_url}\n\nVocê pode compartilhar este link com seus convidados!\n\nGuarde bem seu usuário e senha para acessar os dados dos convidados!`);
+                alert(`🎉 Parabéns! Seu site foi criado com sucesso!\n\nURL: araujo418.github.io/painel-invitesqr/?site=${createdWedding.custom_url}\n\nVocê pode compartilhar este link com seus convidados!\n\nGuarde bem seu usuário e senha para acessar os dados dos convidados!`);
                 
                 // Show the wedding site
                 showWeddingSite(createdWedding);
@@ -1474,15 +1488,42 @@
             sampleMessages.forEach(msg => addMessageToWall(msg));
         }
 
-        // URL validation
-        document.getElementById('customUrl').addEventListener('input', function(e) {
-            let value = e.target.value.toLowerCase();
-            value = value.replace(/[^a-z0-9-]/g, '');
-            e.target.value = value;
+        // Auto-generate URL based on names
+        function generateCustomUrl(groomName, brideName) {
+            const cleanName = (name) => {
+                return name.toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+                    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+                    .replace(/\s+/g, '-') // Replace spaces with hyphens
+                    .replace(/-+/g, '-') // Remove multiple hyphens
+                    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+            };
             
-            // Hide error when user types
-            document.getElementById('urlError').classList.add('hidden');
-        });
+            const cleanGroom = cleanName(groomName);
+            const cleanBride = cleanName(brideName);
+            
+            return `${cleanBride}-e-${cleanGroom}`;
+        }
+        
+        // Update URL preview when names change
+        function updateUrlPreview() {
+            const groomName = document.getElementById('groomName').value;
+            const brideName = document.getElementById('brideName').value;
+            
+            if (groomName && brideName) {
+                const generatedUrl = generateCustomUrl(groomName, brideName);
+                document.getElementById('generatedUrl').textContent = generatedUrl;
+                document.getElementById('customUrl').value = generatedUrl;
+            } else {
+                document.getElementById('generatedUrl').textContent = 'será-gerada-automaticamente';
+                document.getElementById('customUrl').value = '';
+            }
+        }
+        
+        // Add event listeners to name fields
+        document.getElementById('groomName').addEventListener('input', updateUrlPreview);
+        document.getElementById('brideName').addEventListener('input', updateUrlPreview);
 
         // Check for URL parameter on load
         document.addEventListener('DOMContentLoaded', function() {
@@ -1600,5 +1641,5 @@
             document.getElementById('companionOptions').classList.toggle('hidden', !this.checked);
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972135e4e74377d9',t:'MTc1NTY4NTc3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97213a6c772077d9',t:'MTc1NTY4NTk2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
