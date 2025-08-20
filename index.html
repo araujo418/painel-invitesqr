@@ -3,1126 +3,1602 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmação de Presença</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Invites - Crie seu Site de Casamento</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-bg { background: #5aa189; }
-        .card-shadow { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .btn-primary { background: #5aa189; }
-        .btn-primary:hover { background: #4a8f77; }
-        .loading { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .message-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .tab-button.active { color: #5aa189; border-color: #5aa189; }
-        .tab-button:not(.active) { color: #6b7280; border-color: transparent; }
-        .tab-content.hidden { display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap');
+        
+        .font-dancing { font-family: 'Dancing Script', cursive; }
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .message-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border-left: 4px solid #667eea;
+        }
+        
+        .pulse-heart {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hidden { display: none; }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .tab-active {
+            border-color: #5ba189 !important;
+            color: #5ba189 !important;
+        }
+        
+        .tab-inactive {
+            border-color: transparent !important;
+            color: #6b7280 !important;
+        }
     </style>
 </head>
-<body class="min-h-screen gradient-bg">
-    <!-- Header com botão de login -->
-    <header class="w-full p-4 flex justify-between items-center">
-        <div class="text-white font-semibold text-xl">
-            <span id="event-title">Confirmação de Presença</span>
-        </div>
-        <button id="login-btn" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-all duration-300 backdrop-filter backdrop-blur-sm">
-            Login Administrador
-        </button>
-    </header>
-
-    <!-- Container principal -->
-    <div class="container mx-auto px-4 py-8">
-        <!-- Loading -->
-        <div id="loading" class="flex justify-center items-center min-h-96">
-            <div class="loading w-12 h-12 border-4 border-white border-t-transparent rounded-full"></div>
-        </div>
-
-        <!-- Página de confirmação para convidados -->
-        <div id="guest-page" class="hidden fade-in">
-            <div class="max-w-2xl mx-auto">
-                <!-- Informações do evento -->
-                <div class="bg-white rounded-2xl card-shadow p-8 mb-8 text-center">
-                    <div class="mb-6">
-                        <h1 id="couple-names" class="text-4xl font-bold text-gray-800 mb-2"></h1>
-                        <p id="event-type" class="text-xl text-gray-600 mb-4"></p>
-                        <p id="event-date" class="text-lg text-gray-500"></p>
-                    </div>
-                    
-                    <!-- Cronômetro regressivo -->
-                    <div class="mb-6">
-                        <div class="text-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-2">⏰ Faltam apenas:</h3>
-                        </div>
-                        <div id="countdown" class="grid grid-cols-4 gap-4 max-w-lg mx-auto">
-                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-100">
-                                <div id="days" class="text-3xl font-bold mb-1 text-gray-800">0</div>
-                                <div class="text-sm uppercase tracking-wide text-gray-600">Dias</div>
-                            </div>
-                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-100">
-                                <div id="hours" class="text-3xl font-bold mb-1 text-gray-800">0</div>
-                                <div class="text-sm uppercase tracking-wide text-gray-600">Horas</div>
-                            </div>
-                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 border-2 border-gray-100">
-                                <div id="minutes" class="text-3xl font-bold mb-1 text-gray-800">0</div>
-                                <div class="text-sm uppercase tracking-wide text-gray-600">Min</div>
-                            </div>
-                            <div class="bg-white text-gray-800 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all duration-300 animate-pulse border-2 border-gray-100">
-                                <div id="seconds" class="text-3xl font-bold mb-1 text-gray-800">0</div>
-                                <div class="text-sm uppercase tracking-wide text-gray-600">Seg</div>
-                            </div>
-                        </div>
-                    </div>
+<body class="font-poppins bg-gray-50 min-h-screen">
+    
+    <!-- Home Page - Create Account -->
+    <div id="homePage" class="min-h-screen">
+        <!-- Hero Section -->
+        <header class="gradient-bg text-white py-20 text-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-black opacity-10"></div>
+            <!-- Login button in top right -->
+            <div class="absolute top-6 right-6 z-20">
+                <button onclick="showLoginForm()" class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-full font-medium hover:bg-opacity-30 transition-all text-sm">
+                    Login
+                </button>
+            </div>
+            <div class="relative z-10 max-w-4xl mx-auto px-4">
+                <h1 class="font-dancing text-6xl md:text-8xl font-bold mb-6">Invites</h1>
+                <p class="text-xl md:text-2xl font-light mb-8">Crie seu site de casamento personalizado em minutos</p>
+                <div class="text-4xl pulse-heart mb-8">💕</div>
+                <div class="space-y-4">
+                    <button onclick="showCreateForm()" class="bg-white text-green-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200 card-shadow" style="color: #5ba189;">
+                        ✨ Criar Meu Site de Casamento
+                    </button>
                 </div>
+            </div>
+        </header>
 
-                <!-- Formulário de confirmação -->
-                <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Confirme sua Presença</h2>
-                    
-                    <form id="rsvp-form" class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Seu Nome</label>
-                            <input type="text" id="guest-name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Digite seu nome completo" style="--tw-ring-color: #5aa189;">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-4">Você irá ao evento?</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button type="button" id="confirm-yes" class="p-4 border-2 border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all duration-300 text-center">
-                                    <div class="text-2xl mb-2">✅</div>
-                                    <div class="font-medium">Sim, estarei lá!</div>
-                                </button>
-                                <button type="button" id="confirm-no" class="p-4 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
-                                    <div class="text-2xl mb-2">❌</div>
-                                    <div class="font-medium">Não poderei ir</div>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div id="companion-section" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-4">Você levará acompanhante?</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button type="button" id="companion-yes" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
-                                    <div class="font-medium">Sim, com acompanhante</div>
-                                </button>
-                                <button type="button" id="companion-no" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
-                                    <div class="font-medium">Sem acompanhante</div>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div id="companion-name-section" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Acompanhante</label>
-                            <input type="text" id="companion-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Nome do seu acompanhante" style="--tw-ring-color: #5aa189;">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem para os Noivos (Opcional)</label>
-                            <textarea id="guest-message" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Deixe uma mensagem carinhosa..." style="--tw-ring-color: #5aa189;"></textarea>
-                        </div>
-
-                        <button type="submit" id="submit-btn" class="w-full btn-primary text-white py-4 rounded-lg font-semibold text-lg hover:shadow-lg transition-all duration-300">
-                            Confirmar Presença
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Mensagens dos convidados -->
-                <div class="bg-white rounded-2xl card-shadow p-8">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">Mensagens dos Convidados</h3>
-                    <div id="messages-container" class="space-y-4 max-h-96 overflow-y-auto">
-                        <!-- Mensagens serão carregadas aqui -->
+        <!-- Features Section -->
+        <section class="py-16 bg-white">
+            <div class="max-w-6xl mx-auto px-4">
+                <h2 class="font-dancing text-4xl text-center text-gray-800 mb-12">Por que escolher o Invites?</h2>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="text-center p-6">
+                        <div class="text-4xl mb-4">🎨</div>
+                        <h3 class="text-xl font-semibold mb-3">Design Elegante</h3>
+                        <p class="text-gray-600">Sites lindos e responsivos que impressionam seus convidados</p>
+                    </div>
+                    <div class="text-center p-6">
+                        <div class="text-4xl mb-4">⏰</div>
+                        <h3 class="text-xl font-semibold mb-3">Cronômetro Regressivo</h3>
+                        <p class="text-gray-600">Contagem regressiva automática para o grande dia</p>
+                    </div>
+                    <div class="text-center p-6">
+                        <div class="text-4xl mb-4">💌</div>
+                        <h3 class="text-xl font-semibold mb-3">Confirmações Online</h3>
+                        <p class="text-gray-600">Receba confirmações e mensagens dos convidados</p>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Página de administração -->
-        <div id="admin-page" class="hidden fade-in">
-            <div class="max-w-6xl mx-auto">
-                <div class="bg-white rounded-2xl card-shadow p-8 mb-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h1 class="text-3xl font-bold text-gray-800">Painel do Evento</h1>
-                        <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-300">
-                            Sair
-                        </button>
-                    </div>
-
-                    <!-- Abas de navegação -->
-                    <div class="border-b border-gray-200 mb-6">
-                        <nav class="-mb-px flex space-x-8">
-                            <button id="guests-tab" class="tab-button active py-2 px-1 border-b-2 font-medium text-sm" style="border-color: #5aa189; color: #5aa189;">
-                                👥 Lista de Convidados
-                            </button>
-                            <button id="messages-tab" class="tab-button py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                                💬 Mensagens
-                            </button>
-                        </nav>
-                    </div>
-
-                    <!-- Conteúdo da aba de convidados -->
-                    <div id="guests-content" class="tab-content">
-                        <!-- Estatísticas -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div class="bg-white p-6 rounded-lg text-center border-2 border-gray-100 shadow-sm">
-                                <div id="confirmed-count" class="text-3xl font-bold" style="color: #5aa189;">0</div>
-                                <div class="text-gray-700">Confirmados</div>
-                            </div>
-                            <div class="bg-white p-6 rounded-lg text-center border-2 border-gray-100 shadow-sm">
-                                <div id="declined-count" class="text-3xl font-bold text-gray-600">0</div>
-                                <div class="text-gray-700">Não Confirmados</div>
-                            </div>
-                            <div class="bg-white p-6 rounded-lg text-center border-2 border-gray-100 shadow-sm">
-                                <div id="total-count" class="text-3xl font-bold text-gray-800">0</div>
-                                <div class="text-gray-700">Total de Respostas</div>
-                            </div>
-                        </div>
-
-                        <!-- Botão de download PDF -->
-                        <div class="flex justify-end mb-4">
-                            <button id="download-pdf" class="text-white px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg" style="background-color: #5aa189;" onmouseover="this.style.backgroundColor='#4a8f77'" onmouseout="this.style.backgroundColor='#5aa189'">
-                                📄 Baixar Lista em PDF
-                            </button>
-                        </div>
-
-                        <!-- Lista de convidados -->
-                        <div class="mb-8">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Lista de Convidados</h2>
-                            <div class="overflow-x-auto">
-                                <table class="w-full bg-white rounded-lg overflow-hidden shadow-sm">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acompanhante</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="guests-table" class="bg-white divide-y divide-gray-200">
-                                        <!-- Convidados serão carregados aqui -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Conteúdo da aba de mensagens -->
-                    <div id="messages-content" class="tab-content hidden">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4">💬 Mensagens dos Convidados</h2>
-                            <p class="text-gray-600">Todas as mensagens carinhosas deixadas pelos seus convidados</p>
-                        </div>
-                        <div id="admin-messages-container" class="space-y-4 max-h-96 overflow-y-auto">
-                            <!-- Mensagens serão carregadas aqui -->
-                        </div>
-                    </div>
-                </div>
+        <!-- Demo Section -->
+        <section class="py-16 gradient-bg">
+            <div class="max-w-4xl mx-auto px-4 text-center">
+                <h2 class="font-dancing text-4xl text-white mb-8">Veja um exemplo</h2>
+                <button onclick="showDemoSite()" class="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all">
+                    👀 Ver Site de Demonstração
+                </button>
             </div>
-        </div>
+        </section>
+    </div>
 
-        <!-- Modal de Login -->
-        <div id="login-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Login Administrador</h2>
-                <form id="login-form">
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Token de Acesso</label>
-                        <input type="password" id="admin-token" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Digite o token do evento" style="--tw-ring-color: #5aa189;">
+    <!-- Login Form -->
+    <div id="loginForm" class="hidden min-h-screen py-16 gradient-bg">
+        <div class="max-w-md mx-auto px-4">
+            <div class="bg-white rounded-2xl p-8 card-shadow">
+                <div class="text-center mb-8">
+                    <h2 class="font-dancing text-4xl text-gray-800 mb-4">Login</h2>
+                    <p class="text-gray-600">Acesse seu dashboard</p>
+                </div>
+                
+                <form id="adminLoginForm" class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Nome de Usuário</label>
+                        <input type="text" id="loginUsername" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
                     </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Senha</label>
+                        <input type="password" id="loginPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                    </div>
+                    
+                    <div id="loginError" class="text-red-500 text-sm hidden"></div>
+                    
                     <div class="flex gap-4">
-                        <button type="button" id="cancel-login" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300">
-                            Cancelar
+                        <button type="button" onclick="showHomePage()" 
+                                class="flex-1 bg-gray-500 text-white py-4 rounded-lg font-semibold hover:bg-gray-600 transition-all">
+                            ← Voltar
                         </button>
-                        <button type="submit" class="flex-1 btn-primary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
-                            Entrar
+                        <button type="submit" id="loginButton"
+                                class="flex-1 text-white py-4 rounded-lg font-semibold transition-all" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                            🔐 Entrar
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+    </div>
 
-        <!-- Modal de Sucesso -->
-        <div id="success-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-                <div class="text-6xl mb-4">🎉</div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Presença Confirmada!</h2>
-                <p class="text-gray-600 mb-6">Obrigado por confirmar sua presença. Estamos ansiosos para te ver no evento!</p>
-                <button id="close-success" class="btn-primary text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
-                    Fechar
-                </button>
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="hidden min-h-screen bg-gray-50">
+        <!-- Dashboard Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="font-dancing text-3xl text-gray-800">Dashboard</h1>
+                        <p id="dashboardWeddingInfo" class="text-gray-600">Ana & Carlos - 15 de Junho de 2024</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="viewWeddingSite()" class="px-4 py-2 rounded-lg transition-all text-white" style="background-color: #5ba189; hover:background-color: #4a8b73;">
+                            👀 Ver Site
+                        </button>
+                        <button onclick="logout()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-all">
+                            🚪 Sair
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <!-- Stats Cards -->
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 rounded-full">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Confirmados</p>
+                            <p id="confirmedCount" class="text-2xl font-bold text-green-600">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-red-100 rounded-full">
+                            <span class="text-2xl">❌</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Não Confirmados</p>
+                            <p id="declinedCount" class="text-2xl font-bold text-red-600">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 rounded-full">
+                            <span class="text-2xl">👥</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Total Pessoas</p>
+                            <p id="totalPeople" class="text-2xl font-bold text-blue-600">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 rounded-full">
+                            <span class="text-2xl">💌</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Mensagens</p>
+                            <p id="messagesCount" class="text-2xl font-bold text-purple-600">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white rounded-lg card-shadow">
+                <div class="border-b">
+                    <nav class="flex">
+                        <button onclick="showTab('rsvps')" id="rsvpsTab" class="px-6 py-4 text-sm font-medium border-b-2 tab-active">
+                            📋 Lista de Convidados
+                        </button>
+                        <button onclick="showTab('messages')" id="messagesTab" class="px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700">
+                            💬 Mensagens
+                        </button>
+                        <button onclick="showTab('settings')" id="settingsTab" class="px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700">
+                            ⚙️ Configurações
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- RSVPs Tab -->
+                <div id="rsvpsTabContent" class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold">Lista de Convidados</h3>
+                        <div class="flex gap-2">
+                            <button onclick="exportGuestList('all')" class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-all text-sm">
+                                📊 Todos
+                            </button>
+                            <button onclick="exportGuestList('confirmed')" class="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-all text-sm">
+                                ✅ Confirmados
+                            </button>
+                            <button onclick="exportGuestList('declined')" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all text-sm">
+                                ❌ Não Confirmados
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left py-3 px-4">Nome</th>
+                                    <th class="text-left py-3 px-4">Acompanhante</th>
+                                    <th class="text-left py-3 px-4">Status</th>
+                                    <th class="text-left py-3 px-4">Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rsvpsList">
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">
+                                        Carregando confirmações...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Messages Tab -->
+                <div id="messagesTabContent" class="p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-6">Mensagens dos Convidados</h3>
+                    
+                    <div id="adminMessagesList" class="space-y-4">
+                        <div class="text-center py-8 text-gray-500">
+                            Carregando mensagens...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settingsTabContent" class="p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-6">Configurações do Site</h3>
+                    
+                    <form id="settingsForm" class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noivo(a)</label>
+                                <input type="text" id="settingsGroomName" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noiva(o)</label>
+                                <input type="text" id="settingsBrideName" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            </div>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Data do Casamento</label>
+                                <input type="date" id="settingsWeddingDate" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 font-medium mb-2">Horário</label>
+                                <input type="time" id="settingsWeddingTime" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Local do Evento</label>
+                            <input type="text" id="settingsEventVenue" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-800 mb-4">Configurações de Acompanhantes</h4>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="allowCompanions" class="mr-3" style="accent-color: #5ba189;">
+                                    <label for="allowCompanions" class="text-gray-700">Permitir acompanhantes</label>
+                                </div>
+                                
+                                <div id="companionOptions" class="ml-6 space-y-3 hidden">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="companionType" value="single" id="singleCompanion" class="mr-3" style="accent-color: #5ba189;">
+                                        <label for="singleCompanion" class="text-gray-700">Apenas 1 acompanhante (campo de nome)</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="radio" name="companionType" value="multiple" id="multipleCompanions" class="mr-3 text-purple-500">
+                                        <label for="multipleCompanions" class="text-gray-700">Múltiplos acompanhantes (seletor de quantidade)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-gray-800 mb-4">Mensagem de Confirmação</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-gray-700 font-medium mb-2">Mensagem para quem confirma presença</label>
+                                    <textarea id="confirmMessage" rows="3" 
+                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                              placeholder="Ex: Obrigado por confirmar! Esperamos você no nosso grande dia! 🎉"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 font-medium mb-2">Mensagem para quem não pode comparecer</label>
+                                    <textarea id="declineMessage" rows="3" 
+                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                              placeholder="Ex: Obrigado por nos avisar. Sentiremos sua falta! 💙"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <button type="submit" class="text-white px-6 py-3 rounded-lg font-semibold transition-all" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                                💾 Salvar Configurações
+                            </button>
+                            <button type="button" onclick="resetSettings()" class="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-all">
+                                🔄 Restaurar
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Create Wedding Form -->
+    <div id="createForm" class="hidden min-h-screen py-16 gradient-bg">
+        <div class="max-w-2xl mx-auto px-4">
+            <div class="bg-white rounded-2xl p-8 card-shadow">
+                <div class="text-center mb-8">
+                    <h2 class="font-dancing text-4xl text-gray-800 mb-4">Crie Seu Site de Casamento</h2>
+                    <p class="text-gray-600">Preencha os dados do seu casamento</p>
+                </div>
+                
+                <form id="weddingForm" class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Nome de Usuário *</label>
+                            <input type="text" id="username" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                   placeholder="Ex: ana_carlos">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Senha *</label>
+                            <input type="password" id="password" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                   placeholder="Mínimo 6 caracteres">
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noivo(a) *</label>
+                            <input type="text" id="groomName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Nome do(a) Noiva(o) *</label>
+                            <input type="text" id="brideName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Data do Casamento *</label>
+                        <input type="date" id="weddingDate" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Horário *</label>
+                        <input type="time" id="weddingTime" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Local do Evento *</label>
+                        <input type="text" id="eventVenue" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                               placeholder="Ex: Salão de Festas Jardim">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">URL Personalizada *</label>
+                        <div class="flex">
+                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                invites.com/
+                            </span>
+                            <input type="text" id="customUrl" required 
+                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                   placeholder="ana-e-carlos"
+                                   pattern="[a-z0-9-]+"
+                                   title="Apenas letras minúsculas, números e hífens">
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">Apenas letras minúsculas, números e hífens (ex: ana-e-carlos)</p>
+                        <div id="urlError" class="text-red-500 text-sm mt-1 hidden"></div>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <button type="button" onclick="showHomePage()" 
+                                class="flex-1 bg-gray-500 text-white py-4 rounded-lg font-semibold hover:bg-gray-600 transition-all">
+                            ← Voltar
+                        </button>
+                        <button type="submit" id="createButton"
+                                class="flex-1 text-white py-4 rounded-lg font-semibold transform hover:scale-105 transition-all duration-200 card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                            🎉 Criar Site
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wedding Site Template -->
+    <div id="weddingSite" class="hidden">
+        <!-- Header -->
+        <header class="gradient-bg text-white py-16 text-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-black opacity-10"></div>
+            <div class="relative z-10 max-w-4xl mx-auto px-4">
+                <h1 id="coupleNames" class="font-dancing text-6xl md:text-8xl font-bold mb-4">Ana & Carlos</h1>
+                <p class="text-xl md:text-2xl font-light mb-6">Você está convidado para nosso casamento!</p>
+
+                <div class="mt-8 text-4xl pulse-heart">💕</div>
+                <div class="mt-6">
+                    <span id="siteUrl" class="bg-white bg-opacity-20 px-4 py-2 rounded-full text-sm">
+                        invites.com/ana-e-carlos
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Countdown Timer -->
+        <section class="py-12 bg-white">
+            <div class="max-w-4xl mx-auto px-4 text-center">
+                <h2 class="font-dancing text-4xl text-gray-800 mb-8">Contagem Regressiva</h2>
+                <div id="countdown" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                        <div id="days" class="text-3xl font-bold">00</div>
+                        <div class="text-sm uppercase tracking-wide">Dias</div>
+                    </div>
+                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                        <div id="hours" class="text-3xl font-bold">00</div>
+                        <div class="text-sm uppercase tracking-wide">Horas</div>
+                    </div>
+                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                        <div id="minutes" class="text-3xl font-bold">00</div>
+                        <div class="text-sm uppercase tracking-wide">Minutos</div>
+                    </div>
+                    <div class="text-white p-6 rounded-lg card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                        <div id="seconds" class="text-3xl font-bold">00</div>
+                        <div class="text-sm uppercase tracking-wide">Segundos</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RSVP Form -->
+        <section class="py-16 gradient-bg">
+            <div class="max-w-2xl mx-auto px-4">
+                <div class="bg-white rounded-2xl p-8 card-shadow">
+                    <h2 class="font-dancing text-4xl text-center text-gray-800 mb-8">Confirme sua Presença</h2>
+                    
+                    <form id="rsvpForm" class="space-y-6">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Seu Nome *</label>
+                            <input type="text" id="guestName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all" style="--tw-ring-color: #5ba189; focus:ring-color: #5ba189;">
+                        </div>
+                        
+
+                        
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-4">Confirmação de Presença *</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="attendance" value="sim" required class="sr-only peer">
+                                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all duration-200 hover:border-green-300 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:shadow-lg">
+                                        <div class="text-3xl mb-2">✅</div>
+                                        <div class="font-semibold text-gray-800 peer-checked:text-green-700">Vou comparecer</div>
+                                        <div class="text-sm text-gray-500 mt-1">Estarei presente no grande dia!</div>
+                                    </div>
+                                </label>
+                                <label class="relative cursor-pointer">
+                                    <input type="radio" name="attendance" value="nao" required class="sr-only peer">
+                                    <div class="bg-white border-2 border-gray-200 rounded-xl p-6 text-center transition-all duration-200 hover:border-red-300 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:shadow-lg">
+                                        <div class="text-3xl mb-2">❌</div>
+                                        <div class="font-semibold text-gray-800 peer-checked:text-red-700">Não poderei ir</div>
+                                        <div class="text-sm text-gray-500 mt-1">Infelizmente não conseguirei comparecer</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="companionSection" class="hidden">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-blue-800">Vai trazer acompanhante?</h4>
+                                        <p class="text-sm text-blue-600">Clique para adicionar o nome do seu acompanhante</p>
+                                    </div>
+                                    <button type="button" id="addCompanionBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all text-sm">
+                                        + Adicionar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="companionNameField" class="hidden">
+                                <label class="block text-gray-700 font-medium mb-2">Nome do Acompanhante</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="companionName" 
+                                           class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                           placeholder="Digite o nome do acompanhante">
+                                    <button type="button" id="removeCompanionBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all">
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="guestCountSection" class="hidden">
+                            <label class="block text-gray-700 font-medium mb-2">Número de Acompanhantes</label>
+                            <select id="guestCount" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                                <option value="0">Apenas eu</option>
+                                <option value="1">Eu + 1 acompanhante</option>
+                                <option value="2">Eu + 2 acompanhantes</option>
+                                <option value="3">Eu + 3 acompanhantes</option>
+                                <option value="4">Eu + 4 acompanhantes</option>
+                                <option value="5">Eu + 5 acompanhantes</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Mensagem para os Noivos</label>
+                            <textarea id="message" rows="4" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                      placeholder="Deixe uma mensagem carinhosa..."></textarea>
+                            <p class="text-sm text-gray-500 mt-1">Esta mensagem será exibida publicamente no mural de recados</p>
+                        </div>
+                        
+                        <button type="submit" id="rsvpButton"
+                                class="w-full text-white py-4 rounded-lg font-semibold text-lg transform hover:scale-105 transition-all duration-200 card-shadow" style="background: linear-gradient(135deg, #5ba189 0%, #4a8b73 100%);">
+                            💌 Confirmar Presença
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Messages Wall -->
+        <section class="py-16 bg-gray-50">
+            <div class="max-w-6xl mx-auto px-4">
+                <h2 class="font-dancing text-4xl text-center text-gray-800 mb-12">Mural de Recados</h2>
+                
+                <div id="messagesContainer" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="text-center py-8">
+                        <div class="text-4xl mb-4">💌</div>
+                        <p class="text-gray-500">Carregando mensagens...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="gradient-bg text-white py-8 text-center">
+            <div class="max-w-4xl mx-auto px-4">
+                <p id="footerNames" class="text-lg mb-2">Ana & Carlos</p>
+                <p id="footerDate" class="text-sm opacity-75">15 de Junho de 2024 • Com amor 💕</p>
+                <div class="mt-4">
+                    <button onclick="showHomePage()" class="text-sm bg-white bg-opacity-20 px-4 py-2 rounded-full hover:bg-opacity-30 transition-all">
+                        ← Voltar ao Invites
+                    </button>
+                </div>
+                <div class="mt-6 pt-4 border-t border-white border-opacity-20">
+                    <p class="text-xs opacity-60">Created By Invites 2025</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
     <script>
         // Configuração do Supabase
-        const SUPABASE_URL = 'https://bjyvawcwgzghtpzwkwag.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqeXZhd2N3Z3pnaHRwendrd2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MjQ4ODcsImV4cCI6MjA3MTIwMDg4N30.dMnWptSZqPcw2tC6sTmFxLH4_1X1LZkPCSVQBFOCA6Q';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzY3MDIsImV4cCI6MjA3MTI1MjcwMn0.LPMGW_OPKiwTEKhyzl_v2Snb9nVeZg0wP4Ot6zKrCn0'
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
 
-        // Variáveis globais
-        let currentEvent = null;
-        let isAdmin = false;
-        let countdownInterval = null;
+        let currentWeddingData = {};
+        let currentAdminData = {};
+        let countdownInterval;
 
-        // Elementos DOM
-        const elements = {
-            loading: document.getElementById('loading'),
-            guestPage: document.getElementById('guest-page'),
-            adminPage: document.getElementById('admin-page'),
-            loginModal: document.getElementById('login-modal'),
-            successModal: document.getElementById('success-modal'),
-            loginBtn: document.getElementById('login-btn'),
-            logoutBtn: document.getElementById('logout-btn'),
-            rsvpForm: document.getElementById('rsvp-form'),
-            loginForm: document.getElementById('login-form'),
-            confirmYes: document.getElementById('confirm-yes'),
-            confirmNo: document.getElementById('confirm-no'),
-            companionYes: document.getElementById('companion-yes'),
-            companionNo: document.getElementById('companion-no'),
-            companionSection: document.getElementById('companion-section'),
-            companionNameSection: document.getElementById('companion-name-section')
-        };
-
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', async () => {
-            const slug = getSlugFromURL();
-            if (slug) {
-                await loadEvent(slug);
-            } else {
-                showError('Evento não encontrado');
-            }
-            setupEventListeners();
-        });
-
-        // Extrair slug da URL
-        function getSlugFromURL() {
-            const path = window.location.pathname;
-            return path.substring(1) || null;
-        }
-
-        // Carregar dados do evento
-        async function loadEvent(slug) {
+        // Funções do Supabase
+        async function createWedding(weddingData) {
             try {
-                let event = null;
+                const { data, error } = await supabase
+                    .from('weddings')
+                    .insert([{
+                        username: weddingData.username,
+                        password: weddingData.password,
+                        groom_name: weddingData.groomName,
+                        bride_name: weddingData.brideName,
+                        wedding_date: weddingData.weddingDate,
+                        wedding_time: weddingData.weddingTime,
+                        event_venue: weddingData.eventVenue,
+                        custom_url: weddingData.customUrl
+                    }])
+                    .select()
+                    .single()
                 
-                if (slug && slug !== '') {
-                    // Tentar buscar por slug específico
-                    const { data, error } = await supabase
-                        .from('events')
-                        .select('*')
-                        .eq('slug', slug)
-                        .single();
-                    
-                    if (error || !data) {
-                        console.error('Evento não encontrado para slug:', slug, error);
-                        showError('Evento não encontrado');
-                        return;
-                    }
-                    
-                    event = data;
-                } else {
-                    // Se não há slug, mostrar erro
-                    showError('URL do evento não especificada');
-                    return;
-                }
-
-                currentEvent = event;
-                
-                // Aplicar configurações padrão se não existirem
-                if (!event.allow_companions) event.allow_companions = true;
-                if (!event.max_companions) event.max_companions = 1;
-                if (!event.companion_mode) event.companion_mode = 'yes_no'; // 'yes_no', 'quantity', 'disabled'
-                if (!event.require_companion_names) event.require_companion_names = true;
-                
-                displayEventInfo(event);
-                setupCompanionForm(event);
-                startCountdown(event.event_date);
-                await loadMessages();
-                
-                elements.loading.classList.add('hidden');
-                elements.guestPage.classList.remove('hidden');
+                if (error) throw error
+                return data
             } catch (error) {
-                console.error('Erro ao carregar evento:', error);
-                showError('Erro ao carregar o evento');
+                console.error('Erro ao criar casamento:', error)
+                throw error
             }
         }
 
-        // Exibir informações do evento
-        function displayEventInfo(event) {
-            document.getElementById('couple-names').textContent = event.couple_names;
-            document.getElementById('event-type').textContent = event.event_type;
-            document.getElementById('event-date').textContent = formatDate(event.event_date);
-            document.getElementById('event-title').textContent = `${event.couple_names} - ${event.event_type}`;
-        }
-
-        // Formatar data
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        // Contador regressivo
-        function startCountdown(eventDate) {
-            const targetDate = new Date(eventDate).getTime();
-            
-            countdownInterval = setInterval(() => {
-                const now = new Date().getTime();
-                const distance = targetDate - now;
-
-                if (distance < 0) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('countdown').innerHTML = '<div class="col-span-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-6 text-center shadow-lg"><div class="text-3xl mb-2">🎉</div><div class="text-2xl font-bold">O evento já começou!</div></div>';
-                    return;
-                }
-
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                document.getElementById('days').textContent = days;
-                document.getElementById('hours').textContent = hours;
-                document.getElementById('minutes').textContent = minutes;
-                document.getElementById('seconds').textContent = seconds;
-            }, 1000);
-        }
-
-        // Configurar formulário de acompanhantes baseado nas configurações do evento
-        function setupCompanionForm(event) {
-            const companionSection = elements.companionSection;
-            const companionNameSection = elements.companionNameSection;
-            
-            // Se acompanhantes não são permitidos, esconder seção
-            if (!event.allow_companions || event.companion_mode === 'disabled') {
-                companionSection.style.display = 'none';
-                return;
-            }
-            
-            // Configurar baseado no modo
-            if (event.companion_mode === 'quantity') {
-                // Modo quantidade - mostrar seletor numérico
-                setupQuantityMode(event.max_companions);
-            } else {
-                // Modo sim/não padrão
-                setupYesNoMode();
-            }
-            
-            // Configurar se nomes são obrigatórios
-            if (!event.require_companion_names) {
-                const companionNameInput = document.getElementById('companion-name');
-                if (companionNameInput) {
-                    companionNameInput.removeAttribute('required');
-                    companionNameInput.placeholder = 'Nome do acompanhante (opcional)';
-                }
-            }
-        }
-        
-        // Configurar modo sim/não para acompanhantes
-        function setupYesNoMode() {
-            const companionSection = elements.companionSection;
-            companionSection.innerHTML = `
-                <label class="block text-sm font-medium text-gray-700 mb-4">Você levará acompanhante?</label>
-                <div class="grid grid-cols-2 gap-4">
-                    <button type="button" id="companion-yes" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
-                        <div class="font-medium">Sim, com acompanhante</div>
-                    </button>
-                    <button type="button" id="companion-no" class="p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
-                        <div class="font-medium">Sem acompanhante</div>
-                    </button>
-                </div>
-            `;
-            
-            // Reconfigurar elementos
-            elements.companionYes = document.getElementById('companion-yes');
-            elements.companionNo = document.getElementById('companion-no');
-            
-            // Reconfigurar listeners
-            elements.companionYes.addEventListener('click', () => selectCompanion(true));
-            elements.companionNo.addEventListener('click', () => selectCompanion(false));
-        }
-        
-        // Configurar modo quantidade para acompanhantes
-        function setupQuantityMode(maxCompanions) {
-            const companionSection = elements.companionSection;
-            let optionsHTML = '';
-            
-            for (let i = 0; i <= maxCompanions; i++) {
-                const label = i === 0 ? 'Sem acompanhante' : 
-                             i === 1 ? '1 acompanhante' : 
-                             `${i} acompanhantes`;
-                optionsHTML += `
-                    <button type="button" data-quantity="${i}" class="companion-quantity-btn p-3 border-2 border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all duration-300 text-center">
-                        <div class="font-medium">${label}</div>
-                    </button>
-                `;
-            }
-            
-            companionSection.innerHTML = `
-                <label class="block text-sm font-medium text-gray-700 mb-4">Quantos acompanhantes você levará?</label>
-                <div class="grid grid-cols-${Math.min(maxCompanions + 1, 4)} gap-2">
-                    ${optionsHTML}
-                </div>
-            `;
-            
-            // Configurar listeners para botões de quantidade
-            document.querySelectorAll('.companion-quantity-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const quantity = parseInt(btn.dataset.quantity);
-                    selectCompanionQuantity(quantity);
-                });
-            });
-        }
-        
-        // Selecionar quantidade de acompanhantes
-        function selectCompanionQuantity(quantity) {
-            // Resetar todos os botões
-            document.querySelectorAll('.companion-quantity-btn').forEach(btn => {
-                btn.classList.remove('border-green-500', 'bg-green-50');
-                btn.style.borderColor = '#d1d5db';
-                btn.style.backgroundColor = 'transparent';
-            });
-            
-            // Ativar botão selecionado
-            const selectedBtn = document.querySelector(`[data-quantity="${quantity}"]`);
-            if (selectedBtn) {
-                selectedBtn.style.borderColor = '#5aa189';
-                selectedBtn.style.backgroundColor = '#f0f9ff';
-            }
-            
-            // Configurar campos de nomes baseado na quantidade
-            setupCompanionNameFields(quantity);
-            
-            // Salvar seleção
-            elements.companionSection.dataset.selectedQuantity = quantity;
-        }
-        
-        // Configurar campos de nomes dos acompanhantes
-        function setupCompanionNameFields(quantity) {
-            const companionNameSection = elements.companionNameSection;
-            
-            if (quantity === 0) {
-                companionNameSection.classList.add('hidden');
-                return;
-            }
-            
-            companionNameSection.classList.remove('hidden');
-            
-            if (quantity === 1) {
-                // Um acompanhante - campo simples
-                companionNameSection.innerHTML = `
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Acompanhante</label>
-                    <input type="text" id="companion-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300" placeholder="Nome do seu acompanhante" style="--tw-ring-color: #5aa189;">
-                `;
-            } else {
-                // Múltiplos acompanhantes - campos múltiplos
-                let fieldsHTML = `<label class="block text-sm font-medium text-gray-700 mb-2">Nomes dos Acompanhantes</label>`;
-                
-                for (let i = 1; i <= quantity; i++) {
-                    fieldsHTML += `
-                        <input type="text" id="companion-name-${i}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 mb-3" placeholder="Nome do ${i}º acompanhante" style="--tw-ring-color: #5aa189;">
-                    `;
-                }
-                
-                companionNameSection.innerHTML = fieldsHTML;
-            }
-        }
-
-        // Configurar event listeners
-        function setupEventListeners() {
-            // Botões de confirmação
-            elements.confirmYes.addEventListener('click', () => selectConfirmation(true));
-            elements.confirmNo.addEventListener('click', () => selectConfirmation(false));
-
-            // Botões de acompanhante
-            elements.companionYes.addEventListener('click', () => selectCompanion(true));
-            elements.companionNo.addEventListener('click', () => selectCompanion(false));
-
-            // Formulários
-            elements.rsvpForm.addEventListener('submit', handleRSVPSubmit);
-            elements.loginForm.addEventListener('submit', handleLogin);
-
-            // Botões de modal
-            elements.loginBtn.addEventListener('click', () => elements.loginModal.classList.remove('hidden'));
-            elements.logoutBtn.addEventListener('click', logout);
-            document.getElementById('cancel-login').addEventListener('click', () => elements.loginModal.classList.add('hidden'));
-            document.getElementById('close-success').addEventListener('click', () => elements.successModal.classList.add('hidden'));
-
-            // Abas do painel admin
-            document.getElementById('guests-tab').addEventListener('click', () => switchTab('guests'));
-            document.getElementById('messages-tab').addEventListener('click', () => switchTab('messages'));
-
-            // Download PDF
-            document.getElementById('download-pdf').addEventListener('click', generatePDF);
-        }
-
-        // Selecionar confirmação
-        function selectConfirmation(confirmed) {
-            elements.confirmYes.classList.remove('border-green-500', 'bg-green-50');
-            elements.confirmNo.classList.remove('border-red-500', 'bg-red-50');
-
-            if (confirmed) {
-                elements.confirmYes.style.borderColor = '#5aa189';
-                elements.confirmYes.style.backgroundColor = '#f0f9ff';
-                elements.companionSection.classList.remove('hidden');
-            } else {
-                elements.confirmNo.style.borderColor = '#6b7280';
-                elements.confirmNo.style.backgroundColor = '#f9fafb';
-                elements.companionSection.classList.add('hidden');
-                elements.companionNameSection.classList.add('hidden');
-            }
-
-            elements.confirmYes.dataset.selected = confirmed;
-            elements.confirmNo.dataset.selected = !confirmed;
-        }
-
-        // Selecionar acompanhante
-        function selectCompanion(hasCompanion) {
-            elements.companionYes.classList.remove('border-purple-500', 'bg-purple-50');
-            elements.companionNo.classList.remove('border-purple-500', 'bg-purple-50');
-
-            if (hasCompanion) {
-                elements.companionYes.classList.add('border-purple-500', 'bg-purple-50');
-                elements.companionNameSection.classList.remove('hidden');
-            } else {
-                elements.companionNo.classList.add('border-purple-500', 'bg-purple-50');
-                elements.companionNameSection.classList.add('hidden');
-            }
-
-            elements.companionYes.dataset.selected = hasCompanion;
-            elements.companionNo.dataset.selected = !hasCompanion;
-        }
-
-        // Submeter confirmação de presença
-        async function handleRSVPSubmit(e) {
-            e.preventDefault();
-
-            const guestName = document.getElementById('guest-name').value;
-            const confirmed = elements.confirmYes.dataset.selected === 'true';
-            const message = document.getElementById('guest-message').value;
-
-            if (!guestName) {
-                alert('Por favor, digite seu nome');
-                return;
-            }
-
-            if (elements.confirmYes.dataset.selected === undefined && elements.confirmNo.dataset.selected === undefined) {
-                alert('Por favor, confirme se você irá ao evento');
-                return;
-            }
-
-            // Coletar dados de acompanhantes baseado no modo configurado
-            let companionData = getCompanionData();
-
+        async function loginAdmin(username, password) {
             try {
-                // Salvar RSVP no Supabase
-                const { data: rsvpData, error: rsvpError } = await supabase
+                const { data, error } = await supabase
+                    .from('weddings')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single()
+                
+                if (error) throw error
+                return data
+            } catch (error) {
+                console.error('Erro ao fazer login:', error)
+                throw error
+            }
+        }
+
+        async function getWeddingByUrl(customUrl) {
+            try {
+                const { data, error } = await supabase
+                    .from('weddings')
+                    .select('*')
+                    .eq('custom_url', customUrl)
+                    .single()
+                
+                if (error) throw error
+                return data
+            } catch (error) {
+                console.error('Erro ao buscar casamento:', error)
+                throw error
+            }
+        }
+
+        async function createRSVP(rsvpData) {
+            try {
+                const { data, error } = await supabase
                     .from('rsvps')
-                    .upsert({
-                        event_id: currentEvent.id,
-                        guest_name: guestName,
-                        confirmed: confirmed,
-                        has_companion: companionData.hasCompanion,
-                        companion_count: companionData.count,
-                        companion_name: companionData.names.length === 1 ? companionData.names[0] : null,
-                        companion_names: companionData.names.length > 1 ? JSON.stringify(companionData.names) : null
-                    }, {
-                        onConflict: 'event_id,guest_name'
-                    });
-
-                if (rsvpError) {
-                    console.error('Erro ao salvar RSVP:', rsvpError);
-                    alert('Erro ao salvar confirmação. Tente novamente.');
-                    return;
-                }
-
-                // Salvar mensagem se fornecida
-                if (message && message.trim()) {
-                    const { error: messageError } = await supabase
-                        .from('messages')
-                        .insert({
-                            event_id: currentEvent.id,
-                            guest_name: guestName,
-                            message: message.trim()
-                        });
-
-                    if (messageError) {
-                        console.error('Erro ao salvar mensagem:', messageError);
-                    }
-                }
-
-                await loadMessages(); // Recarregar mensagens
-                elements.successModal.classList.remove('hidden');
-                elements.rsvpForm.reset();
-                resetFormSelections();
-
+                    .insert([rsvpData])
+                
+                if (error) throw error
+                return data
             } catch (error) {
-                console.error('Erro ao salvar confirmação:', error);
-                alert('Erro ao salvar confirmação. Tente novamente.');
+                console.error('Erro ao criar RSVP:', error)
+                throw error
             }
-        }
-        
-        // Coletar dados de acompanhantes baseado na configuração
-        function getCompanionData() {
-            const companionData = {
-                hasCompanion: false,
-                count: 0,
-                names: []
-            };
-            
-            // Se acompanhantes não são permitidos
-            if (!currentEvent.allow_companions || currentEvent.companion_mode === 'disabled') {
-                return companionData;
-            }
-            
-            if (currentEvent.companion_mode === 'quantity') {
-                // Modo quantidade
-                const selectedQuantity = elements.companionSection.dataset.selectedQuantity;
-                if (selectedQuantity && parseInt(selectedQuantity) > 0) {
-                    companionData.hasCompanion = true;
-                    companionData.count = parseInt(selectedQuantity);
-                    
-                    // Coletar nomes
-                    if (companionData.count === 1) {
-                        const nameInput = document.getElementById('companion-name');
-                        if (nameInput && nameInput.value.trim()) {
-                            companionData.names.push(nameInput.value.trim());
-                        }
-                    } else {
-                        for (let i = 1; i <= companionData.count; i++) {
-                            const nameInput = document.getElementById(`companion-name-${i}`);
-                            if (nameInput && nameInput.value.trim()) {
-                                companionData.names.push(nameInput.value.trim());
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Modo sim/não tradicional
-                const hasCompanion = elements.companionYes && elements.companionYes.dataset.selected === 'true';
-                if (hasCompanion) {
-                    companionData.hasCompanion = true;
-                    companionData.count = 1;
-                    
-                    const nameInput = document.getElementById('companion-name');
-                    if (nameInput && nameInput.value.trim()) {
-                        companionData.names.push(nameInput.value.trim());
-                    }
-                }
-            }
-            
-            return companionData;
         }
 
-        // Resetar seleções do formulário
-        function resetFormSelections() {
-            elements.confirmYes.classList.remove('border-green-500', 'bg-green-50');
-            elements.confirmNo.classList.remove('border-red-500', 'bg-red-50');
-            elements.companionYes.classList.remove('border-purple-500', 'bg-purple-50');
-            elements.companionNo.classList.remove('border-purple-500', 'bg-purple-50');
-            elements.companionSection.classList.add('hidden');
-            elements.companionNameSection.classList.add('hidden');
-            delete elements.confirmYes.dataset.selected;
-            delete elements.confirmNo.dataset.selected;
-            delete elements.companionYes.dataset.selected;
-            delete elements.companionNo.dataset.selected;
-        }
-
-        // Carregar mensagens
-        async function loadMessages() {
+        async function createMessage(messageData) {
             try {
-                const { data: messages, error } = await supabase
+                const { data, error } = await supabase
+                    .from('messages')
+                    .insert([messageData])
+                    .select()
+                    .single()
+                
+                if (error) throw error
+                return data
+            } catch (error) {
+                console.error('Erro ao criar mensagem:', error)
+                throw error
+            }
+        }
+
+        async function getMessages(weddingId) {
+            try {
+                const { data, error } = await supabase
                     .from('messages')
                     .select('*')
-                    .eq('event_id', currentEvent.id)
-                    .order('created_at', { ascending: false });
+                    .eq('wedding_id', weddingId)
+                    .order('created_at', { ascending: false })
+                
+                if (error) throw error
+                return data
+            } catch (error) {
+                console.error('Erro ao buscar mensagens:', error)
+                return []
+            }
+        }
 
-                if (error) {
-                    console.error('Erro ao carregar mensagens:', error);
+        async function getRSVPs(weddingId) {
+            try {
+                const { data, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', weddingId)
+                    .order('created_at', { ascending: false })
+                
+                if (error) throw error
+                return data
+            } catch (error) {
+                console.error('Erro ao buscar RSVPs:', error)
+                return []
+            }
+        }
+
+        async function checkUrlAvailability(customUrl) {
+            try {
+                const { data, error } = await supabase
+                    .from('weddings')
+                    .select('id')
+                    .eq('custom_url', customUrl)
+                    .single()
+                
+                // Se não encontrou nenhum registro, a URL está disponível
+                return error && error.code === 'PGRST116'
+            } catch (error) {
+                return false
+            }
+        }
+
+        // Navigation functions
+        function showHomePage() {
+            document.getElementById('homePage').classList.remove('hidden');
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('weddingSite').classList.add('hidden');
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        function showCreateForm() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('createForm').classList.remove('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('weddingSite').classList.add('hidden');
+        }
+
+        function showLoginForm() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('weddingSite').classList.add('hidden');
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            document.getElementById('weddingSite').classList.add('hidden');
+        }
+
+        function showDemoSite() {
+            // Show demo with sample data
+            const demoData = {
+                id: 'demo',
+                groom_name: 'Carlos',
+                bride_name: 'Ana',
+                wedding_date: '2024-06-15',
+                wedding_time: '18:00',
+                event_venue: 'Salão de Festas Jardim',
+                custom_url: 'ana-e-carlos'
+            };
+            
+            showWeddingSite(demoData);
+            addSampleMessages();
+        }
+
+        function showWeddingSite(weddingData) {
+            currentWeddingData = weddingData;
+            
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('weddingSite').classList.remove('hidden');
+            
+            // Update wedding site content
+            updateWeddingSiteContent(weddingData);
+            
+            // Start countdown
+            startCountdown(weddingData.wedding_date, weddingData.wedding_time);
+            
+            // Load messages if not demo
+            if (weddingData.id !== 'demo') {
+                loadMessages(weddingData.id);
+            }
+        }
+
+        function viewWeddingSite() {
+            showWeddingSite(currentAdminData);
+        }
+
+        function logout() {
+            currentAdminData = {};
+            showHomePage();
+        }
+
+        function updateWeddingSiteContent(data) {
+            const coupleNames = `${data.bride_name} & ${data.groom_name}`;
+            
+            document.getElementById('coupleNames').textContent = coupleNames;
+            document.getElementById('footerNames').textContent = coupleNames;
+            
+            // Format date for footer only
+            const date = new Date(data.wedding_date);
+            const formattedDate = date.toLocaleDateString('pt-BR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            document.getElementById('footerDate').textContent = `${formattedDate} • Com amor 💕`;
+            
+            // URL
+            document.getElementById('siteUrl').textContent = `invites.com/${data.custom_url}`;
+            
+            // Update RSVP form based on settings
+            updateRSVPForm(data);
+        }
+
+        function updateRSVPForm(data) {
+            const allowCompanions = data.allow_companions !== false; // Default true
+            const companionType = data.companion_type || 'single';
+            
+            const companionSection = document.getElementById('companionSection');
+            const guestCountSection = document.getElementById('guestCountSection');
+            
+            if (!allowCompanions) {
+                // Hide both companion sections
+                companionSection.classList.add('hidden');
+                guestCountSection.classList.add('hidden');
+            } else if (companionType === 'single') {
+                // Show single companion name field
+                companionSection.classList.remove('hidden');
+                guestCountSection.classList.add('hidden');
+                
+                // Setup companion controls
+                setupCompanionControls();
+            } else {
+                // Show multiple companions selector
+                companionSection.classList.add('hidden');
+                guestCountSection.classList.remove('hidden');
+            }
+        }
+
+        function setupCompanionControls() {
+            const addBtn = document.getElementById('addCompanionBtn');
+            const removeBtn = document.getElementById('removeCompanionBtn');
+            const companionNameField = document.getElementById('companionNameField');
+            const companionName = document.getElementById('companionName');
+            
+            // Add companion button
+            addBtn.addEventListener('click', function() {
+                companionNameField.classList.remove('hidden');
+                companionName.focus();
+            });
+            
+            // Remove companion button
+            removeBtn.addEventListener('click', function() {
+                companionNameField.classList.add('hidden');
+                companionName.value = '';
+            });
+        }
+
+        // Show/hide companion section based on attendance
+        function toggleCompanionSection() {
+            const attendance = document.querySelector('input[name="attendance"]:checked');
+            const companionSection = document.getElementById('companionSection');
+            const guestCountSection = document.getElementById('guestCountSection');
+            
+            if (attendance && attendance.value === 'sim') {
+                // Show companion options if attending and companions are allowed
+                const allowCompanions = currentWeddingData.allow_companions !== false;
+                const companionType = currentWeddingData.companion_type || 'single';
+                
+                if (allowCompanions) {
+                    if (companionType === 'single') {
+                        companionSection.classList.remove('hidden');
+                        guestCountSection.classList.add('hidden');
+                    } else {
+                        companionSection.classList.add('hidden');
+                        guestCountSection.classList.remove('hidden');
+                    }
+                }
+            } else {
+                // Hide companion sections if not attending
+                companionSection.classList.add('hidden');
+                guestCountSection.classList.add('hidden');
+                
+                // Reset companion fields
+                document.getElementById('companionName').value = '';
+                document.getElementById('companionNameField').classList.add('hidden');
+                document.getElementById('guestCount').value = '0';
+            }
+        }
+
+        // Admin Login Handler
+        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loginButton = document.getElementById('loginButton');
+            const loginError = document.getElementById('loginError');
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Reset error
+            loginError.classList.add('hidden');
+            
+            // Show loading
+            loginButton.textContent = 'Entrando...';
+            loginButton.classList.add('loading');
+            
+            try {
+                const adminData = await loginAdmin(username, password);
+                currentAdminData = adminData;
+                
+                // Update dashboard info
+                const coupleNames = `${adminData.bride_name} & ${adminData.groom_name}`;
+                const date = new Date(adminData.wedding_date);
+                const formattedDate = date.toLocaleDateString('pt-BR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                document.getElementById('dashboardWeddingInfo').textContent = `${coupleNames} - ${formattedDate}`;
+                
+                // Load dashboard data
+                await loadDashboardData(adminData.id);
+                
+                // Show dashboard
+                showAdminDashboard();
+                
+            } catch (error) {
+                loginError.textContent = 'Usuário ou senha incorretos.';
+                loginError.classList.remove('hidden');
+            } finally {
+                loginButton.textContent = '🔐 Entrar';
+                loginButton.classList.remove('loading');
+            }
+        });
+
+        // Load Dashboard Data
+        async function loadDashboardData(weddingId) {
+            try {
+                const [rsvps, messages] = await Promise.all([
+                    getRSVPs(weddingId),
+                    getMessages(weddingId)
+                ]);
+                
+                // Calculate stats
+                const confirmed = rsvps.filter(r => r.attendance === true);
+                const declined = rsvps.filter(r => r.attendance === false);
+                const totalPeople = confirmed.reduce((sum, rsvp) => {
+                    return sum + (rsvp.guest_count || 1);
+                }, 0);
+                
+                // Update stats
+                document.getElementById('confirmedCount').textContent = confirmed.length;
+                document.getElementById('declinedCount').textContent = declined.length;
+                document.getElementById('totalPeople').textContent = totalPeople;
+                document.getElementById('messagesCount').textContent = messages.length;
+                
+                // Load RSVP list
+                loadRSVPList(rsvps);
+                
+                // Load admin messages
+                loadAdminMessages(messages);
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados do dashboard:', error);
+            }
+        }
+
+        // Load RSVP List
+        function loadRSVPList(rsvps) {
+            const rsvpsList = document.getElementById('rsvpsList');
+            
+            if (rsvps.length === 0) {
+                rsvpsList.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">
+                            Ainda não há confirmações de presença.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            rsvpsList.innerHTML = '';
+            
+            rsvps.forEach(rsvp => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                
+                const statusClass = rsvp.attendance ? 'text-green-600' : 'text-red-600';
+                const statusText = rsvp.attendance ? '✅ Confirmado' : '❌ Não vai';
+                
+                let companionText = '-';
+                if (rsvp.companion_name) {
+                    companionText = rsvp.companion_name;
+                } else if (rsvp.guest_count && rsvp.guest_count > 1) {
+                    companionText = `${rsvp.guest_count - 1} acompanhante(s)`;
+                }
+                
+                const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR');
+                
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-medium">${rsvp.guest_name}</td>
+                    <td class="py-3 px-4">${companionText}</td>
+                    <td class="py-3 px-4 ${statusClass}">${statusText}</td>
+                    <td class="py-3 px-4 text-gray-500">${date}</td>
+                `;
+                
+                rsvpsList.appendChild(row);
+            });
+        }
+
+        // Load Admin Messages
+        function loadAdminMessages(messages) {
+            const adminMessagesList = document.getElementById('adminMessagesList');
+            
+            if (messages.length === 0) {
+                adminMessagesList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        Ainda não há mensagens dos convidados.
+                    </div>
+                `;
+                return;
+            }
+            
+            adminMessagesList.innerHTML = '';
+            
+            messages.forEach(msg => {
+                const displayName = msg.companion_name ? 
+                    `${msg.guest_name} & ${msg.companion_name}` : 
+                    msg.guest_name;
+                const initial = msg.guest_name.charAt(0).toUpperCase();
+                const timeAgo = getTimeAgo(new Date(msg.created_at));
+                
+                const messageCard = document.createElement('div');
+                messageCard.className = 'bg-white p-4 rounded-lg border border-gray-200';
+                messageCard.innerHTML = `
+                    <div class="flex items-center mb-3">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            ${initial}
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="font-medium text-gray-800">${displayName}</h4>
+                            <p class="text-xs text-gray-500">${timeAgo}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 text-sm leading-relaxed">${msg.message}</p>
+                `;
+                
+                adminMessagesList.appendChild(messageCard);
+            });
+        }
+
+        // Tab Management
+        function showTab(tabName) {
+            // Update tab buttons
+            document.getElementById('rsvpsTab').className = tabName === 'rsvps' ? 
+                'px-6 py-4 text-sm font-medium border-b-2 tab-active' : 
+                'px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700';
+            
+            document.getElementById('messagesTab').className = tabName === 'messages' ? 
+                'px-6 py-4 text-sm font-medium border-b-2 tab-active' : 
+                'px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700';
+                
+            document.getElementById('settingsTab').className = tabName === 'settings' ? 
+                'px-6 py-4 text-sm font-medium border-b-2 tab-active' : 
+                'px-6 py-4 text-sm font-medium border-b-2 tab-inactive hover:text-gray-700';
+            
+            // Show/hide content
+            document.getElementById('rsvpsTabContent').classList.toggle('hidden', tabName !== 'rsvps');
+            document.getElementById('messagesTabContent').classList.toggle('hidden', tabName !== 'messages');
+            document.getElementById('settingsTabContent').classList.toggle('hidden', tabName !== 'settings');
+            
+            // Load settings when tab is opened
+            if (tabName === 'settings') {
+                loadSettings();
+            }
+        }
+
+        // Export Guest List
+        function exportGuestList(type = 'all') {
+            if (!currentAdminData.id) return;
+            
+            getRSVPs(currentAdminData.id).then(rsvps => {
+                let filteredRsvps = rsvps;
+                let fileName = `convidados_${currentAdminData.custom_url}`;
+                
+                // Filter based on type
+                if (type === 'confirmed') {
+                    filteredRsvps = rsvps.filter(rsvp => rsvp.attendance === true);
+                    fileName += '_confirmados';
+                } else if (type === 'declined') {
+                    filteredRsvps = rsvps.filter(rsvp => rsvp.attendance === false);
+                    fileName += '_nao_confirmados';
+                } else {
+                    fileName += '_todos';
+                }
+                
+                if (filteredRsvps.length === 0) {
+                    const typeText = type === 'confirmed' ? 'confirmados' : 
+                                   type === 'declined' ? 'não confirmados' : 'convidados';
+                    alert(`Não há ${typeText} para exportar.`);
                     return;
                 }
+                
+                let csvContent = "Nome,Acompanhante,Status,Total Pessoas,Data,Mensagem\n";
+                
+                filteredRsvps.forEach(rsvp => {
+                    let companion = '';
+                    if (rsvp.companion_name) {
+                        companion = rsvp.companion_name;
+                    } else if (rsvp.guest_count && rsvp.guest_count > 1) {
+                        companion = `${rsvp.guest_count - 1} acompanhante(s)`;
+                    }
+                    
+                    const status = rsvp.attendance ? 'Confirmado' : 'Não vai';
+                    const totalPeople = rsvp.guest_count || 1;
+                    const date = new Date(rsvp.created_at).toLocaleDateString('pt-BR');
+                    const message = (rsvp.message || '').replace(/"/g, '""'); // Escape quotes
+                    
+                    csvContent += `"${rsvp.guest_name}","${companion}","${status}","${totalPeople}","${date}","${message}"\n`;
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${fileName}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Show success message
+                const typeText = type === 'confirmed' ? 'confirmados' : 
+                               type === 'declined' ? 'não confirmados' : 'todos os convidados';
+                alert(`✅ Lista de ${typeText} exportada com sucesso!`);
+            });
+        }
 
-                displayMessages(messages || []);
+        // Wedding form handler
+        document.getElementById('weddingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const createButton = document.getElementById('createButton');
+            const customUrl = document.getElementById('customUrl').value;
+            const urlError = document.getElementById('urlError');
+            
+            // Reset error
+            urlError.classList.add('hidden');
+            
+            // Show loading
+            createButton.textContent = 'Criando...';
+            createButton.classList.add('loading');
+            
+            try {
+                // Check URL availability
+                const isAvailable = await checkUrlAvailability(customUrl);
+                if (!isAvailable) {
+                    urlError.textContent = 'Esta URL já está em uso. Escolha outra.';
+                    urlError.classList.remove('hidden');
+                    return;
+                }
+                
+                const weddingData = {
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    groomName: document.getElementById('groomName').value,
+                    brideName: document.getElementById('brideName').value,
+                    weddingDate: document.getElementById('weddingDate').value,
+                    weddingTime: document.getElementById('weddingTime').value,
+                    eventVenue: document.getElementById('eventVenue').value,
+                    customUrl: customUrl
+                };
+                
+                // Create wedding in database
+                const createdWedding = await createWedding(weddingData);
+                
+                // Show success message
+                alert(`🎉 Parabéns! Seu site foi criado com sucesso!\n\nURL: invites.com/${createdWedding.custom_url}\n\nVocê pode compartilhar este link com seus convidados!\n\nGuarde bem seu usuário e senha para acessar os dados dos convidados!`);
+                
+                // Show the wedding site
+                showWeddingSite(createdWedding);
+                
+            } catch (error) {
+                alert('Erro ao criar o site. Tente novamente.');
+                console.error('Erro:', error);
+            } finally {
+                createButton.textContent = '🎉 Criar Site';
+                createButton.classList.remove('loading');
+            }
+        });
+
+        // Countdown Timer
+        function startCountdown(weddingDate, weddingTime) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            function updateCountdown() {
+                const weddingDateTime = new Date(`${weddingDate}T${weddingTime}:00`).getTime();
+                const now = new Date().getTime();
+                const distance = weddingDateTime - now;
+
+                if (distance > 0) {
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                    document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                    document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                    document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+                } else {
+                    document.getElementById('countdown').innerHTML = '<div class="col-span-4 text-2xl font-bold text-purple-600">🎉 O grande dia chegou! 🎉</div>';
+                    clearInterval(countdownInterval);
+                }
+            }
+
+            countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown();
+        }
+
+        // Add event listeners for attendance radio buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to attendance radio buttons
+            document.addEventListener('change', function(e) {
+                if (e.target.name === 'attendance') {
+                    toggleCompanionSection();
+                }
+            });
+        });
+
+        // RSVP Form Handler
+        document.getElementById('rsvpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentWeddingData.id || currentWeddingData.id === 'demo') {
+                alert('Esta é uma demonstração. Crie seu próprio site para receber confirmações reais!');
+                return;
+            }
+            
+            const rsvpButton = document.getElementById('rsvpButton');
+            const guestName = document.getElementById('guestName').value;
+            const attendance = document.querySelector('input[name="attendance"]:checked').value;
+            const message = document.getElementById('message').value;
+            
+            // Get companion info based on form type
+            let companionName = null;
+            let guestCount = 1; // Default: just the main guest
+            
+            const allowCompanions = currentWeddingData.allow_companions !== false;
+            const companionType = currentWeddingData.companion_type || 'single';
+            
+            if (allowCompanions && attendance === 'sim') {
+                if (companionType === 'single') {
+                    companionName = document.getElementById('companionName').value || null;
+                    if (companionName) guestCount = 2;
+                } else {
+                    const selectedCount = parseInt(document.getElementById('guestCount').value) || 0;
+                    guestCount = 1 + selectedCount; // Main guest + companions
+                }
+            }
+            
+            // Show loading
+            rsvpButton.textContent = 'Enviando...';
+            rsvpButton.classList.add('loading');
+            
+            try {
+                // Create RSVP
+                await createRSVP({
+                    wedding_id: currentWeddingData.id,
+                    guest_name: guestName,
+                    companion_name: companionName,
+                    guest_count: guestCount,
+                    attendance: attendance === 'sim',
+                    message: message || null
+                });
+                
+                // Create message if provided and attending
+                if (message.trim() && attendance === 'sim') {
+                    const messageData = await createMessage({
+                        wedding_id: currentWeddingData.id,
+                        guest_name: guestName,
+                        companion_name: companionName,
+                        message: message
+                    });
+                    
+                    // Add message to wall immediately
+                    addMessageToWall(messageData);
+                }
+                
+                // Create confirmation message using custom messages if available
+                let confirmationText;
+                if (attendance === 'sim') {
+                    confirmationText = currentWeddingData.confirm_message || 
+                        `Obrigado, ${guestName}! Sua presença foi confirmada com sucesso! 🎉`;
+                } else {
+                    confirmationText = currentWeddingData.decline_message || 
+                        `Obrigado por nos avisar, ${guestName}. Sentiremos sua falta! 💙`;
+                }
+                
+                // Show confirmation
+                alert(confirmationText);
+                
+                // Reset form
+                this.reset();
+                
+            } catch (error) {
+                alert('Erro ao enviar confirmação. Tente novamente.');
+                console.error('Erro:', error);
+            } finally {
+                rsvpButton.textContent = '💌 Confirmar Presença';
+                rsvpButton.classList.remove('loading');
+            }
+        });
+
+        // Load messages from database
+        async function loadMessages(weddingId) {
+            try {
+                const messages = await getMessages(weddingId);
+                const messagesContainer = document.getElementById('messagesContainer');
+                
+                if (messages.length === 0) {
+                    messagesContainer.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <div class="text-4xl mb-4">💌</div>
+                            <p class="text-gray-500">Ainda não há mensagens. Seja o primeiro a deixar um recado!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                messagesContainer.innerHTML = '';
+                messages.forEach(msg => addMessageToWall(msg));
+                
             } catch (error) {
                 console.error('Erro ao carregar mensagens:', error);
             }
         }
 
-        // Exibir mensagens
-        function displayMessages(messages) {
-            const container = document.getElementById('messages-container');
-            const adminContainer = document.getElementById('admin-messages-container');
+        // Add message to wall
+        function addMessageToWall(messageData) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const displayName = messageData.companion_name ? 
+                `${messageData.guest_name} & ${messageData.companion_name}` : 
+                messageData.guest_name;
+            const initial = messageData.guest_name.charAt(0).toUpperCase();
             
-            const messagesHTML = messages.map(msg => `
-                <div class="message-card p-4 rounded-lg border-l-4" style="border-left-color: #5aa189;">
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-semibold text-gray-800">${msg.guest_name}</h4>
-                        <span class="text-sm text-gray-500">${formatMessageDate(msg.created_at)}</span>
+            // Calculate time ago
+            const timeAgo = messageData.created_at ? 
+                getTimeAgo(new Date(messageData.created_at)) : 'agora';
+            
+            const messageCard = document.createElement('div');
+            messageCard.className = 'message-card p-6 rounded-lg card-shadow fade-in';
+            messageCard.innerHTML = `
+                <div class="flex items-center mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
+                        ${initial}
                     </div>
-                    <p class="text-gray-700">${msg.message}</p>
-                </div>
-            `).join('');
-
-            container.innerHTML = messagesHTML || '<p class="text-gray-500 text-center">Ainda não há mensagens.</p>';
-            if (adminContainer) {
-                adminContainer.innerHTML = messagesHTML || '<p class="text-gray-500 text-center">Ainda não há mensagens.</p>';
-            }
-        }
-
-        // Formatar data da mensagem
-        function formatMessageDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        // Login do administrador
-        async function handleLogin(e) {
-            e.preventDefault();
-            const token = document.getElementById('admin-token').value;
-
-            if (token === currentEvent.admin_token) {
-                isAdmin = true;
-                elements.loginModal.classList.add('hidden');
-                await showAdminPage();
-            } else {
-                alert('Token inválido');
-            }
-        }
-
-        // Mostrar página de administração
-        async function showAdminPage() {
-            elements.guestPage.classList.add('hidden');
-            elements.adminPage.classList.remove('hidden');
-            await loadAdminData();
-        }
-
-        // Carregar dados de administração
-        async function loadAdminData() {
-            try {
-                const { data: guests, error } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('event_id', currentEvent.id)
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('Erro ao carregar convidados:', error);
-                    return;
-                }
-
-                displayGuestStats(guests || []);
-                displayGuestsList(guests || []);
-                await loadMessages();
-            } catch (error) {
-                console.error('Erro ao carregar dados de administração:', error);
-            }
-        }
-
-        // Exibir estatísticas
-        function displayGuestStats(guests) {
-            const confirmed = guests.filter(g => g.confirmed).length;
-            const declined = guests.filter(g => !g.confirmed).length;
-            const total = guests.length;
-
-            document.getElementById('confirmed-count').textContent = confirmed;
-            document.getElementById('declined-count').textContent = declined;
-            document.getElementById('total-count').textContent = total;
-        }
-
-        // Exibir lista de convidados
-        function displayGuestsList(guests) {
-            const tbody = document.getElementById('guests-table');
-            
-            const guestsHTML = guests.map(guest => {
-                // Processar nomes de acompanhantes
-                let companionDisplay = '';
-                if (guest.has_companion) {
-                    if (guest.companion_count > 1 && guest.companion_names) {
-                        // Múltiplos acompanhantes
-                        try {
-                            const names = JSON.parse(guest.companion_names);
-                            companionDisplay = names.map(name => `+ ${name}`).join('<br>');
-                        } catch (e) {
-                            companionDisplay = `+ ${guest.companion_count} acompanhante(s)`;
-                        }
-                    } else if (guest.companion_name) {
-                        // Um acompanhante com nome
-                        companionDisplay = `+ ${guest.companion_name}`;
-                    } else {
-                        // Acompanhante sem nome especificado
-                        const count = guest.companion_count || 1;
-                        companionDisplay = `+ ${count} acompanhante${count > 1 ? 's' : ''}`;
-                    }
-                }
-                
-                return `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${guest.guest_name}</div>
-                            ${companionDisplay ? `<div class="text-sm text-gray-500">${companionDisplay}</div>` : ''}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${guest.confirmed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                ${guest.confirmed ? 'Confirmado' : 'Não Confirmado'}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${guest.has_companion ? `${guest.companion_count || 1}` : 'Não'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${formatMessageDate(guest.created_at)}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="deleteGuest(${guest.id})" class="text-red-600 hover:text-red-900">Excluir</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            tbody.innerHTML = guestsHTML || '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Nenhum convidado ainda</td></tr>';
-        }
-
-        // Excluir convidado
-        async function deleteGuest(guestId) {
-            if (confirm('Tem certeza que deseja excluir este convidado?')) {
-                try {
-                    const { error } = await supabase
-                        .from('rsvps')
-                        .delete()
-                        .eq('id', guestId);
-
-                    if (error) {
-                        console.error('Erro ao excluir convidado:', error);
-                        alert('Erro ao excluir convidado');
-                        return;
-                    }
-
-                    await loadAdminData(); // Recarregar dados
-                } catch (error) {
-                    console.error('Erro ao excluir convidado:', error);
-                    alert('Erro ao excluir convidado');
-                }
-            }
-        }
-
-        // Logout
-        function logout() {
-            isAdmin = false;
-            elements.adminPage.classList.add('hidden');
-            elements.guestPage.classList.remove('hidden');
-        }
-
-        // Alternar entre abas
-        function switchTab(tabName) {
-            // Remover classe active de todas as abas
-            document.querySelectorAll('.tab-button').forEach(tab => {
-                tab.classList.remove('active');
-                tab.classList.add('text-gray-500', 'border-transparent');
-                tab.style.color = '#6b7280';
-                tab.style.borderColor = 'transparent';
-            });
-
-            // Esconder todo o conteúdo
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-
-            // Ativar aba selecionada
-            if (tabName === 'guests') {
-                const guestsTab = document.getElementById('guests-tab');
-                guestsTab.classList.add('active');
-                guestsTab.classList.remove('text-gray-500', 'border-transparent');
-                guestsTab.style.color = '#5aa189';
-                guestsTab.style.borderColor = '#5aa189';
-                document.getElementById('guests-content').classList.remove('hidden');
-            } else if (tabName === 'messages') {
-                const messagesTab = document.getElementById('messages-tab');
-                messagesTab.classList.add('active');
-                messagesTab.classList.remove('text-gray-500', 'border-transparent');
-                messagesTab.style.color = '#5aa189';
-                messagesTab.style.borderColor = '#5aa189';
-                document.getElementById('messages-content').classList.remove('hidden');
-            }
-        }
-
-        // Gerar PDF da lista de convidados
-        async function generatePDF() {
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-
-                // Configurações do PDF
-                const pageWidth = doc.internal.pageSize.width;
-                const margin = 20;
-                let yPosition = 30;
-
-                // Título do documento
-                doc.setFontSize(20);
-                doc.setFont(undefined, 'bold');
-                doc.text(`Lista de Convidados - ${currentEvent.couple_names}`, margin, yPosition);
-                
-                yPosition += 10;
-                doc.setFontSize(14);
-                doc.setFont(undefined, 'normal');
-                doc.text(`${currentEvent.event_type} - ${formatDate(currentEvent.event_date)}`, margin, yPosition);
-                
-                yPosition += 20;
-
-                // Buscar dados atualizados
-                const { data: guests, error } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('event_id', currentEvent.id)
-                    .order('confirmed', { ascending: false })
-                    .order('guest_name', { ascending: true });
-
-                if (error) {
-                    alert('Erro ao gerar PDF');
-                    return;
-                }
-
-                const confirmedGuests = guests.filter(g => g.confirmed);
-                const declinedGuests = guests.filter(g => !g.confirmed);
-
-                // Estatísticas
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('📊 RESUMO:', margin, yPosition);
-                yPosition += 8;
-                
-                doc.setFont(undefined, 'normal');
-                doc.text(`✅ Confirmados: ${confirmedGuests.length}`, margin, yPosition);
-                yPosition += 6;
-                doc.text(`❌ Não Confirmados: ${declinedGuests.length}`, margin, yPosition);
-                yPosition += 6;
-                doc.text(`📋 Total de Respostas: ${guests.length}`, margin, yPosition);
-                yPosition += 20;
-
-                // Função para adicionar seção
-                function addSection(title, guestList, emoji) {
-                    if (yPosition > 250) {
-                        doc.addPage();
-                        yPosition = 30;
-                    }
-
-                    doc.setFontSize(16);
-                    doc.setFont(undefined, 'bold');
-                    doc.text(`${emoji} ${title} (${guestList.length})`, margin, yPosition);
-                    yPosition += 15;
-
-                    if (guestList.length === 0) {
-                        doc.setFontSize(10);
-                        doc.setFont(undefined, 'italic');
-                        doc.text('Nenhum convidado nesta categoria', margin + 5, yPosition);
-                        yPosition += 15;
-                        return;
-                    }
-
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-
-                    guestList.forEach((guest, index) => {
-                        if (yPosition > 270) {
-                            doc.addPage();
-                            yPosition = 30;
-                        }
-
-                        const guestText = `${index + 1}. ${guest.guest_name}`;
-                        let companionText = '';
-                        
-                        // Processar acompanhantes para o PDF
-                        if (guest.has_companion) {
-                            if (guest.companion_count > 1 && guest.companion_names) {
-                                try {
-                                    const names = JSON.parse(guest.companion_names);
-                                    companionText = ` + ${names.join(', ')}`;
-                                } catch (e) {
-                                    companionText = ` + ${guest.companion_count} acompanhante(s)`;
-                                }
-                            } else if (guest.companion_name) {
-                                companionText = ` + ${guest.companion_name}`;
-                            } else {
-                                const count = guest.companion_count || 1;
-                                companionText = ` + ${count} acompanhante${count > 1 ? 's' : ''}`;
-                            }
-                        }
-                        
-                        const dateText = ` (${formatMessageDate(guest.created_at)})`;
-                        
-                        doc.text(guestText, margin + 5, yPosition);
-                        
-                        if (companionText) {
-                            doc.setFont(undefined, 'italic');
-                            doc.text(companionText, margin + 5 + doc.getTextWidth(guestText), yPosition);
-                            doc.setFont(undefined, 'normal');
-                        }
-                        
-                        doc.setFontSize(8);
-                        doc.setTextColor(100);
-                        doc.text(dateText, pageWidth - margin - doc.getTextWidth(dateText), yPosition);
-                        doc.setTextColor(0);
-                        doc.setFontSize(10);
-                        
-                        yPosition += 8;
-                    });
-
-                    yPosition += 10;
-                }
-
-                // Adicionar seções
-                addSection('CONVIDADOS CONFIRMADOS', confirmedGuests, '✅');
-                addSection('CONVIDADOS NÃO CONFIRMADOS', declinedGuests, '❌');
-
-                // Rodapé
-                const totalPages = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i);
-                    doc.setFontSize(8);
-                    doc.setTextColor(100);
-                    doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin - 20, doc.internal.pageSize.height - 10);
-                    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, margin, doc.internal.pageSize.height - 10);
-                }
-
-                // Salvar PDF
-                const fileName = `Lista_Convidados_${currentEvent.couple_names.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-                doc.save(fileName);
-
-            } catch (error) {
-                console.error('Erro ao gerar PDF:', error);
-                alert('Erro ao gerar PDF. Tente novamente.');
-            }
-        }
-
-        // Mostrar erro
-        function showError(message) {
-            elements.loading.classList.add('hidden');
-            document.body.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center gradient-bg">
-                    <div class="bg-white rounded-2xl p-8 text-center card-shadow">
-                        <div class="text-6xl mb-4">😔</div>
-                        <h1 class="text-2xl font-bold text-gray-800 mb-4">Oops!</h1>
-                        <p class="text-gray-600">${message}</p>
+                    <div class="ml-3">
+                        <h4 class="font-semibold text-gray-800">${displayName}</h4>
+                        <p class="text-sm text-gray-500">${timeAgo}</p>
                     </div>
                 </div>
+                <p class="text-gray-700 leading-relaxed">${messageData.message}</p>
             `;
+            
+            // Add to beginning of messages
+            messagesContainer.insertBefore(messageCard, messagesContainer.firstChild);
         }
+
+        // Helper function to calculate time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'agora';
+            if (diffInSeconds < 3600) return `há ${Math.floor(diffInSeconds / 60)} min`;
+            if (diffInSeconds < 86400) return `há ${Math.floor(diffInSeconds / 3600)} horas`;
+            return `há ${Math.floor(diffInSeconds / 86400)} dias`;
+        }
+
+        // Add sample messages for demo
+        function addSampleMessages() {
+            const sampleMessages = [
+                { guest_name: 'Maria Silva', message: 'Que alegria imensa! Vocês são um casal lindo e merecem toda felicidade do mundo. Mal posso esperar para celebrar com vocês! 💕', created_at: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+                { guest_name: 'João Santos', message: 'Carlos, meu amigo, que Deus abençoe essa união! Ana, você ganhou um cara incrível. Estaremos lá para comemorar! 🎉', created_at: new Date(Date.now() - 5 * 60 * 60 * 1000) },
+                { guest_name: 'Lucia', companion_name: 'Pedro', message: 'Estamos muito felizes por vocês! Que essa nova jornada seja repleta de amor, cumplicidade e muitas alegrias. Confirmado! ✨', created_at: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+            ];
+
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = '';
+
+            sampleMessages.forEach(msg => addMessageToWall(msg));
+        }
+
+        // URL validation
+        document.getElementById('customUrl').addEventListener('input', function(e) {
+            let value = e.target.value.toLowerCase();
+            value = value.replace(/[^a-z0-9-]/g, '');
+            e.target.value = value;
+            
+            // Hide error when user types
+            document.getElementById('urlError').classList.add('hidden');
+        });
+
+        // Check for URL parameter on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const weddingUrl = urlParams.get('site');
+            
+            if (weddingUrl) {
+                loadWeddingFromUrl(weddingUrl);
+            }
+        });
+
+        async function loadWeddingFromUrl(customUrl) {
+            try {
+                const wedding = await getWeddingByUrl(customUrl);
+                showWeddingSite(wedding);
+            } catch (error) {
+                console.error('Casamento não encontrado:', error);
+                alert('Site de casamento não encontrado!');
+            }
+        }
+
+        // Settings Management
+        function loadSettings() {
+            if (!currentAdminData.id) return;
+            
+            // Load basic wedding info
+            document.getElementById('settingsGroomName').value = currentAdminData.groom_name || '';
+            document.getElementById('settingsBrideName').value = currentAdminData.bride_name || '';
+            document.getElementById('settingsWeddingDate').value = currentAdminData.wedding_date || '';
+            document.getElementById('settingsWeddingTime').value = currentAdminData.wedding_time || '';
+            document.getElementById('settingsEventVenue').value = currentAdminData.event_venue || '';
+            
+            // Load companion settings
+            const allowCompanions = currentAdminData.allow_companions !== false; // Default true
+            const companionType = currentAdminData.companion_type || 'single';
+            
+            document.getElementById('allowCompanions').checked = allowCompanions;
+            document.getElementById('companionOptions').classList.toggle('hidden', !allowCompanions);
+            
+            if (companionType === 'single') {
+                document.getElementById('singleCompanion').checked = true;
+            } else {
+                document.getElementById('multipleCompanions').checked = true;
+            }
+            
+            // Load custom messages
+            document.getElementById('confirmMessage').value = currentAdminData.confirm_message || '';
+            document.getElementById('declineMessage').value = currentAdminData.decline_message || '';
+        }
+
+        function resetSettings() {
+            loadSettings();
+        }
+
+        // Settings form handler
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentAdminData.id) return;
+            
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.textContent = 'Salvando...';
+            submitButton.classList.add('loading');
+            
+            try {
+                const allowCompanions = document.getElementById('allowCompanions').checked;
+                const companionType = document.querySelector('input[name="companionType"]:checked')?.value || 'single';
+                
+                const updateData = {
+                    groom_name: document.getElementById('settingsGroomName').value,
+                    bride_name: document.getElementById('settingsBrideName').value,
+                    wedding_date: document.getElementById('settingsWeddingDate').value,
+                    wedding_time: document.getElementById('settingsWeddingTime').value,
+                    event_venue: document.getElementById('settingsEventVenue').value,
+                    allow_companions: allowCompanions,
+                    companion_type: companionType,
+                    confirm_message: document.getElementById('confirmMessage').value,
+                    decline_message: document.getElementById('declineMessage').value
+                };
+                
+                const { error } = await supabase
+                    .from('weddings')
+                    .update(updateData)
+                    .eq('id', currentAdminData.id);
+                
+                if (error) throw error;
+                
+                // Update current admin data
+                Object.assign(currentAdminData, updateData);
+                
+                // Update dashboard info
+                const coupleNames = `${updateData.bride_name} & ${updateData.groom_name}`;
+                const date = new Date(updateData.wedding_date);
+                const formattedDate = date.toLocaleDateString('pt-BR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                document.getElementById('dashboardWeddingInfo').textContent = `${coupleNames} - ${formattedDate}`;
+                
+                alert('✅ Configurações salvas com sucesso!');
+                
+            } catch (error) {
+                console.error('Erro ao salvar configurações:', error);
+                alert('Erro ao salvar configurações. Tente novamente.');
+            } finally {
+                submitButton.textContent = '💾 Salvar Configurações';
+                submitButton.classList.remove('loading');
+            }
+        });
+
+        // Companion settings toggle
+        document.getElementById('allowCompanions').addEventListener('change', function() {
+            document.getElementById('companionOptions').classList.toggle('hidden', !this.checked);
+        });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'971b91d232bc77e3',t:'MTc1NTYyNjYyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97212494027f77dd',t:'MTc1NTY4NTA2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
