@@ -140,7 +140,76 @@
 
         /* Adjust content spacing for guest pages */
         .guest-content {
-            padding-top: 80px;
+            padding-top: 100px;
+        }
+
+        /* Admin dashboard header spacing */
+        .admin-content {
+            padding-top: 20px;
+        }
+
+        /* Emoji picker styling */
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 280px;
+        }
+
+        .emoji-picker.show {
+            display: block;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+        }
+
+        .emoji-btn {
+            padding: 8px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 18px;
+            transition: background-color 0.2s;
+        }
+
+        .emoji-btn:hover {
+            background: #f3f4f6;
+        }
+
+        /* Response status styling */
+        .response-status {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .edit-response-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .edit-response-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         /* Clean styling for guest pages - same as main site */
@@ -485,7 +554,7 @@
         </section>
 
         <!-- Admin Dashboard -->
-        <section id="dashboard-section" class="p-6 hidden">
+        <section id="dashboard-section" class="p-6 hidden admin-content">
             <div class="simple-card p-6 mb-6">
                 <div class="flex justify-between items-center mb-4">
                     <div>
@@ -648,6 +717,7 @@
         let currentUser = null;
         let isMasterAdmin = false;
         let countdownInterval = null;
+        let userResponse = null; // Track user's RSVP response
         const MASTER_CODE = 'invites2025master';
 
         // Check for guest access immediately
@@ -2349,68 +2419,14 @@
                                 <p class="text-xl text-red-700">O prazo para confirmação de presença foi até ${formatDate(currentEvent.confirmation_deadline)}</p>
                             </div>
                         ` : `
-                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-blue-100">
-                                <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Confirma Presença?</h3>
-                                ${hasDeadline ? `<p class="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">⏰ Prazo até: ${formatDate(currentEvent.confirmation_deadline)}</p>` : ''}
-                                
-                                <form id="rsvp-form" class="space-y-4 sm:space-y-6">
-                                    <!-- Confirmação SIM/NÃO -->
-                                    <div class="flex justify-center gap-8 sm:gap-12 mb-6 sm:mb-8">
-                                        <label class="flex items-center gap-2 sm:gap-3 cursor-pointer">
-                                            <input type="radio" name="attendance" value="yes" id="attendance-yes" class="w-5 h-5 sm:w-6 sm:h-6 text-green-500">
-                                            <span class="text-xl sm:text-2xl font-semibold text-gray-800">SIM</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 sm:gap-3 cursor-pointer">
-                                            <input type="radio" name="attendance" value="no" id="attendance-no" class="w-5 h-5 sm:w-6 sm:h-6 text-red-500">
-                                            <span class="text-xl sm:text-2xl font-semibold text-gray-800">NÃO</span>
-                                        </label>
-                                    </div>
-                                    
-                                    <!-- Campos que aparecem quando marca SIM -->
-                                    <div id="yes-fields" class="hidden space-y-4 sm:space-y-6">
-                                        <div>
-                                            <input type="text" id="guest-name" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
-                                        </div>
-                                        
-                                        ${allowCompanion ? `
-                                        <div class="flex items-center gap-3 sm:gap-4 justify-center">
-                                            <input type="checkbox" id="has-companion" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 rounded focus:ring-blue-500">
-                                            <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante</label>
-                                        </div>
-                                        
-                                        <div id="companion-field" class="hidden">
-                                            <input type="text" id="companion-name" placeholder="Nome do acompanhante" class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                    
-                                    <!-- Campos que aparecem quando marca NÃO -->
-                                    <div id="no-fields" class="hidden space-y-4 sm:space-y-6">
-                                        <div>
-                                            <input type="text" id="guest-name-no" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="flex justify-center">
-                                        <button type="submit" id="submit-rsvp" class="bg-gradient-to-r from-purple-500 to-blue-500 hover:shadow-xl text-white px-8 sm:px-12 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-300 disabled:opacity-50" disabled>
-                                            📝 Confirmar Resposta
-                                        </button>
-                                    </div>
-                                </form>
+                            <!-- Response Status or RSVP Form -->
+                            <div id="rsvp-container">
+                                <!-- This will be populated by JavaScript -->
                             </div>
                         `}
 
-                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-purple-100">
-                            <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Deixe uma Mensagem</h3>
-                            <form id="message-form" class="space-y-4 sm:space-y-6">
-                                <input type="text" id="message-guest-name" placeholder="Seu nome" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
-                                <textarea id="message-text" placeholder="Sua mensagem especial..." required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none h-24 sm:h-32 text-base sm:text-lg resize-none"></textarea>
-                                <div class="text-center">
-                                    <button type="submit" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-xl text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-300">
-                                        💌 Enviar Mensagem
-                                    </button>
-                                </div>
-                            </form>
+                        <div id="message-container" class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-purple-100">
+                            <!-- This will be populated by JavaScript -->
                         </div>
 
                         <div class="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200">
@@ -2426,63 +2442,195 @@
             // Start countdown timer
             startCountdown(currentEvent.event_date);
 
-            // Add event listeners for forms
-            document.getElementById('message-form').addEventListener('submit', submitMessage);
+            // Render RSVP section
+            renderRSVPSection(isDeadlinePassed, allowCompanion);
             
-            // Add event listeners for RSVP form only if deadline hasn't passed
-            if (!isDeadlinePassed) {
-                // Radio button listeners
-                document.getElementById('attendance-yes').addEventListener('change', function() {
-                    if (this.checked) {
-                        document.getElementById('yes-fields').classList.remove('hidden');
-                        document.getElementById('no-fields').classList.add('hidden');
-                        document.getElementById('submit-rsvp').disabled = false;
-                        document.getElementById('guest-name').required = true;
-                        document.getElementById('guest-name-no').required = false;
-                    }
-                });
+            // Render message section
+            renderMessageSection();
+            
+            // Load public messages
+            loadPublicMessages();
+        }
+
+        // Render RSVP Section
+        async function renderRSVPSection(isDeadlinePassed, allowCompanion) {
+            const container = document.getElementById('rsvp-container');
+            
+            if (userResponse) {
+                // Show response status
+                const statusMessage = userResponse.attendance ? 
+                    `✅ Você confirmou presença${userResponse.companion_name ? ` junto com ${userResponse.companion_name}` : ''}!` :
+                    '❌ Você informou que não poderá comparecer.';
                 
-                document.getElementById('attendance-no').addEventListener('change', function() {
-                    if (this.checked) {
-                        document.getElementById('no-fields').classList.remove('hidden');
-                        document.getElementById('yes-fields').classList.add('hidden');
-                        document.getElementById('submit-rsvp').disabled = false;
-                        document.getElementById('guest-name-no').required = true;
-                        document.getElementById('guest-name').required = false;
-                    }
-                });
+                container.innerHTML = `
+                    <div class="response-status">
+                        <h3 class="text-2xl font-playfair font-semibold mb-2">A sua resposta foi enviada, grato! 🙏</h3>
+                        <p class="text-lg mb-4">${statusMessage}</p>
+                        <button onclick="editResponse()" class="edit-response-btn">
+                            ✏️ Editar resposta
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Show RSVP form
+                const hasDeadline = currentEvent.enable_deadline && currentEvent.confirmation_deadline;
                 
-                // Companion checkbox listener (only if companions are allowed)
-                if (allowCompanion) {
-                    document.getElementById('has-companion').addEventListener('change', function() {
-                        const companionField = document.getElementById('companion-field');
-                        if (this.checked) {
-                            companionField.classList.remove('hidden');
-                            document.getElementById('companion-name').required = true;
-                        } else {
-                            companionField.classList.add('hidden');
-                            document.getElementById('companion-name').required = false;
-                            document.getElementById('companion-name').value = '';
-                        }
-                    });
+                container.innerHTML = `
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-blue-100">
+                        <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Confirma Presença?</h3>
+                        ${hasDeadline ? `<p class="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">⏰ Prazo até: ${formatDate(currentEvent.confirmation_deadline)}</p>` : ''}
+                        
+                        <form id="rsvp-form" class="space-y-4 sm:space-y-6">
+                            <!-- Confirmação SIM/NÃO -->
+                            <div class="flex justify-center gap-8 sm:gap-12 mb-6 sm:mb-8">
+                                <label class="flex items-center gap-2 sm:gap-3 cursor-pointer">
+                                    <input type="radio" name="attendance" value="yes" id="attendance-yes" class="w-5 h-5 sm:w-6 sm:h-6 text-green-500">
+                                    <span class="text-xl sm:text-2xl font-semibold text-gray-800">SIM</span>
+                                </label>
+                                <label class="flex items-center gap-2 sm:gap-3 cursor-pointer">
+                                    <input type="radio" name="attendance" value="no" id="attendance-no" class="w-5 h-5 sm:w-6 sm:h-6 text-red-500">
+                                    <span class="text-xl sm:text-2xl font-semibold text-gray-800">NÃO</span>
+                                </label>
+                            </div>
+                            
+                            <!-- Campos que aparecem quando marca SIM -->
+                            <div id="yes-fields" class="hidden space-y-4 sm:space-y-6">
+                                <div>
+                                    <input type="text" id="guest-name" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
+                                </div>
+                                
+                                ${allowCompanion ? `
+                                <div class="flex items-center gap-3 sm:gap-4 justify-center">
+                                    <input type="checkbox" id="has-companion" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 rounded focus:ring-blue-500">
+                                    <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante</label>
+                                </div>
+                                
+                                <div id="companion-field" class="hidden">
+                                    <input type="text" id="companion-name" placeholder="Nome do acompanhante" class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
+                                </div>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Campos que aparecem quando marca NÃO -->
+                            <div id="no-fields" class="hidden space-y-4 sm:space-y-6">
+                                <div>
+                                    <input type="text" id="guest-name-no" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-center">
+                                <button type="submit" id="submit-rsvp" class="bg-gradient-to-r from-purple-500 to-blue-500 hover:shadow-xl text-white px-8 sm:px-12 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-300 disabled:opacity-50" disabled>
+                                    📝 Confirmar Resposta
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+
+                // Add event listeners for RSVP form
+                setupRSVPEventListeners(allowCompanion);
+            }
+        }
+
+        // Setup RSVP Event Listeners
+        function setupRSVPEventListeners(allowCompanion) {
+            // Radio button listeners
+            document.getElementById('attendance-yes').addEventListener('change', function() {
+                if (this.checked) {
+                    document.getElementById('yes-fields').classList.remove('hidden');
+                    document.getElementById('no-fields').classList.add('hidden');
+                    document.getElementById('submit-rsvp').disabled = false;
+                    document.getElementById('guest-name').required = true;
+                    document.getElementById('guest-name-no').required = false;
                 }
-                
-                // Form submit listener
-                document.getElementById('rsvp-form').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const attendanceYes = document.getElementById('attendance-yes').checked;
-                    const attendanceNo = document.getElementById('attendance-no').checked;
-                    
-                    if (attendanceYes) {
-                        submitRSVP(true);
-                    } else if (attendanceNo) {
-                        submitRSVP(false);
+            });
+            
+            document.getElementById('attendance-no').addEventListener('change', function() {
+                if (this.checked) {
+                    document.getElementById('no-fields').classList.remove('hidden');
+                    document.getElementById('yes-fields').classList.add('hidden');
+                    document.getElementById('submit-rsvp').disabled = false;
+                    document.getElementById('guest-name-no').required = true;
+                    document.getElementById('guest-name').required = false;
+                }
+            });
+            
+            // Companion checkbox listener (only if companions are allowed)
+            if (allowCompanion) {
+                document.getElementById('has-companion').addEventListener('change', function() {
+                    const companionField = document.getElementById('companion-field');
+                    if (this.checked) {
+                        companionField.classList.remove('hidden');
+                        document.getElementById('companion-name').required = true;
+                    } else {
+                        companionField.classList.add('hidden');
+                        document.getElementById('companion-name').required = false;
+                        document.getElementById('companion-name').value = '';
                     }
                 });
             }
             
-            // Load public messages
-            loadPublicMessages();
+            // Form submit listener
+            document.getElementById('rsvp-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const attendanceYes = document.getElementById('attendance-yes').checked;
+                const attendanceNo = document.getElementById('attendance-no').checked;
+                
+                if (attendanceYes) {
+                    submitRSVP(true);
+                } else if (attendanceNo) {
+                    submitRSVP(false);
+                }
+            });
+        }
+
+        // Render Message Section
+        function renderMessageSection() {
+            const container = document.getElementById('message-container');
+            
+            if (userResponse) {
+                // User has responded, show message form with pre-filled name
+                const displayName = userResponse.companion_name ? 
+                    `${userResponse.guest_name} e ${userResponse.companion_name}` : 
+                    userResponse.guest_name;
+                
+                container.innerHTML = `
+                    <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Deixe uma Mensagem</h3>
+                    <form id="message-form" class="space-y-4 sm:space-y-6">
+                        <div class="bg-white rounded-xl p-4 border">
+                            <p class="text-gray-700 font-medium">Mensagem de: <span class="text-purple-600">${displayName}</span></p>
+                        </div>
+                        <div class="relative">
+                            <textarea id="message-text" placeholder="Sua mensagem especial... 😊" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none h-24 sm:h-32 text-base sm:text-lg resize-none"></textarea>
+                            <button type="button" onclick="toggleEmojiPicker('message-text')" class="emoji-toggle-btn absolute top-3 right-3 bg-gray-100 hover:bg-gray-200 rounded-lg p-2 text-lg transition-colors">
+                                😊
+                            </button>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-xl text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-300">
+                                💌 Enviar Mensagem
+                            </button>
+                        </div>
+                    </form>
+                `;
+            } else {
+                // User hasn't responded yet, show message that they need to confirm first
+                container.innerHTML = `
+                    <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Deixe uma Mensagem</h3>
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 text-center">
+                        <p class="text-gray-600 text-lg mb-4">📝 Para deixar uma mensagem, primeiro confirme sua presença acima.</p>
+                        <p class="text-gray-500">Assim saberemos quem está enviando a mensagem! 😊</p>
+                    </div>
+                `;
+            }
+
+            // Setup message form if user has responded
+            if (userResponse) {
+                setTimeout(() => {
+                    createEmojiPicker('message-text');
+                    document.getElementById('message-form').addEventListener('submit', submitMessage);
+                }, 100);
+            }
         }
 
         // Submit RSVP
@@ -2574,8 +2722,17 @@
                 }
 
                 console.log('RSVP submitted successfully:', data);
+                
+                // Store user response
+                userResponse = data[0];
+                
                 alert(attendance ? 'Presença confirmada! Obrigado!' : 'Obrigado por nos avisar!');
-                document.getElementById('rsvp-form').reset();
+                
+                // Re-render sections to show updated state
+                const urlParams = new URLSearchParams(window.location.search);
+                const allowCompanion = urlParams.get('companion') !== 'no';
+                renderRSVPSection(false, allowCompanion);
+                renderMessageSection();
 
             } catch (error) {
                 console.error('Error submitting RSVP:', error);
@@ -2636,30 +2793,34 @@
         async function submitMessage(e) {
             e.preventDefault();
             
-            const guestName = document.getElementById('message-guest-name').value;
             const messageText = document.getElementById('message-text').value;
 
-            if (!guestName || !messageText) {
-                alert('Por favor, preencha todos os campos');
+            if (!messageText) {
+                alert('Por favor, escreva uma mensagem');
+                return;
+            }
+
+            if (!userResponse) {
+                alert('Você precisa confirmar sua presença primeiro');
                 return;
             }
 
             try {
                 console.log('Submitting message with data:', {
                     wedding_id: currentEvent.id,
-                    guest_name: guestName,
+                    guest_name: userResponse.guest_name,
                     message: messageText,
-                    attendance: false,
-                    companion_name: null
+                    attendance: userResponse.attendance,
+                    companion_name: userResponse.companion_name
                 });
 
                 const { data, error } = await supabase
                     .from('rsvps')
                     .insert({
                         wedding_id: currentEvent.id,
-                        guest_name: guestName,
-                        companion_name: null,
-                        attendance: false,
+                        guest_name: userResponse.guest_name,
+                        companion_name: userResponse.companion_name,
+                        attendance: userResponse.attendance,
                         message: messageText
                     })
                     .select();
@@ -2673,7 +2834,7 @@
                 }
 
                 alert('Mensagem enviada com sucesso!');
-                document.getElementById('message-form').reset();
+                document.getElementById('message-text').value = '';
                 
                 // Reload public messages to show the new one
                 loadPublicMessages();
@@ -2684,10 +2845,122 @@
             }
         }
 
+        // Emoji Picker Functions
+        const emojis = [
+            '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣',
+            '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
+            '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜',
+            '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
+            '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+            '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠',
+            '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨',
+            '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥',
+            '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧',
+            '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐',
+            '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑',
+            '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻',
+            '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸',
+            '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '❤️',
+            '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎',
+            '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘',
+            '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️',
+            '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉',
+            '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑',
+            '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴',
+            '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚',
+            '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲',
+            '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕',
+            '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷',
+            '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕',
+            '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️',
+            '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹',
+            '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤',
+            '🏧', '🚾', '♿', '🅿️', '🈳', '🈂️', '🛂', '🛃',
+            '🛄', '🛅', '🚹', '🚺', '🚼', '🚻', '🚮', '🎦',
+            '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖',
+            '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣',
+            '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
+        ];
+
+        function createEmojiPicker(textareaId) {
+            const textarea = document.getElementById(textareaId);
+            if (!textarea) return;
+
+            // Create emoji picker container
+            const picker = document.createElement('div');
+            picker.className = 'emoji-picker';
+            picker.id = `emoji-picker-${textareaId}`;
+
+            // Create emoji grid
+            const grid = document.createElement('div');
+            grid.className = 'emoji-grid';
+
+            emojis.forEach(emoji => {
+                const btn = document.createElement('button');
+                btn.className = 'emoji-btn';
+                btn.textContent = emoji;
+                btn.type = 'button';
+                btn.onclick = () => {
+                    const cursorPos = textarea.selectionStart;
+                    const textBefore = textarea.value.substring(0, cursorPos);
+                    const textAfter = textarea.value.substring(textarea.selectionEnd);
+                    textarea.value = textBefore + emoji + textAfter;
+                    textarea.focus();
+                    textarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+                    picker.classList.remove('show');
+                };
+                grid.appendChild(btn);
+            });
+
+            picker.appendChild(grid);
+            textarea.parentNode.style.position = 'relative';
+            textarea.parentNode.appendChild(picker);
+
+            return picker;
+        }
+
+        function toggleEmojiPicker(textareaId) {
+            const picker = document.getElementById(`emoji-picker-${textareaId}`);
+            if (picker) {
+                picker.classList.toggle('show');
+            }
+        }
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-toggle-btn')) {
+                document.querySelectorAll('.emoji-picker').forEach(picker => {
+                    picker.classList.remove('show');
+                });
+            }
+        });
+
+        // Check User Response
+        async function checkUserResponse(guestName) {
+            try {
+                const { data: response } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', currentEvent.id)
+                    .eq('guest_name', guestName)
+                    .single();
+
+                return response;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // Edit Response Function
+        function editResponse() {
+            userResponse = null;
+            renderEventSite();
+        }
+
         // Initialize
         if (!clienteParam) {
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a2374658077e3',t:'MTc1NTc3OTM5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a35bbf5f477da',t:'MTc1NTc4MDE0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
