@@ -754,15 +754,15 @@
                 console.log('Evento criado:', createdEvent);
                 
                 // Show success message with working URL
-                const generatedUrl = `https://araujo418.github.io/painel-invitesqr/?cliente=${eventData.customUrl}`;
+                const generatedUrl = `https://araujo418.github.io/painel-invitesqr/index.html?cliente=${eventData.customUrl}`;
                 document.getElementById('generated-url').textContent = generatedUrl;
                 
                 // Show only the visible part of the URL
-                const displayUrl = `painel-invitesqr/?cliente=${eventData.customUrl}`;
+                const displayUrl = `araujo418.github.io/painel-invitesqr/index.html?cliente=${eventData.customUrl}`;
                 document.getElementById('display-url').textContent = displayUrl;
                 
                 // Show the no-companion URL
-                const displayUrlNoCompanion = `painel-invitesqr/?cliente=${eventData.customUrl}&companion=no`;
+                const displayUrlNoCompanion = `araujo418.github.io/painel-invitesqr/index.html?cliente=${eventData.customUrl}&companion=no`;
                 document.getElementById('display-url-no-companion').textContent = displayUrlNoCompanion;
                 
                 document.getElementById('success-message').classList.remove('hidden');
@@ -1065,7 +1065,7 @@
 
         // Copy Event URL (Master Admin)
         function copyEventUrlMaster(customUrl) {
-            const url = `https://araujo418.github.io/painel-invitesqr/?cliente=${customUrl}`;
+            const url = `https://araujo418.github.io/painel-invitesqr/index.html?cliente=${customUrl}`;
             navigator.clipboard.writeText(url).then(() => {
                 alert('Link do evento copiado!');
             });
@@ -1210,7 +1210,7 @@
 
         // Copy Event URL
         function copyEventUrl() {
-            const url = `https://araujo418.github.io/painel-invitesqr/?cliente=${currentEvent.custom_url}`;
+            const url = `https://araujo418.github.io/painel-invitesqr/index.html?cliente=${currentEvent.custom_url}`;
             navigator.clipboard.writeText(url).then(() => {
                 alert('Link completo copiado! (permite acompanhantes)');
             });
@@ -1218,7 +1218,7 @@
 
         // Copy Event URL without companion option
         function copyEventUrlNoCompanion() {
-            const url = `https://araujo418.github.io/painel-invitesqr/?cliente=${currentEvent.custom_url}&companion=no`;
+            const url = `https://araujo418.github.io/painel-invitesqr/index.html?cliente=${currentEvent.custom_url}&companion=no`;
             navigator.clipboard.writeText(url).then(() => {
                 alert('Link sem acompanhante copiado! (não permite acompanhantes)');
             });
@@ -1649,5 +1649,5 @@
         // Initialize
         showSection('home');
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97281a56f53b77d7',t:'MTc1NTc1ODA0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9728212451e677d7',t:'MTc1NTc1ODMyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
