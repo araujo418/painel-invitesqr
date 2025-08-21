@@ -125,6 +125,18 @@
             display: none !important;
         }
 
+        /* Guest page header styling */
+        .guest-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+        }
+
         /* Countdown animation */
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
@@ -537,7 +549,7 @@
 
         <!-- Event Site View -->
         <section id="event-site-section" class="hidden">
-            <div id="event-site-content">
+            <div id="event-site-content" class="pt-20">
                 <!-- Event site content will be loaded here -->
             </div>
             <!-- Promotional Link (only visible on guest sites) -->
@@ -558,7 +570,18 @@
         // Supabase Configuration
         const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzY3MDIsImV4cCI6MjA3MTI1MjcwMn0.LPMGW_OPKiwTEKhyzl_v2Snb9nVeZg0wP4Ot6zKrCn0';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                persistSession: false
+            },
+            global: {
+                headers: {
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`
+                }
+            }
+        });
 
         let currentEvent = null;
         let currentUser = null;
@@ -571,11 +594,10 @@
         const clienteParam = urlParams.get('cliente');
 
         if (clienteParam) {
-            // Hide main content immediately for guest pages (but keep login button visible)
-            document.getElementById('main-header').classList.add('guest-loading');
+            // Hide main content immediately for guest pages
             document.getElementById('main-navigation').classList.add('guest-loading');
             document.getElementById('main-footer').classList.add('guest-loading');
-            // Don't hide login button for guest pages
+            // Keep header visible but modify it for guest pages
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         }
 
@@ -1725,16 +1747,58 @@
             }
         });
 
+        // Test Database Connection
+        async function testDatabaseConnection() {
+            try {
+                console.log('Testing database connection...');
+                const { data, error } = await supabase
+                    .from('events')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    console.error('Database connection test failed:', error);
+                    return false;
+                }
+                
+                console.log('Database connection successful');
+                return true;
+            } catch (error) {
+                console.error('Database connection error:', error);
+                return false;
+            }
+        }
+
         // Load Event Site for Guests
         async function loadEventSite(customUrl) {
             try {
+                // Setup guest header
+                setupGuestHeader();
+
+                // Test connection first
+                const connectionOk = await testDatabaseConnection();
+                if (!connectionOk) {
+                    alert('Erro de conexão com o banco de dados. Verifique sua internet.');
+                    return;
+                }
+
                 const { data: event, error } = await supabase
                     .from('events')
                     .select('*')
                     .eq('custom_url', customUrl)
                     .single();
 
-                if (error || !event) {
+                if (error) {
+                    console.error('Error loading event:', error);
+                    if (error.code === 'PGRST116') {
+                        alert('Evento não encontrado. Verifique o link.');
+                    } else {
+                        alert(`Erro ao carregar evento: ${error.message}`);
+                    }
+                    return;
+                }
+
+                if (!event) {
                     alert('Evento não encontrado');
                     return;
                 }
@@ -1745,8 +1809,23 @@
 
             } catch (error) {
                 console.error('Error loading event site:', error);
-                alert('Erro ao carregar evento');
+                alert('Erro ao carregar evento. Verifique sua conexão.');
             }
+        }
+
+        // Setup Guest Header
+        function setupGuestHeader() {
+            const header = document.getElementById('main-header');
+            header.classList.add('guest-header');
+            
+            // Update header content for guest view
+            const headerContent = header.querySelector('div');
+            headerContent.innerHTML = `
+                <h1 class="text-xl font-semibold text-gray-900">Invites</h1>
+                <button onclick="showSection('login')" class="btn-secondary text-sm">
+                    👤 Login
+                </button>
+            `;
         }
 
         // Render Event Site for Guests
@@ -1977,11 +2056,17 @@
             // Check if event is full (only for confirmations and if limit is enabled)
             if (attendance && currentEvent.enable_max_limit && currentEvent.max_confirmations) {
                 try {
-                    const { data: confirmedRsvps } = await supabase
+                    const { data: confirmedRsvps, error: checkError } = await supabase
                         .from('rsvps')
                         .select('*')
                         .eq('event_id', currentEvent.id)
                         .eq('attendance', true);
+
+                    if (checkError) {
+                        console.error('Error checking capacity:', checkError);
+                        alert('Erro ao verificar capacidade. Tente novamente.');
+                        return;
+                    }
 
                     const currentConfirmed = confirmedRsvps ? confirmedRsvps.length : 0;
                     const guestCount = companionName ? 2 : 1;
@@ -1992,6 +2077,8 @@
                     }
                 } catch (error) {
                     console.error('Error checking capacity:', error);
+                    alert('Erro ao verificar capacidade. Tente novamente.');
+                    return;
                 }
             }
 
@@ -2008,8 +2095,13 @@
                     .select();
 
                 if (error) {
-                    console.error('RSVP error:', error);
-                    throw error;
+                    console.error('RSVP error details:', error);
+                    if (error.message) {
+                        alert(`Erro: ${error.message}`);
+                    } else {
+                        alert('Erro ao confirmar presença. Verifique se as tabelas existem no banco.');
+                    }
+                    return;
                 }
 
                 alert(attendance ? 'Presença confirmada! Obrigado!' : 'Obrigado por nos avisar!');
@@ -2017,7 +2109,7 @@
 
             } catch (error) {
                 console.error('Error submitting RSVP:', error);
-                alert('Erro ao confirmar presença. Tente novamente.');
+                alert('Erro de conexão. Verifique sua internet e tente novamente.');
             }
         }
 
@@ -2063,6 +2155,11 @@
             const guestName = document.getElementById('message-guest-name').value;
             const messageText = document.getElementById('message-text').value;
 
+            if (!guestName || !messageText) {
+                alert('Por favor, preencha todos os campos');
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('messages')
@@ -2074,8 +2171,13 @@
                     .select();
 
                 if (error) {
-                    console.error('Message error:', error);
-                    throw error;
+                    console.error('Message error details:', error);
+                    if (error.message) {
+                        alert(`Erro: ${error.message}`);
+                    } else {
+                        alert('Erro ao enviar mensagem. Verifique se as tabelas existem no banco.');
+                    }
+                    return;
                 }
 
                 alert('Mensagem enviada com sucesso!');
@@ -2086,7 +2188,7 @@
 
             } catch (error) {
                 console.error('Error submitting message:', error);
-                alert('Erro ao enviar mensagem. Tente novamente.');
+                alert('Erro de conexão. Verifique sua internet e tente novamente.');
             }
         }
 
@@ -2097,5 +2199,5 @@
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729cf6e657177da',t:'MTc1NTc3NTk1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729dbd020d177e3',t:'MTc1NTc3NjQ1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
