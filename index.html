@@ -137,6 +137,62 @@
             border-bottom: 1px solid rgba(229, 231, 235, 0.8);
         }
 
+        /* Premium styling for guest pages */
+        .premium-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 8s ease infinite;
+            color: white;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .premium-input {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #374151;
+        }
+
+        .premium-input:focus {
+            background: white;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .font-playfair {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Promotional link styling */
+        .promo-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .promo-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+
         /* Countdown animation */
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
@@ -147,6 +203,7 @@
             animation: pulse 2s infinite;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="font-inter min-h-screen bg-gray-50">
 
@@ -1001,10 +1058,12 @@
                     .from('rsvps')
                     .select('*');
 
-                // Get all messages
+                // Get all messages (from rsvps table where message is not null)
                 const { data: allMessages } = await supabase
-                    .from('messages')
-                    .select('*');
+                    .from('rsvps')
+                    .select('*')
+                    .not('message', 'is', null)
+                    .neq('message', '');
 
                 // Update stats
                 document.getElementById('total-events').textContent = events ? events.length : 0;
@@ -1123,11 +1182,13 @@
                     .eq('wedding_id', eventId)
                     .order('created_at', { ascending: false });
 
-                // Get messages for this event
+                // Get messages for this event (from rsvps table)
                 const { data: messages } = await supabase
-                    .from('messages')
+                    .from('rsvps')
                     .select('*')
-                    .eq('event_id', eventId)
+                    .eq('wedding_id', eventId)
+                    .not('message', 'is', null)
+                    .neq('message', '')
                     .order('created_at', { ascending: false });
 
                 if (!rsvps || rsvps.length === 0) {
@@ -1206,8 +1267,7 @@
             if (!doubleConfirm) return;
 
             try {
-                // Delete in order: messages, rsvps, then event
-                await supabase.from('messages').delete().eq('event_id', eventId);
+                // Delete RSVPs first (includes messages since they're in the same table)
                 await supabase.from('rsvps').delete().eq('wedding_id', eventId);
                 
                 const { error } = await supabase
@@ -1278,11 +1338,13 @@
                     .eq('wedding_id', eventId)
                     .order('created_at', { ascending: false });
 
-                // Get messages for this event
+                // Get messages for this event (from rsvps table)
                 const { data: messages } = await supabase
-                    .from('messages')
+                    .from('rsvps')
                     .select('*')
-                    .eq('event_id', eventId)
+                    .eq('wedding_id', eventId)
+                    .not('message', 'is', null)
+                    .neq('message', '')
                     .order('created_at', { ascending: false });
 
                 const detailsContent = document.getElementById('event-details-content');
@@ -1294,8 +1356,8 @@
                 // Calculate statistics
                 const totalGuests = rsvps ? rsvps.length : 0;
                 const confirmedGuests = rsvps ? rsvps.filter(r => r.attendance).length : 0;
-                const totalPeople = rsvps ? rsvps.reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0) : 0;
-                const confirmedPeople = rsvps ? rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0) : 0;
+                const totalPeople = rsvps ? rsvps.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0) : 0;
+                const confirmedPeople = rsvps ? rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0) : 0;
 
                 detailsContent.innerHTML = `
                     <!-- Event Info -->
@@ -1423,9 +1485,10 @@
             if (!confirmDelete) return;
 
             try {
+                // Clear the message field instead of deleting the entire record
                 const { error } = await supabase
-                    .from('messages')
-                    .delete()
+                    .from('rsvps')
+                    .update({ message: null })
                     .eq('id', messageId);
 
                 if (error) throw error;
@@ -1485,11 +1548,13 @@
                     .select('*')
                     .eq('wedding_id', currentEvent.id);
 
-                // Get Messages
+                // Get Messages (from rsvps table where message is not null)
                 const { data: messages } = await supabase
-                    .from('messages')
+                    .from('rsvps')
                     .select('*')
-                    .eq('event_id', currentEvent.id);
+                    .eq('wedding_id', currentEvent.id)
+                    .not('message', 'is', null)
+                    .neq('message', '');
 
                 const totalGuests = rsvps ? rsvps.length : 0;
                 const confirmedGuests = rsvps ? rsvps.filter(r => r.attendance).length : 0;
@@ -1552,9 +1617,11 @@
         async function loadMessages() {
             try {
                 const { data: messages } = await supabase
-                    .from('messages')
+                    .from('rsvps')
                     .select('*')
-                    .eq('event_id', currentEvent.id)
+                    .eq('wedding_id', currentEvent.id)
+                    .not('message', 'is', null)
+                    .neq('message', '')
                     .order('created_at', { ascending: false });
 
                 const messagesList = document.getElementById('messages-list');
@@ -2056,19 +2123,24 @@
             // Check if event is full (only for confirmations and if limit is enabled)
             if (attendance && currentEvent.enable_max_limit && currentEvent.max_confirmations) {
                 try {
+                    console.log('Checking capacity for event ID:', currentEvent.id);
+                    
                     const { data: confirmedRsvps, error: checkError } = await supabase
                         .from('rsvps')
-                        .select('*')
+                        .select('id, attendance')
                         .eq('wedding_id', currentEvent.id)
                         .eq('attendance', true);
 
+                    console.log('Capacity check result:', { confirmedRsvps, checkError });
+
                     if (checkError) {
                         console.error('Error checking capacity:', checkError);
-                        alert('Erro ao verificar capacidade. Tente novamente.');
+                        alert(`Erro ao verificar capacidade: ${checkError.message}`);
                         return;
                     }
 
                     const currentConfirmed = confirmedRsvps ? confirmedRsvps.length : 0;
+                    console.log(`Current confirmed: ${currentConfirmed}, Max allowed: ${currentEvent.max_confirmations}`);
 
                     if (currentConfirmed >= currentEvent.max_confirmations) {
                         alert('Desculpe, o evento já atingiu o limite máximo de confirmações.');
@@ -2076,7 +2148,7 @@
                     }
                 } catch (error) {
                     console.error('Error checking capacity:', error);
-                    alert('Erro ao verificar capacidade. Tente novamente.');
+                    alert(`Erro ao verificar capacidade: ${error.message}`);
                     return;
                 }
             }
@@ -2086,7 +2158,8 @@
                     wedding_id: currentEvent.id,
                     guest_name: guestName,
                     companion_name: companionName || null,
-                    attendance: attendance
+                    attendance: attendance,
+                    message: null
                 });
 
                 const { data, error } = await supabase
@@ -2095,7 +2168,8 @@
                         wedding_id: currentEvent.id,
                         guest_name: guestName,
                         companion_name: companionName || null,
-                        attendance: attendance
+                        attendance: attendance,
+                        message: null
                     })
                     .select();
 
@@ -2118,15 +2192,27 @@
         // Load Public Messages for Event Site
         async function loadPublicMessages() {
             try {
-                const { data: messages } = await supabase
-                    .from('messages')
-                    .select('*')
-                    .eq('event_id', currentEvent.id)
+                console.log('Loading messages for event ID:', currentEvent.id);
+                
+                const { data: messages, error } = await supabase
+                    .from('rsvps')
+                    .select('id, guest_name, message, created_at')
+                    .eq('wedding_id', currentEvent.id)
+                    .not('message', 'is', null)
+                    .neq('message', '')
                     .order('created_at', { ascending: false })
                     .limit(10);
 
+                console.log('Messages loaded:', { messages, error });
+
                 const messagesList = document.getElementById('public-messages-list');
                 messagesList.innerHTML = '';
+
+                if (error) {
+                    console.error('Error loading messages:', error);
+                    messagesList.innerHTML = '<p class="text-center text-gray-500 py-8">Erro ao carregar mensagens</p>';
+                    return;
+                }
 
                 if (messages && messages.length > 0) {
                     messages.forEach(message => {
@@ -2147,6 +2233,8 @@
 
             } catch (error) {
                 console.error('Error loading public messages:', error);
+                const messagesList = document.getElementById('public-messages-list');
+                messagesList.innerHTML = '<p class="text-center text-gray-500 py-8">Erro ao carregar mensagens</p>';
             }
         }
 
@@ -2163,22 +2251,30 @@
             }
 
             try {
+                console.log('Submitting message with data:', {
+                    wedding_id: currentEvent.id,
+                    guest_name: guestName,
+                    message: messageText,
+                    attendance: false,
+                    companion_name: null
+                });
+
                 const { data, error } = await supabase
-                    .from('messages')
+                    .from('rsvps')
                     .insert({
-                        event_id: currentEvent.id,
+                        wedding_id: currentEvent.id,
                         guest_name: guestName,
+                        companion_name: null,
+                        attendance: false,
                         message: messageText
                     })
                     .select();
 
+                console.log('Message submission result:', { data, error });
+
                 if (error) {
                     console.error('Message error details:', error);
-                    if (error.message) {
-                        alert(`Erro: ${error.message}`);
-                    } else {
-                        alert('Erro ao enviar mensagem. Verifique se as tabelas existem no banco.');
-                    }
+                    alert(`Erro ao enviar mensagem: ${error.message || 'Erro desconhecido'}`);
                     return;
                 }
 
@@ -2194,12 +2290,10 @@
             }
         }
 
-
-
         // Initialize
         if (!clienteParam) {
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729ebbf47a277e0',t:'MTc1NTc3NzExMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729ff59355677d7',t:'MTc1NTc3NzkxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
