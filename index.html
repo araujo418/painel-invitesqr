@@ -118,22 +118,35 @@
             box-shadow: 0 8px 30px rgba(37, 211, 102, 0.4);
         }
 
+        /* Hide main content initially for guest pages */
+        .guest-loading {
+            display: none !important;
+        }
 
+        /* Countdown animation */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .countdown-pulse {
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
 <body class="font-inter min-h-screen gradient-bg relative">
 
     <!-- Login Button (Top Right) -->
-    <div class="fixed top-6 right-6 z-50">
+    <div class="fixed top-6 right-6 z-50" id="login-btn-container">
         <button onclick="showSection('login')" class="border-2 border-[#5ba189] text-[#5ba189] hover:bg-[#5ba189] hover:text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 flex items-center gap-2">
             Login
         </button>
     </div>
 
     <!-- Main Container -->
-    <div class="container mx-auto px-4 py-8 relative z-10">
+    <div class="container mx-auto px-4 py-8 relative z-10" id="main-container">
         <!-- Header -->
-        <header class="text-center mb-12 relative z-10">
+        <header class="text-center mb-12 relative z-10" id="main-header">
             <h1 class="font-playfair text-7xl text-white font-bold tracking-tight mb-4">Invites</h1>
             <div class="w-24 h-1 bg-gradient-to-r from-purple-400 to-blue-400 mx-auto mb-6 rounded-full"></div>
             <p class="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
@@ -393,7 +406,7 @@
             </div>
 
             <!-- All Events List -->
-            <div class="premium-card rounded-3xl p-8">
+            <div class="premium-card rounded-3xl p-8 mb-8">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-6">📋 Todos os Eventos</h3>
                 
                 <div class="overflow-x-auto">
@@ -412,6 +425,20 @@
                             <!-- Events list will be populated here -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Detailed Event View -->
+            <div id="event-details-section" class="premium-card rounded-3xl p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-semibold text-gray-800">📊 Detalhes do Evento</h3>
+                    <button onclick="hideEventDetails()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+                        ← Voltar
+                    </button>
+                </div>
+                
+                <div id="event-details-content">
+                    <!-- Event details will be loaded here -->
                 </div>
             </div>
         </section>
@@ -544,6 +571,42 @@
             </div>
         </section>
 
+        <!-- Restricted Access Section -->
+        <section id="restricted-section" class="max-w-2xl mx-auto hidden">
+            <div class="premium-card rounded-3xl p-12 text-center">
+                <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center text-3xl text-white">🚫</div>
+                <h2 class="font-playfair text-4xl text-gray-800 mb-6 font-semibold">Acesso Restrito</h2>
+                <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                    Esta é uma área administrativa privada. Se você é um convidado, use o link específico que recebeu para acessar o evento.
+                </p>
+                
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
+                    <h3 class="font-semibold text-gray-800 mb-4">👥 Para Convidados</h3>
+                    <p class="text-gray-600 mb-4">Use o link específico que você recebeu, que deve ter este formato:</p>
+                    <code class="text-sm text-blue-600 bg-white px-3 py-2 rounded-lg border">
+                        araujo418.github.io/painel-invitesqr/index.html?cliente=nome-do-evento
+                    </code>
+                </div>
+
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 mb-8 border border-purple-100">
+                    <h3 class="font-semibold text-gray-800 mb-4">🔐 Para Administradores</h3>
+                    <p class="text-gray-600 mb-4">Se você é o organizador do evento, faça login com suas credenciais:</p>
+                    <button onclick="showSection('login')" class="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                        🚀 Fazer Login
+                    </button>
+                </div>
+
+                <div class="pt-6 border-t border-gray-200">
+                    <p class="text-sm text-gray-500">
+                        Precisa criar um novo evento? 
+                        <button onclick="showSection('create')" class="text-blue-600 hover:text-blue-800 font-medium underline">
+                            Clique aqui
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </section>
+
         <!-- Event Site View -->
         <section id="event-site-section" class="hidden">
             <div id="event-site-content">
@@ -559,7 +622,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-center py-8 mt-16 relative z-10">
+    <footer class="text-center py-8 mt-16 relative z-10" id="main-footer">
         <div class="w-16 h-0.5 bg-gradient-to-r from-purple-400 to-blue-400 mx-auto mb-4 rounded-full"></div>
         <p class="text-sm text-white/70 font-medium">Copyright ©Invites 2025</p>
     </footer>
@@ -573,7 +636,21 @@
         let currentEvent = null;
         let currentUser = null;
         let isMasterAdmin = false;
+        let countdownInterval = null;
         const MASTER_CODE = 'invites2025master';
+
+        // Check for guest access immediately
+        const urlParams = new URLSearchParams(window.location.search);
+        const clienteParam = urlParams.get('cliente');
+
+        if (clienteParam) {
+            // Hide main content immediately for guest pages
+            document.getElementById('main-header').classList.add('guest-loading');
+            document.getElementById('main-navigation').classList.add('guest-loading');
+            document.getElementById('main-footer').classList.add('guest-loading');
+            document.getElementById('login-btn-container').classList.add('guest-loading');
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        }
 
         // Session Management
         function saveSession(event) {
@@ -1018,12 +1095,21 @@
                             <span class="text-gray-400">/${eventRsvps.length}</span>
                         </td>
                         <td class="py-3 px-4">
-                            <div class="flex gap-2">
-                                <button onclick="changeEventPassword(${event.id}, '${event.title}')" class="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600">
-                                    🔑 Trocar Senha
+                            <div class="flex gap-1 flex-wrap">
+                                <button onclick="showEventDetails(${event.id})" class="bg-indigo-500 text-white px-2 py-1 rounded text-xs hover:bg-indigo-600">
+                                    👁️ Ver
                                 </button>
-                                <button onclick="copyEventUrlMaster('${event.custom_url}')" class="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600">
+                                <button onclick="changeEventPassword(${event.id}, '${event.title}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">
+                                    🔑 Senha
+                                </button>
+                                <button onclick="copyEventUrlMaster('${event.custom_url}')" class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">
                                     📋 Link
+                                </button>
+                                <button onclick="downloadEventReport(${event.id}, '${event.title}')" class="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600">
+                                    📊 CSV
+                                </button>
+                                <button onclick="deleteEvent(${event.id}, '${event.title}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">
+                                    🗑️ Del
                                 </button>
                             </div>
                         </td>
@@ -1069,6 +1155,345 @@
             navigator.clipboard.writeText(url).then(() => {
                 alert('Link do evento copiado!');
             });
+        }
+
+        // Download Event Report (Master Admin)
+        async function downloadEventReport(eventId, eventTitle) {
+            try {
+                // Get event details
+                const { data: event } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .single();
+
+                // Get RSVPs for this event
+                const { data: rsvps } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('created_at', { ascending: false });
+
+                // Get messages for this event
+                const { data: messages } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('created_at', { ascending: false });
+
+                if (!rsvps || rsvps.length === 0) {
+                    alert('Nenhum convidado para exportar neste evento');
+                    return;
+                }
+
+                // Create comprehensive CSV content
+                let csvContent = `RELATÓRIO COMPLETO DO EVENTO: ${eventTitle}\n`;
+                csvContent += `Data do Evento: ${formatDate(event.event_date)}\n`;
+                csvContent += `Usuário: ${event.username}\n`;
+                csvContent += `Senha: ${event.password}\n`;
+                csvContent += `Limite Máximo: ${event.max_confirmations || 'Ilimitado'}\n`;
+                csvContent += `Prazo Confirmação: ${event.confirmation_deadline ? formatDate(event.confirmation_deadline) : 'Sem prazo'}\n\n`;
+                
+                csvContent += "LISTA DE CONVIDADOS\n";
+                csvContent += "Nome,Acompanhante,Status,Data de Confirmação,Total Pessoas\n";
+                
+                rsvps.forEach(rsvp => {
+                    const status = rsvp.attendance ? 'Confirmado' : 'Não Confirmado';
+                    const companion = rsvp.companion_name || 'Sem acompanhante';
+                    const date = formatDate(rsvp.created_at);
+                    const totalPeople = rsvp.guest_count || (rsvp.companion_name ? 2 : 1);
+                    
+                    csvContent += `"${rsvp.guest_name}","${companion}","${status}","${date}","${totalPeople}"\n`;
+                });
+
+                // Add statistics
+                const totalGuests = rsvps.length;
+                const confirmedGuests = rsvps.filter(r => r.attendance).length;
+                const totalPeople = rsvps.reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0);
+                const confirmedPeople = rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0);
+
+                csvContent += `\nESTATÍSTICAS\n`;
+                csvContent += `Total de Convidados: ${totalGuests}\n`;
+                csvContent += `Confirmados: ${confirmedGuests}\n`;
+                csvContent += `Total de Pessoas: ${totalPeople}\n`;
+                csvContent += `Pessoas Confirmadas: ${confirmedPeople}\n`;
+
+                // Add messages if any
+                if (messages && messages.length > 0) {
+                    csvContent += `\nMENSAGENS DOS CONVIDADOS\n`;
+                    csvContent += "Nome,Mensagem,Data\n";
+                    messages.forEach(msg => {
+                        csvContent += `"${msg.guest_name}","${msg.message}","${formatDate(msg.created_at)}"\n`;
+                    });
+                }
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `relatorio-completo-${eventTitle.replace(/[^a-z0-9]/gi, '-')}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                alert('📊 Relatório completo baixado com sucesso!');
+
+            } catch (error) {
+                console.error('Error downloading event report:', error);
+                alert('Erro ao baixar relatório do evento. Tente novamente.');
+            }
+        }
+
+        // Delete Event (Master Admin)
+        async function deleteEvent(eventId, eventTitle) {
+            const confirmDelete = confirm(`⚠️ ATENÇÃO!\n\nTem certeza que deseja EXCLUIR PERMANENTEMENTE o evento "${eventTitle}"?\n\nEsta ação irá:\n• Excluir o evento\n• Excluir TODOS os convidados\n• Excluir TODAS as mensagens\n• Tornar o link do evento inacessível\n\nEsta ação NÃO PODE SER DESFEITA!`);
+            
+            if (!confirmDelete) return;
+
+            const doubleConfirm = confirm(`🚨 CONFIRMAÇÃO FINAL\n\nDigite "EXCLUIR" para confirmar a exclusão permanente do evento "${eventTitle}"`);
+            
+            if (!doubleConfirm) return;
+
+            try {
+                // Delete in order: messages, rsvps, then event
+                await supabase.from('messages').delete().eq('event_id', eventId);
+                await supabase.from('rsvps').delete().eq('event_id', eventId);
+                
+                const { error } = await supabase
+                    .from('events')
+                    .delete()
+                    .eq('id', eventId);
+
+                if (error) throw error;
+
+                alert(`✅ Evento "${eventTitle}" foi excluído permanentemente!`);
+                loadMasterDashboard(); // Reload dashboard
+
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                alert('Erro ao excluir evento. Tente novamente.');
+            }
+        }
+
+        // Delete Guest (Master Admin)
+        async function deleteGuest(rsvpId, guestName, eventTitle) {
+            const confirmDelete = confirm(`Tem certeza que deseja excluir o convidado "${guestName}" do evento "${eventTitle}"?`);
+            
+            if (!confirmDelete) return;
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .delete()
+                    .eq('id', rsvpId);
+
+                if (error) throw error;
+
+                alert(`✅ Convidado "${guestName}" foi excluído!`);
+                
+                // Check if we're in event details view
+                const detailsSection = document.getElementById('event-details-section');
+                if (!detailsSection.classList.contains('hidden')) {
+                    // Reload event details
+                    const eventId = detailsSection.dataset.eventId;
+                    if (eventId) {
+                        showEventDetails(parseInt(eventId));
+                    }
+                } else {
+                    // Reload master dashboard
+                    loadMasterDashboard();
+                }
+
+            } catch (error) {
+                console.error('Error deleting guest:', error);
+                alert('Erro ao excluir convidado. Tente novamente.');
+            }
+        }
+
+        // Show Event Details (Master Admin)
+        async function showEventDetails(eventId) {
+            try {
+                // Get event details
+                const { data: event } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .single();
+
+                // Get RSVPs for this event
+                const { data: rsvps } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('created_at', { ascending: false });
+
+                // Get messages for this event
+                const { data: messages } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('created_at', { ascending: false });
+
+                const detailsContent = document.getElementById('event-details-content');
+                const detailsSection = document.getElementById('event-details-section');
+                
+                // Store event ID for future reference
+                detailsSection.dataset.eventId = eventId;
+
+                // Calculate statistics
+                const totalGuests = rsvps ? rsvps.length : 0;
+                const confirmedGuests = rsvps ? rsvps.filter(r => r.attendance).length : 0;
+                const totalPeople = rsvps ? rsvps.reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0) : 0;
+                const confirmedPeople = rsvps ? rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0) : 0;
+
+                detailsContent.innerHTML = `
+                    <!-- Event Info -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
+                        <h4 class="text-2xl font-playfair font-semibold mb-4 text-gray-800">${event.title}</h4>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div><strong>Data do Evento:</strong> ${formatDate(event.event_date)}</div>
+                            <div><strong>Usuário:</strong> ${event.username}</div>
+                            <div><strong>Senha:</strong> ${event.password}</div>
+                            <div><strong>Criado em:</strong> ${formatDate(event.created_at)}</div>
+                            <div><strong>Limite Máximo:</strong> ${event.max_confirmations || 'Ilimitado'}</div>
+                            <div><strong>Prazo Confirmação:</strong> ${event.confirmation_deadline ? formatDate(event.confirmation_deadline) : 'Sem prazo'}</div>
+                        </div>
+                        ${event.description ? `<div class="mt-4"><strong>Descrição:</strong> ${event.description}</div>` : ''}
+                        
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="copyEventUrlMaster('${event.custom_url}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                📋 Copiar Link
+                            </button>
+                            <button onclick="downloadEventReport(${event.id}, '${event.title}')" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                                📊 Baixar Relatório
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="grid md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
+                            <div class="text-2xl font-bold text-blue-600">${totalGuests}</div>
+                            <div class="text-sm text-blue-700">Total Convidados</div>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-4 text-center border border-green-100">
+                            <div class="text-2xl font-bold text-green-600">${confirmedGuests}</div>
+                            <div class="text-sm text-green-700">Confirmados</div>
+                        </div>
+                        <div class="bg-purple-50 rounded-xl p-4 text-center border border-purple-100">
+                            <div class="text-2xl font-bold text-purple-600">${totalPeople}</div>
+                            <div class="text-sm text-purple-700">Total Pessoas</div>
+                        </div>
+                        <div class="bg-orange-50 rounded-xl p-4 text-center border border-orange-100">
+                            <div class="text-2xl font-bold text-orange-600">${confirmedPeople}</div>
+                            <div class="text-sm text-orange-700">Pessoas Confirmadas</div>
+                        </div>
+                    </div>
+
+                    <!-- Guest List -->
+                    <div class="mb-8">
+                        <h5 class="text-xl font-semibold mb-4 text-gray-800">👥 Lista de Convidados</h5>
+                        <div class="overflow-x-auto">
+                            <table class="w-full bg-white rounded-lg border">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="text-left py-3 px-4 border-b">Nome</th>
+                                        <th class="text-left py-3 px-4 border-b">Acompanhante</th>
+                                        <th class="text-left py-3 px-4 border-b">Status</th>
+                                        <th class="text-left py-3 px-4 border-b">Total Pessoas</th>
+                                        <th class="text-left py-3 px-4 border-b">Data</th>
+                                        <th class="text-left py-3 px-4 border-b">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rsvps && rsvps.length > 0 ? rsvps.map(rsvp => `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="py-3 px-4 border-b">${rsvp.guest_name}</td>
+                                            <td class="py-3 px-4 border-b">${rsvp.companion_name || '-'}</td>
+                                            <td class="py-3 px-4 border-b">
+                                                <span class="px-2 py-1 rounded-full text-xs ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                    ${rsvp.attendance ? '✅ Confirmado' : '❌ Não Confirmado'}
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-4 border-b">${rsvp.guest_count || (rsvp.companion_name ? 2 : 1)}</td>
+                                            <td class="py-3 px-4 border-b">${formatDate(rsvp.created_at)}</td>
+                                            <td class="py-3 px-4 border-b">
+                                                <button onclick="deleteGuest(${rsvp.id}, '${rsvp.guest_name}', '${event.title}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">
+                                                    🗑️ Excluir
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="6" class="text-center py-8 text-gray-500">Nenhum convidado ainda</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div>
+                        <h5 class="text-xl font-semibold mb-4 text-gray-800">💌 Mensagens dos Convidados</h5>
+                        <div class="space-y-4 max-h-96 overflow-y-auto">
+                            ${messages && messages.length > 0 ? messages.map(msg => `
+                                <div class="bg-gray-50 rounded-xl p-4 border">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h6 class="font-semibold text-gray-800">${msg.guest_name}</h6>
+                                        <div class="flex gap-2 items-center">
+                                            <span class="text-sm text-gray-500">${formatDate(msg.created_at)}</span>
+                                            <button onclick="deleteMessage(${msg.id}, '${msg.guest_name}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-600">${msg.message}</p>
+                                </div>
+                            `).join('') : '<p class="text-center text-gray-500 py-8">Nenhuma mensagem ainda</p>'}
+                        </div>
+                    </div>
+                `;
+
+                // Show details section
+                detailsSection.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading event details:', error);
+                alert('Erro ao carregar detalhes do evento.');
+            }
+        }
+
+        // Hide Event Details
+        function hideEventDetails() {
+            document.getElementById('event-details-section').classList.add('hidden');
+        }
+
+        // Delete Message (Master Admin)
+        async function deleteMessage(messageId, guestName) {
+            const confirmDelete = confirm(`Tem certeza que deseja excluir a mensagem de "${guestName}"?`);
+            
+            if (!confirmDelete) return;
+
+            try {
+                const { error } = await supabase
+                    .from('messages')
+                    .delete()
+                    .eq('id', messageId);
+
+                if (error) throw error;
+
+                alert(`✅ Mensagem de "${guestName}" foi excluída!`);
+                
+                // Reload event details
+                const detailsSection = document.getElementById('event-details-section');
+                const eventId = detailsSection.dataset.eventId;
+                if (eventId) {
+                    showEventDetails(parseInt(eventId));
+                }
+
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Erro ao excluir mensagem. Tente novamente.');
+            }
         }
 
         // Load Dashboard
@@ -1273,6 +1698,12 @@
             isMasterAdmin = false;
             clearSession();
             
+            // Clear countdown
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
             // Reset forms
             document.getElementById('adminLoginForm').reset();
             document.getElementById('masterAdminForm').reset();
@@ -1283,32 +1714,93 @@
             showSection('home');
         }
 
+        // Countdown Timer Function
+        function startCountdown(eventDate) {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            const targetDate = new Date(eventDate).getTime();
+
+            countdownInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = targetDate - now;
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('countdown-message').innerHTML = '🎉 <strong>O evento chegou!</strong>';
+                    document.getElementById('countdown-timer').innerHTML = '<div class="text-center text-4xl">🎉</div>';
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+
+                // Update message based on time remaining
+                let message = '';
+                if (days > 30) {
+                    message = '🗓️ Ainda temos tempo para nos preparar!';
+                } else if (days > 7) {
+                    message = '📅 O evento está se aproximando!';
+                } else if (days > 1) {
+                    message = '⏰ Últimos dias para se preparar!';
+                } else if (days === 1) {
+                    message = '🚨 <strong>Amanhã é o grande dia!</strong>';
+                } else if (hours > 1) {
+                    message = '🔥 <strong>Hoje é o dia! Faltam poucas horas!</strong>';
+                } else {
+                    message = '⚡ <strong>O evento está começando!</strong>';
+                }
+
+                document.getElementById('countdown-message').innerHTML = message;
+
+                // Add pulse animation when less than 24 hours
+                if (days === 0) {
+                    document.getElementById('countdown-timer').classList.add('countdown-pulse');
+                }
+
+            }, 1000);
+        }
+
         // Utility Functions
         function formatDate(dateString) {
             return new Date(dateString).toLocaleDateString('pt-BR');
         }
 
         // Check for event site parameter on load
-        window.addEventListener('load', () => {
-            // Setup field toggles for create form
-            setupFieldToggles();
-            
-            // Check for cliente parameter in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const clienteParam = urlParams.get('cliente');
-            
+        window.addEventListener('DOMContentLoaded', () => {
             if (clienteParam) {
+                // Load event site for guests
                 loadEventSite(clienteParam);
             } else {
-                // Check for existing session
-                const session = loadSession();
-                if (session) {
-                    currentUser = session;
-                    currentEvent = session;
-                    loadDashboard();
-                    showSection('dashboard');
+                // Setup field toggles for create form
+                setupFieldToggles();
+                
+                // Se não tem parâmetro cliente, verificar se é acesso direto ao painel
+                const currentPath = window.location.pathname;
+                const isDirectAccess = currentPath.includes('painel-invitesqr') || currentPath.includes('index.html');
+                
+                if (isDirectAccess) {
+                    // Acesso direto ao painel - mostrar página de acesso restrito
+                    showRestrictedAccess();
                 } else {
-                    showSection('home');
+                    // Check for existing session
+                    const session = loadSession();
+                    if (session) {
+                        currentUser = session;
+                        currentEvent = session;
+                        loadDashboard();
+                        showSection('dashboard');
+                    } else {
+                        showSection('home');
+                    }
                 }
             }
         });
@@ -1329,18 +1821,7 @@
 
                 currentEvent = event;
                 renderEventSite();
-                
-                // Hide navigation and show only event site
-                document.querySelector('header').style.display = 'none';
-                document.querySelector('#main-navigation').style.display = 'none';
-                document.querySelector('footer').style.display = 'none';
                 showSection('event-site');
-                
-                // Prevent navigation back to main site
-                window.history.pushState(null, null, window.location.href);
-                window.addEventListener('popstate', function(event) {
-                    window.history.pushState(null, null, window.location.href);
-                });
 
             } catch (error) {
                 console.error('Error loading event site:', error);
@@ -1352,8 +1833,10 @@
         function renderEventSite() {
             const content = document.getElementById('event-site-content');
             const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
             const hasDeadline = currentEvent.enable_deadline && currentEvent.confirmation_deadline;
             const deadline = hasDeadline ? new Date(currentEvent.confirmation_deadline) : null;
+            if (deadline) deadline.setHours(23, 59, 59, 999); // Set to end of deadline day
             const isDeadlinePassed = hasDeadline && today > deadline;
             
             // Check if companions are allowed based on URL parameter
@@ -1366,7 +1849,39 @@
                         <h1 class="font-playfair text-7xl text-gray-800 mb-6 font-bold tracking-tight">${currentEvent.title}</h1>
                         <div class="w-24 h-1 bg-gradient-to-r from-purple-400 to-blue-400 mx-auto mb-8 rounded-full"></div>
                         ${currentEvent.enable_description && currentEvent.description ? `<p class="text-2xl text-gray-600 mb-8 leading-relaxed">${currentEvent.description}</p>` : ''}
-                        <p class="text-2xl text-gray-600 mb-12">📅 ${formatDate(currentEvent.event_date)}</p>
+                        <p class="text-2xl text-gray-600 mb-8">📅 ${formatDate(currentEvent.event_date)}</p>
+                        
+                        <!-- Countdown Timer -->
+                        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-8 mb-8 border border-indigo-100">
+                            <h3 class="text-2xl font-playfair font-semibold mb-6 text-gray-800">⏰ Contagem Regressiva</h3>
+                            <div id="countdown-timer" class="grid grid-cols-4 gap-4 max-w-lg mx-auto">
+                                <div class="text-center">
+                                    <div class="bg-white rounded-xl p-4 shadow-sm border">
+                                        <div id="days" class="text-3xl font-bold text-indigo-600">00</div>
+                                        <div class="text-sm text-gray-600 font-medium">Dias</div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-white rounded-xl p-4 shadow-sm border">
+                                        <div id="hours" class="text-3xl font-bold text-purple-600">00</div>
+                                        <div class="text-sm text-gray-600 font-medium">Horas</div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-white rounded-xl p-4 shadow-sm border">
+                                        <div id="minutes" class="text-3xl font-bold text-pink-600">00</div>
+                                        <div class="text-sm text-gray-600 font-medium">Minutos</div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-white rounded-xl p-4 shadow-sm border">
+                                        <div id="seconds" class="text-3xl font-bold text-red-600">00</div>
+                                        <div class="text-sm text-gray-600 font-medium">Segundos</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="countdown-message" class="text-center mt-6 text-lg font-medium text-gray-700"></div>
+                        </div>
                         
                         ${isDeadlinePassed ? `
                             <div class="bg-gradient-to-r from-red-50 to-rose-50 rounded-3xl p-8 mb-8 border border-red-200">
@@ -1445,6 +1960,9 @@
                     </div>
                 </div>
             `;
+
+            // Start countdown timer
+            startCountdown(currentEvent.event_date);
 
             // Add event listeners for forms
             document.getElementById('message-form').addEventListener('submit', submitMessage);
@@ -1525,7 +2043,9 @@
             // Check if deadline has passed (only if deadline is enabled)
             if (currentEvent.enable_deadline && currentEvent.confirmation_deadline) {
                 const today = new Date();
+                today.setHours(0, 0, 0, 0);
                 const deadline = new Date(currentEvent.confirmation_deadline);
+                deadline.setHours(23, 59, 59, 999);
                 if (today > deadline) {
                     alert('O prazo para confirmação já passou.');
                     return;
@@ -1646,8 +2166,21 @@
             }
         }
 
+        // Show Restricted Access Page
+        function showRestrictedAccess() {
+            // Hide header, navigation and footer for restricted access
+            document.getElementById('main-header').style.display = 'none';
+            document.getElementById('main-navigation').style.display = 'none';
+            document.getElementById('main-footer').style.display = 'none';
+            document.getElementById('login-btn-container').style.display = 'none';
+            
+            showSection('restricted');
+        }
+
         // Initialize
-        showSection('home');
+        if (!clienteParam) {
+            showSection('home');
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9728212451e677d7',t:'MTc1NTc1ODMyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972839bfc40b77da',t:'MTc1NTc1OTMzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
