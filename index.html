@@ -1026,7 +1026,7 @@
 
             if (events && events.length > 0) {
                 events.forEach(event => {
-                    const eventRsvps = allRsvps ? allRsvps.filter(r => r.event_id === event.id) : [];
+                    const eventRsvps = allRsvps ? allRsvps.filter(r => r.wedding_id === event.id) : [];
                     const confirmedCount = eventRsvps.filter(r => r.attendance).length;
 
                     const row = document.createElement('tr');
@@ -1120,7 +1120,7 @@
                 const { data: rsvps } = await supabase
                     .from('rsvps')
                     .select('*')
-                    .eq('event_id', eventId)
+                    .eq('wedding_id', eventId)
                     .order('created_at', { ascending: false });
 
                 // Get messages for this event
@@ -1150,7 +1150,7 @@
                     const status = rsvp.attendance ? 'Confirmado' : 'Não Confirmado';
                     const companion = rsvp.companion_name || 'Sem acompanhante';
                     const date = formatDate(rsvp.created_at);
-                    const totalPeople = rsvp.guest_count || (rsvp.companion_name ? 2 : 1);
+                    const totalPeople = rsvp.companion_name ? 2 : 1;
                     
                     csvContent += `"${rsvp.guest_name}","${companion}","${status}","${date}","${totalPeople}"\n`;
                 });
@@ -1158,8 +1158,8 @@
                 // Add statistics
                 const totalGuests = rsvps.length;
                 const confirmedGuests = rsvps.filter(r => r.attendance).length;
-                const totalPeople = rsvps.reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0);
-                const confirmedPeople = rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.guest_count || (r.companion_name ? 2 : 1)), 0);
+                const totalPeople = rsvps.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
+                const confirmedPeople = rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
 
                 csvContent += `\nESTATÍSTICAS\n`;
                 csvContent += `Total de Convidados: ${totalGuests}\n`;
@@ -1208,7 +1208,7 @@
             try {
                 // Delete in order: messages, rsvps, then event
                 await supabase.from('messages').delete().eq('event_id', eventId);
-                await supabase.from('rsvps').delete().eq('event_id', eventId);
+                await supabase.from('rsvps').delete().eq('wedding_id', eventId);
                 
                 const { error } = await supabase
                     .from('events')
@@ -1275,7 +1275,7 @@
                 const { data: rsvps } = await supabase
                     .from('rsvps')
                     .select('*')
-                    .eq('event_id', eventId)
+                    .eq('wedding_id', eventId)
                     .order('created_at', { ascending: false });
 
                 // Get messages for this event
@@ -1366,7 +1366,7 @@
                                                     ${rsvp.attendance ? '✅ Confirmado' : '❌ Não Confirmado'}
                                                 </span>
                                             </td>
-                                            <td class="py-3 px-4 border-b">${rsvp.guest_count || (rsvp.companion_name ? 2 : 1)}</td>
+                                            <td class="py-3 px-4 border-b">${rsvp.companion_name ? 2 : 1}</td>
                                             <td class="py-3 px-4 border-b">${formatDate(rsvp.created_at)}</td>
                                             <td class="py-3 px-4 border-b">
                                                 <button onclick="deleteGuest(${rsvp.id}, '${rsvp.guest_name}', '${event.title}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">
@@ -1483,7 +1483,7 @@
                 const { data: rsvps } = await supabase
                     .from('rsvps')
                     .select('*')
-                    .eq('event_id', currentEvent.id);
+                    .eq('wedding_id', currentEvent.id);
 
                 // Get Messages
                 const { data: messages } = await supabase
@@ -1517,7 +1517,7 @@
                 const { data: rsvps } = await supabase
                     .from('rsvps')
                     .select('*')
-                    .eq('event_id', currentEvent.id)
+                    .eq('wedding_id', currentEvent.id)
                     .order('created_at', { ascending: false });
 
                 const guestList = document.getElementById('guest-list');
@@ -1604,7 +1604,7 @@
                 const { data: rsvps } = await supabase
                     .from('rsvps')
                     .select('*')
-                    .eq('event_id', currentEvent.id)
+                    .eq('wedding_id', currentEvent.id)
                     .order('created_at', { ascending: false });
 
                 if (!rsvps || rsvps.length === 0) {
@@ -2059,7 +2059,7 @@
                     const { data: confirmedRsvps, error: checkError } = await supabase
                         .from('rsvps')
                         .select('*')
-                        .eq('event_id', currentEvent.id)
+                        .eq('wedding_id', currentEvent.id)
                         .eq('attendance', true);
 
                     if (checkError) {
@@ -2069,9 +2069,8 @@
                     }
 
                     const currentConfirmed = confirmedRsvps ? confirmedRsvps.length : 0;
-                    const guestCount = companionName ? 2 : 1;
 
-                    if (currentConfirmed + guestCount > currentEvent.max_confirmations) {
+                    if (currentConfirmed >= currentEvent.max_confirmations) {
                         alert('Desculpe, o evento já atingiu o limite máximo de confirmações.');
                         return;
                     }
@@ -2083,27 +2082,30 @@
             }
 
             try {
+                console.log('Submitting RSVP with data:', {
+                    wedding_id: currentEvent.id,
+                    guest_name: guestName,
+                    companion_name: companionName || null,
+                    attendance: attendance
+                });
+
                 const { data, error } = await supabase
                     .from('rsvps')
                     .insert({
-                        event_id: currentEvent.id,
+                        wedding_id: currentEvent.id,
                         guest_name: guestName,
                         companion_name: companionName || null,
-                        attendance: attendance,
-                        guest_count: companionName ? 2 : 1
+                        attendance: attendance
                     })
                     .select();
 
                 if (error) {
                     console.error('RSVP error details:', error);
-                    if (error.message) {
-                        alert(`Erro: ${error.message}`);
-                    } else {
-                        alert('Erro ao confirmar presença. Verifique se as tabelas existem no banco.');
-                    }
+                    alert(`Erro ao confirmar presença: ${error.message || 'Erro desconhecido'}`);
                     return;
                 }
 
+                console.log('RSVP submitted successfully:', data);
                 alert(attendance ? 'Presença confirmada! Obrigado!' : 'Obrigado por nos avisar!');
                 document.getElementById('rsvp-form').reset();
 
@@ -2199,5 +2201,5 @@
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729dbd020d177e3',t:'MTc1NTc3NjQ1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729ebbf47a277e0',t:'MTc1NTc3NzExMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
