@@ -350,6 +350,10 @@
                                 <input type="checkbox" id="enableMaxLimit" checked class="mr-2">
                                 <span class="text-sm text-gray-700">Definir limite máximo de confirmados</span>
                             </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="enablePublicWall" checked class="mr-2">
+                                <span class="text-sm text-gray-700">Mostrar mural público de mensagens</span>
+                            </label>
                         </div>
                     </div>
 
@@ -371,6 +375,12 @@
                     <div id="maxLimitField">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Limite Máximo de Confirmados *</label>
                         <input type="number" id="maxConfirmations" required placeholder="Ex: 100" min="1" class="w-full simple-input">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Acompanhantes por Convidado *</label>
+                        <input type="number" id="companionLimit" required placeholder="Ex: 1 (0 = sem acompanhantes)" min="0" max="10" class="w-full simple-input">
+                        <p class="text-sm text-gray-500 mt-1">0 = Nenhum acompanhante permitido | 1 = Máximo 1 acompanhante por convidado</p>
                     </div>
 
                     <div class="bg-gray-50 rounded-lg p-4 border">
@@ -783,10 +793,12 @@
                     event_date: eventData.eventDate,
                     confirmation_deadline: eventData.confirmationDeadline,
                     max_confirmations: eventData.maxConfirmations,
+                    companion_limit: eventData.companionLimit,
                     custom_url: eventData.customUrl,
                     enable_description: eventData.enableDescription,
                     enable_deadline: eventData.enableDeadline,
-                    enable_max_limit: eventData.enableMaxLimit
+                    enable_max_limit: eventData.enableMaxLimit,
+                    enable_public_wall: eventData.enablePublicWall
                 })
                 .select()
                 .single();
@@ -857,6 +869,8 @@
             const eventDescription = enableDescription ? document.getElementById('eventDescription').value.trim() : '';
             const confirmationDeadline = enableDeadline ? document.getElementById('confirmationDeadline').value : null;
             const maxConfirmations = enableMaxLimit ? document.getElementById('maxConfirmations').value : null;
+            const companionLimit = document.getElementById('companionLimit').value;
+            const enablePublicWall = document.getElementById('enablePublicWall').checked;
 
             // Verificar campos obrigatórios
             if (!username || !password || !eventTitle || !eventDate) {
@@ -880,6 +894,11 @@
                 return;
             }
 
+            if (!companionLimit && companionLimit !== '0') {
+                alert('Por favor, defina o limite de acompanhantes por convidado.');
+                return;
+            }
+
             // Verificar se a data limite é anterior à data do evento (se ativada)
             if (enableDeadline && confirmationDeadline && new Date(confirmationDeadline) >= new Date(eventDate)) {
                 alert('A data limite para confirmação deve ser anterior à data do evento.');
@@ -898,10 +917,12 @@
                 eventDate: eventDate,
                 confirmationDeadline: confirmationDeadline,
                 maxConfirmations: maxConfirmations ? parseInt(maxConfirmations) : null,
+                companionLimit: parseInt(companionLimit),
                 customUrl: generateCustomUrl(eventTitle),
                 enableDescription: enableDescription,
                 enableDeadline: enableDeadline,
-                enableMaxLimit: enableMaxLimit
+                enableMaxLimit: enableMaxLimit,
+                enablePublicWall: enablePublicWall
             };
 
             // Enviar para o Supabase
@@ -2379,7 +2400,6 @@
                         <h1 class="font-playfair text-3xl sm:text-5xl lg:text-7xl text-gray-800 mb-4 sm:mb-6 font-bold tracking-tight">${currentEvent.title}</h1>
                         <div class="w-16 sm:w-24 h-1 bg-gradient-to-r from-purple-400 to-blue-400 mx-auto mb-6 sm:mb-8 rounded-full"></div>
                         ${currentEvent.enable_description && currentEvent.description ? `<p class="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-6 sm:mb-8 leading-relaxed">${currentEvent.description}</p>` : ''}
-                        <p class="text-xl sm:text-2xl text-gray-600 mb-6 sm:mb-8">📅 ${formatDate(currentEvent.event_date)}</p>
                         
                         <!-- Countdown Timer -->
                         <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-indigo-100">
@@ -2429,12 +2449,14 @@
                             <!-- This will be populated by JavaScript -->
                         </div>
 
+                        ${currentEvent.enable_public_wall ? `
                         <div class="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200">
                             <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">💬 Mural de Mensagens</h3>
                             <div id="public-messages-list" class="space-y-4 sm:space-y-6 max-h-80 sm:max-h-96 overflow-y-auto">
                                 <!-- Public messages will be loaded here -->
                             </div>
                         </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2448,8 +2470,10 @@
             // Render message section
             renderMessageSection();
             
-            // Load public messages
-            loadPublicMessages();
+            // Load public messages if enabled
+            if (currentEvent.enable_public_wall) {
+                loadPublicMessages();
+            }
         }
 
         // Render RSVP Section
@@ -2464,7 +2488,7 @@
                 
                 container.innerHTML = `
                     <div class="response-status">
-                        <h3 class="text-2xl font-playfair font-semibold mb-2">A sua resposta foi enviada, grato! 🙏</h3>
+                        <h3 class="text-2xl font-playfair font-semibold mb-2">Obrigado pela sua confirmação! ✨</h3>
                         <p class="text-lg mb-4">${statusMessage}</p>
                         <button onclick="editResponse()" class="edit-response-btn">
                             ✏️ Editar resposta
@@ -2499,14 +2523,21 @@
                                     <input type="text" id="guest-name" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
                                 </div>
                                 
-                                ${allowCompanion ? `
+                                ${(allowCompanion && currentEvent.companion_limit > 0) ? `
                                 <div class="flex items-center gap-3 sm:gap-4 justify-center">
                                     <input type="checkbox" id="has-companion" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 rounded focus:ring-blue-500">
-                                    <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante</label>
+                                    <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante ${currentEvent.companion_limit > 1 ? `(máx. ${currentEvent.companion_limit})` : ''}</label>
                                 </div>
                                 
-                                <div id="companion-field" class="hidden">
-                                    <input type="text" id="companion-name" placeholder="Nome do acompanhante" class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
+                                <div id="companion-field" class="hidden space-y-3">
+                                    ${Array.from({length: currentEvent.companion_limit}, (_, i) => `
+                                        <input type="text" id="companion-name-${i+1}" placeholder="Nome do acompanhante ${i+1}" class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg companion-input" ${i > 0 ? 'style="display:none"' : ''}>
+                                    `).join('')}
+                                    ${currentEvent.companion_limit > 1 ? `
+                                    <button type="button" id="add-companion-btn" class="text-blue-500 hover:text-blue-700 text-sm" style="display:none">
+                                        + Adicionar outro acompanhante
+                                    </button>
+                                    ` : ''}
                                 </div>
                                 ` : ''}
                             </div>
@@ -2556,18 +2587,46 @@
             });
             
             // Companion checkbox listener (only if companions are allowed)
-            if (allowCompanion) {
+            if (allowCompanion && currentEvent.companion_limit > 0) {
                 document.getElementById('has-companion').addEventListener('change', function() {
                     const companionField = document.getElementById('companion-field');
                     if (this.checked) {
                         companionField.classList.remove('hidden');
-                        document.getElementById('companion-name').required = true;
+                        document.getElementById('companion-name-1').required = true;
+                        
+                        // Show add button if multiple companions allowed
+                        if (currentEvent.companion_limit > 1) {
+                            document.getElementById('add-companion-btn').style.display = 'block';
+                        }
                     } else {
                         companionField.classList.add('hidden');
-                        document.getElementById('companion-name').required = false;
-                        document.getElementById('companion-name').value = '';
+                        // Clear all companion fields
+                        for (let i = 1; i <= currentEvent.companion_limit; i++) {
+                            const field = document.getElementById(`companion-name-${i}`);
+                            if (field) {
+                                field.required = false;
+                                field.value = '';
+                                if (i > 1) field.style.display = 'none';
+                            }
+                        }
+                        if (currentEvent.companion_limit > 1) {
+                            document.getElementById('add-companion-btn').style.display = 'none';
+                        }
                     }
                 });
+
+                // Add companion button listener
+                if (currentEvent.companion_limit > 1) {
+                    document.getElementById('add-companion-btn').addEventListener('click', function() {
+                        for (let i = 2; i <= currentEvent.companion_limit; i++) {
+                            const field = document.getElementById(`companion-name-${i}`);
+                            if (field && field.style.display === 'none') {
+                                field.style.display = 'block';
+                                break;
+                            }
+                        }
+                    });
+                }
             }
             
             // Form submit listener
@@ -2614,14 +2673,8 @@
                     </form>
                 `;
             } else {
-                // User hasn't responded yet, show message that they need to confirm first
-                container.innerHTML = `
-                    <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Deixe uma Mensagem</h3>
-                    <div class="bg-white rounded-xl p-6 border border-gray-200 text-center">
-                        <p class="text-gray-600 text-lg mb-4">📝 Para deixar uma mensagem, primeiro confirme sua presença acima.</p>
-                        <p class="text-gray-500">Assim saberemos quem está enviando a mensagem! 😊</p>
-                    </div>
-                `;
+                // User hasn't responded yet, hide message section completely
+                container.style.display = 'none';
             }
 
             // Setup message form if user has responded
@@ -2635,12 +2688,20 @@
 
         // Submit RSVP
         async function submitRSVP(attendance) {
-            let guestName, companionName = '';
+            let guestName, companionNames = [];
             
             if (attendance) {
                 guestName = document.getElementById('guest-name').value;
-                const companionField = document.getElementById('companion-name');
-                companionName = companionField ? companionField.value : '';
+                
+                // Collect companion names
+                if (currentEvent.companion_limit > 0) {
+                    for (let i = 1; i <= currentEvent.companion_limit; i++) {
+                        const field = document.getElementById(`companion-name-${i}`);
+                        if (field && field.value.trim()) {
+                            companionNames.push(field.value.trim());
+                        }
+                    }
+                }
             } else {
                 guestName = document.getElementById('guest-name-no').value;
             }
@@ -2709,7 +2770,7 @@
                     .insert({
                         wedding_id: currentEvent.id,
                         guest_name: guestName,
-                        companion_name: companionName || null,
+                        companion_names: companionNames.length > 0 ? companionNames : null,
                         attendance: attendance,
                         message: null
                     })
@@ -2935,20 +2996,32 @@
             }
         });
 
-        // Check User Response
-        async function checkUserResponse(guestName) {
-            try {
-                const { data: response } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('wedding_id', currentEvent.id)
-                    .eq('guest_name', guestName)
-                    .single();
-
-                return response;
-            } catch (error) {
-                return null;
+        // Check User Response on page load
+        async function checkExistingResponse() {
+            // Check localStorage for saved response
+            const savedResponse = localStorage.getItem(`rsvp_${currentEvent.id}`);
+            if (savedResponse) {
+                try {
+                    const parsedResponse = JSON.parse(savedResponse);
+                    // Verify response still exists in database
+                    const { data: dbResponse } = await supabase
+                        .from('rsvps')
+                        .select('*')
+                        .eq('id', parsedResponse.id)
+                        .single();
+                    
+                    if (dbResponse) {
+                        userResponse = dbResponse;
+                        return dbResponse;
+                    } else {
+                        // Response was deleted, clear localStorage
+                        localStorage.removeItem(`rsvp_${currentEvent.id}`);
+                    }
+                } catch (error) {
+                    localStorage.removeItem(`rsvp_${currentEvent.id}`);
+                }
             }
+            return null;
         }
 
         // Edit Response Function
@@ -2962,5 +3035,5 @@
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a35bbf5f477da',t:'MTc1NTc4MDE0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a48aef73e77e0',t:'MTc1NTc4MDkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
