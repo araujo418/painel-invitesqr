@@ -209,6 +209,10 @@
                                 <input type="checkbox" id="enable-public-wall" checked class="mr-3">
                                 <span class="text-sm text-gray-700">Mural público de mensagens</span>
                             </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="enable-gifts" class="mr-3">
+                                <span class="text-sm text-gray-700">Ativar sugestões de presentes</span>
+                            </label>
                         </div>
                     </div>
 
@@ -237,6 +241,66 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Acompanhantes *</label>
                             <input type="number" id="companion-limit" required placeholder="Ex: 1" min="0" max="10" class="input">
                             <p class="text-sm text-gray-500 mt-1">0 = Sem acompanhantes | 1+ = Máximo por convidado</p>
+                        </div>
+                    </div>
+
+                    <!-- Gift Configuration -->
+                    <div id="gifts-field" class="bg-yellow-50 rounded-lg p-6 border border-yellow-200" style="display: none;">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuração de Presentes</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Presente</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="gift-type" value="bank" id="gift-bank" class="mr-3">
+                                    <span class="text-sm text-gray-700">Transferência Bancária</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="gift-type" value="list" id="gift-list" class="mr-3">
+                                    <span class="text-sm text-gray-700">Lista de Sugestões</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Bank Transfer Configuration -->
+                        <div id="bank-config" class="space-y-4" style="display: none;">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem Personalizada</label>
+                                <textarea id="bank-message" class="input h-32 resize-none" placeholder="Digite sua mensagem personalizada...">Querido(a) convidado(a)!
+Caso queira nos presentear, agradecemos
+desde já o seu lindo gesto e gostaríamos
+que o fizesse por transferência bancária.
+para o IBAN indicado abaixo:
+
+AO. 7210158 
+Titular Diogo dos santos Inglês
+
+Muito obrigado(a)!
+Deus lhe abençoe sempre!</textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+                                    <input type="text" id="bank-iban" placeholder="Ex: AO. 7210158" class="input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Titular da Conta</label>
+                                    <input type="text" id="bank-holder" placeholder="Ex: Diogo dos santos Inglês" class="input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gift List Configuration -->
+                        <div id="list-config" class="space-y-4" style="display: none;">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-sm font-medium text-gray-700">Lista de Presentes</label>
+                                <button type="button" onclick="addGiftItem()" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                                    ➕ Adicionar Item
+                                </button>
+                            </div>
+                            <div id="gift-items" class="space-y-3">
+                                <!-- Gift items will be added here -->
+                            </div>
                         </div>
                     </div>
 
@@ -437,6 +501,10 @@
                                 <input type="checkbox" id="edit-enable-public-wall" class="mr-3">
                                 <span class="text-sm text-gray-700">Mural público de mensagens</span>
                             </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="edit-enable-gifts" class="mr-3">
+                                <span class="text-sm text-gray-700">Ativar sugestões de presentes</span>
+                            </label>
                         </div>
                     </div>
 
@@ -465,6 +533,56 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Acompanhantes *</label>
                             <input type="number" id="edit-companion-limit" required min="0" max="10" class="input">
                             <p class="text-sm text-gray-500 mt-1">0 = Sem acompanhantes | 1+ = Máximo por convidado</p>
+                        </div>
+                    </div>
+
+                    <!-- Edit Gift Configuration -->
+                    <div id="edit-gifts-field" class="bg-yellow-50 rounded-lg p-6 border border-yellow-200" style="display: none;">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuração de Presentes</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Presente</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="edit-gift-type" value="bank" id="edit-gift-bank" class="mr-3">
+                                    <span class="text-sm text-gray-700">Transferência Bancária</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="edit-gift-type" value="list" id="edit-gift-list" class="mr-3">
+                                    <span class="text-sm text-gray-700">Lista de Sugestões</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Edit Bank Transfer Configuration -->
+                        <div id="edit-bank-config" class="space-y-4" style="display: none;">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem Personalizada</label>
+                                <textarea id="edit-bank-message" class="input h-32 resize-none" placeholder="Digite sua mensagem personalizada..."></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+                                    <input type="text" id="edit-bank-iban" placeholder="Ex: AO. 7210158" class="input">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Titular da Conta</label>
+                                    <input type="text" id="edit-bank-holder" placeholder="Ex: Diogo dos santos Inglês" class="input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Gift List Configuration -->
+                        <div id="edit-list-config" class="space-y-4" style="display: none;">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-sm font-medium text-gray-700">Lista de Presentes</label>
+                                <button type="button" onclick="addEditGiftItem()" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                                    ➕ Adicionar Item
+                                </button>
+                            </div>
+                            <div id="edit-gift-items" class="space-y-3">
+                                <!-- Gift items will be added here -->
+                            </div>
                         </div>
                     </div>
 
@@ -655,6 +773,8 @@
         let countdownInterval = null;
         let userResponse = null;
         let companionCount = 0;
+        let giftItemCount = 0;
+        let editGiftItemCount = 0;
 
         // Check URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -755,25 +875,158 @@
             const toggles = [
                 { checkbox: 'enable-description', field: 'description-field', input: 'event-description' },
                 { checkbox: 'enable-deadline', field: 'deadline-field', input: 'confirmation-deadline' },
-                { checkbox: 'enable-max-limit', field: 'max-limit-field', input: 'max-confirmations' }
+                { checkbox: 'enable-max-limit', field: 'max-limit-field', input: 'max-confirmations' },
+                { checkbox: 'enable-gifts', field: 'gifts-field', input: null }
             ];
 
             toggles.forEach(({ checkbox, field, input }) => {
                 const checkboxEl = document.getElementById(checkbox);
                 const fieldEl = document.getElementById(field);
-                const inputEl = document.getElementById(input);
+                const inputEl = input ? document.getElementById(input) : null;
 
                 checkboxEl.addEventListener('change', () => {
                     if (checkboxEl.checked) {
                         fieldEl.style.display = 'block';
-                        inputEl.required = true;
+                        if (inputEl) inputEl.required = true;
                     } else {
                         fieldEl.style.display = 'none';
-                        inputEl.required = false;
-                        inputEl.value = '';
+                        if (inputEl) {
+                            inputEl.required = false;
+                            inputEl.value = '';
+                        }
                     }
                 });
             });
+
+            // Setup gift type toggles
+            setupGiftTypeToggles();
+        }
+
+        function setupGiftTypeToggles() {
+            const bankRadio = document.getElementById('gift-bank');
+            const listRadio = document.getElementById('gift-list');
+            const bankConfig = document.getElementById('bank-config');
+            const listConfig = document.getElementById('list-config');
+
+            if (bankRadio && listRadio) {
+                bankRadio.addEventListener('change', () => {
+                    if (bankRadio.checked) {
+                        bankConfig.style.display = 'block';
+                        listConfig.style.display = 'none';
+                    }
+                });
+
+                listRadio.addEventListener('change', () => {
+                    if (listRadio.checked) {
+                        bankConfig.style.display = 'none';
+                        listConfig.style.display = 'block';
+                    }
+                });
+            }
+        }
+
+        // Gift Management Functions
+        function addGiftItem() {
+            giftItemCount++;
+            const giftItems = document.getElementById('gift-items');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex gap-2 items-center';
+            itemDiv.id = `gift-item-${giftItemCount}`;
+            
+            itemDiv.innerHTML = `
+                <input type="text" 
+                       id="gift-name-${giftItemCount}" 
+                       placeholder="Nome do presente" 
+                       class="input flex-1">
+                <input type="number" 
+                       id="gift-quantity-${giftItemCount}" 
+                       placeholder="Qtd" 
+                       min="1" 
+                       value="1"
+                       class="input w-20">
+                <button type="button" 
+                        onclick="removeGiftItem(${giftItemCount})" 
+                        class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm">
+                    🗑️
+                </button>
+            `;
+            
+            giftItems.appendChild(itemDiv);
+        }
+
+        function removeGiftItem(itemId) {
+            const item = document.getElementById(`gift-item-${itemId}`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        function addEditGiftItem(existingName = '', existingQuantity = 1) {
+            editGiftItemCount++;
+            const giftItems = document.getElementById('edit-gift-items');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex gap-2 items-center';
+            itemDiv.id = `edit-gift-item-${editGiftItemCount}`;
+            
+            itemDiv.innerHTML = `
+                <input type="text" 
+                       id="edit-gift-name-${editGiftItemCount}" 
+                       placeholder="Nome do presente" 
+                       value="${existingName}"
+                       class="input flex-1">
+                <input type="number" 
+                       id="edit-gift-quantity-${editGiftItemCount}" 
+                       placeholder="Qtd" 
+                       min="1" 
+                       value="${existingQuantity}"
+                       class="input w-20">
+                <button type="button" 
+                        onclick="removeEditGiftItem(${editGiftItemCount})" 
+                        class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm">
+                    🗑️
+                </button>
+            `;
+            
+            giftItems.appendChild(itemDiv);
+        }
+
+        function removeEditGiftItem(itemId) {
+            const item = document.getElementById(`edit-gift-item-${itemId}`);
+            if (item) {
+                item.remove();
+            }
+        }
+
+        function getGiftItems() {
+            const items = [];
+            for (let i = 1; i <= giftItemCount; i++) {
+                const nameField = document.getElementById(`gift-name-${i}`);
+                const quantityField = document.getElementById(`gift-quantity-${i}`);
+                if (nameField && nameField.value.trim() && quantityField) {
+                    items.push({
+                        name: nameField.value.trim(),
+                        quantity: parseInt(quantityField.value) || 1
+                    });
+                }
+            }
+            return items;
+        }
+
+        function getEditGiftItems() {
+            const items = [];
+            for (let i = 1; i <= editGiftItemCount; i++) {
+                const nameField = document.getElementById(`edit-gift-name-${i}`);
+                const quantityField = document.getElementById(`edit-gift-quantity-${i}`);
+                if (nameField && nameField.value.trim() && quantityField) {
+                    items.push({
+                        name: nameField.value.trim(),
+                        quantity: parseInt(quantityField.value) || 1
+                    });
+                }
+            }
+            return items;
         }
 
         // Create Event
@@ -785,6 +1038,25 @@
             createBtn.disabled = true;
 
             try {
+                const giftType = document.querySelector('input[name="gift-type"]:checked')?.value || null;
+                let giftConfig = null;
+
+                if (document.getElementById('enable-gifts').checked && giftType) {
+                    if (giftType === 'bank') {
+                        giftConfig = {
+                            type: 'bank',
+                            message: document.getElementById('bank-message').value.trim(),
+                            iban: document.getElementById('bank-iban').value.trim(),
+                            holder: document.getElementById('bank-holder').value.trim()
+                        };
+                    } else if (giftType === 'list') {
+                        giftConfig = {
+                            type: 'list',
+                            items: getGiftItems()
+                        };
+                    }
+                }
+
                 const formData = {
                     title: document.getElementById('event-title').value.trim(),
                     description: document.getElementById('enable-description').checked ? 
@@ -801,7 +1073,9 @@
                     enable_description: document.getElementById('enable-description').checked,
                     enable_deadline: document.getElementById('enable-deadline').checked,
                     enable_max_limit: document.getElementById('enable-max-limit').checked,
-                    enable_public_wall: document.getElementById('enable-public-wall').checked
+                    enable_public_wall: document.getElementById('enable-public-wall').checked,
+                    enable_gifts: document.getElementById('enable-gifts').checked,
+                    gift_config: giftConfig
                 };
 
                 const { data, error } = await supabase
@@ -1142,6 +1416,26 @@
             document.getElementById('edit-enable-deadline').checked = currentEvent.enable_deadline;
             document.getElementById('edit-enable-max-limit').checked = currentEvent.enable_max_limit;
             document.getElementById('edit-enable-public-wall').checked = currentEvent.enable_public_wall;
+            document.getElementById('edit-enable-gifts').checked = currentEvent.enable_gifts || false;
+            
+            // Setup gift configuration
+            if (currentEvent.enable_gifts && currentEvent.gift_config) {
+                const giftConfig = currentEvent.gift_config;
+                if (giftConfig.type === 'bank') {
+                    document.getElementById('edit-gift-bank').checked = true;
+                    document.getElementById('edit-bank-message').value = giftConfig.message || '';
+                    document.getElementById('edit-bank-iban').value = giftConfig.iban || '';
+                    document.getElementById('edit-bank-holder').value = giftConfig.holder || '';
+                } else if (giftConfig.type === 'list') {
+                    document.getElementById('edit-gift-list').checked = true;
+                    // Load existing gift items
+                    if (giftConfig.items && giftConfig.items.length > 0) {
+                        giftConfig.items.forEach(item => {
+                            addEditGiftItem(item.name, item.quantity);
+                        });
+                    }
+                }
+            }
             
             // Setup field toggles for edit form
             setupEditFieldToggles();
@@ -1155,13 +1449,14 @@
             const toggles = [
                 { checkbox: 'edit-enable-description', field: 'edit-description-field', input: 'edit-event-description' },
                 { checkbox: 'edit-enable-deadline', field: 'edit-deadline-field', input: 'edit-confirmation-deadline' },
-                { checkbox: 'edit-enable-max-limit', field: 'edit-max-limit-field', input: 'edit-max-confirmations' }
+                { checkbox: 'edit-enable-max-limit', field: 'edit-max-limit-field', input: 'edit-max-confirmations' },
+                { checkbox: 'edit-enable-gifts', field: 'edit-gifts-field', input: null }
             ];
 
             toggles.forEach(({ checkbox, field, input }) => {
                 const checkboxEl = document.getElementById(checkbox);
                 const fieldEl = document.getElementById(field);
-                const inputEl = document.getElementById(input);
+                const inputEl = input ? document.getElementById(input) : null;
 
                 // Initial state
                 if (checkboxEl.checked) {
@@ -1175,10 +1470,45 @@
                         fieldEl.style.display = 'block';
                     } else {
                         fieldEl.style.display = 'none';
-                        inputEl.value = '';
+                        if (inputEl) inputEl.value = '';
                     }
                 });
             });
+
+            // Setup edit gift type toggles
+            setupEditGiftTypeToggles();
+        }
+
+        function setupEditGiftTypeToggles() {
+            const bankRadio = document.getElementById('edit-gift-bank');
+            const listRadio = document.getElementById('edit-gift-list');
+            const bankConfig = document.getElementById('edit-bank-config');
+            const listConfig = document.getElementById('edit-list-config');
+
+            if (bankRadio && listRadio) {
+                // Initial state
+                if (bankRadio.checked) {
+                    bankConfig.style.display = 'block';
+                    listConfig.style.display = 'none';
+                } else if (listRadio.checked) {
+                    bankConfig.style.display = 'none';
+                    listConfig.style.display = 'block';
+                }
+
+                bankRadio.addEventListener('change', () => {
+                    if (bankRadio.checked) {
+                        bankConfig.style.display = 'block';
+                        listConfig.style.display = 'none';
+                    }
+                });
+
+                listRadio.addEventListener('change', () => {
+                    if (listRadio.checked) {
+                        bankConfig.style.display = 'none';
+                        listConfig.style.display = 'block';
+                    }
+                });
+            }
         }
 
         // Delete Options
@@ -1284,6 +1614,25 @@
             e.preventDefault();
 
             try {
+                const editGiftType = document.querySelector('input[name="edit-gift-type"]:checked')?.value || null;
+                let editGiftConfig = null;
+
+                if (document.getElementById('edit-enable-gifts').checked && editGiftType) {
+                    if (editGiftType === 'bank') {
+                        editGiftConfig = {
+                            type: 'bank',
+                            message: document.getElementById('edit-bank-message').value.trim(),
+                            iban: document.getElementById('edit-bank-iban').value.trim(),
+                            holder: document.getElementById('edit-bank-holder').value.trim()
+                        };
+                    } else if (editGiftType === 'list') {
+                        editGiftConfig = {
+                            type: 'list',
+                            items: getEditGiftItems()
+                        };
+                    }
+                }
+
                 const formData = {
                     title: document.getElementById('edit-event-title').value.trim(),
                     description: document.getElementById('edit-enable-description').checked ? 
@@ -1297,7 +1646,9 @@
                     enable_description: document.getElementById('edit-enable-description').checked,
                     enable_deadline: document.getElementById('edit-enable-deadline').checked,
                     enable_max_limit: document.getElementById('edit-enable-max-limit').checked,
-                    enable_public_wall: document.getElementById('edit-enable-public-wall').checked
+                    enable_public_wall: document.getElementById('edit-enable-public-wall').checked,
+                    enable_gifts: document.getElementById('edit-enable-gifts').checked,
+                    gift_config: editGiftConfig
                 };
 
                 const { error } = await supabase
@@ -1712,6 +2063,10 @@
                             <!-- Message content will be populated here -->
                         </div>
 
+                        <div id="gifts-container" class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-8 mb-8 border border-yellow-100">
+                            <!-- Gifts content will be populated here -->
+                        </div>
+
                         ${currentEvent.enable_public_wall ? `
                         <div class="bg-gradient-to-br from-slate-50 to-gray-50 rounded-3xl p-8 border border-slate-200">
                             <h3 class="text-3xl font-playfair font-semibold mb-6 text-gray-800">💬 Mural de Mensagens</h3>
@@ -1732,6 +2087,7 @@
                 renderRSVPSection(allowCompanion);
             }
             renderMessageSection();
+            renderGiftsSection();
             
             // Load public messages
             if (currentEvent.enable_public_wall) {
@@ -1857,9 +2213,12 @@
                         
                         <form id="message-form" class="space-y-4">
                             <textarea id="message-text" placeholder="Digite sua mensagem aqui..." class="input text-lg p-4 rounded-xl h-32 resize-none"></textarea>
-                            <div class="text-center">
+                            <div class="text-center space-x-4">
                                 <button type="button" onclick="submitMessage()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-2xl text-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl">
                                     💌 Enviar mensagem
+                                </button>
+                                <button type="button" onclick="skipMessage()" class="bg-gray-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-gray-600">
+                                    ⏭️ Ignorar
                                 </button>
                             </div>
                         </form>
@@ -1869,6 +2228,53 @@
                 container.innerHTML = `
                     <h3 class="text-3xl font-playfair font-semibold mb-4 text-gray-800">💌 Mensagens especiais</h3>
                     <p class="text-lg text-gray-600">Confirme sua presença para deixar uma mensagem especial!</p>
+                `;
+            }
+        }
+
+        function renderGiftsSection() {
+            const container = document.getElementById('gifts-container');
+            
+            if (!currentEvent.enable_gifts || !currentEvent.gift_config) {
+                container.style.display = 'none';
+                return;
+            }
+
+            if (userResponse && userResponse.attendance) {
+                const giftConfig = currentEvent.gift_config;
+                
+                if (giftConfig.type === 'bank') {
+                    container.innerHTML = `
+                        <h3 class="text-3xl font-playfair font-semibold mb-6 text-gray-800">🎁 Sugestão de Presente</h3>
+                        <div class="bg-white rounded-2xl p-6 border border-yellow-200">
+                            <div class="whitespace-pre-line text-gray-700 mb-6">${giftConfig.message}</div>
+                            ${giftConfig.iban ? `
+                            <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold text-gray-800">IBAN: ${giftConfig.iban}</div>
+                                        ${giftConfig.holder ? `<div class="text-sm text-gray-600">Titular: ${giftConfig.holder}</div>` : ''}
+                                    </div>
+                                    <button onclick="copyIban('${giftConfig.iban}')" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 font-semibold">
+                                        📋 Copiar IBAN
+                                    </button>
+                                </div>
+                            </div>
+                            ` : ''}
+                            <div class="text-center mt-6">
+                                <button onclick="skipGifts()" class="bg-gray-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-gray-600">
+                                    ⏭️ Ignorar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else if (giftConfig.type === 'list') {
+                    loadGiftList();
+                }
+            } else {
+                container.innerHTML = `
+                    <h3 class="text-3xl font-playfair font-semibold mb-4 text-gray-800">🎁 Sugestões de Presentes</h3>
+                    <p class="text-lg text-gray-600">Confirme sua presença para ver as sugestões de presentes!</p>
                 `;
             }
         }
@@ -2103,6 +2509,151 @@
             }
         }
 
+        // Gift Functions
+        function skipMessage() {
+            renderGiftsSection();
+        }
+
+        function skipGifts() {
+            const container = document.getElementById('gifts-container');
+            container.style.display = 'none';
+        }
+
+        function copyIban(iban) {
+            navigator.clipboard.writeText(iban).then(() => {
+                alert('IBAN copiado para a área de transferência!');
+            }).catch(() => {
+                alert('Erro ao copiar IBAN. Tente selecionar e copiar manualmente.');
+            });
+        }
+
+        async function loadGiftList() {
+            const container = document.getElementById('gifts-container');
+            const giftConfig = currentEvent.gift_config;
+            
+            if (!giftConfig.items || giftConfig.items.length === 0) {
+                container.innerHTML = `
+                    <h3 class="text-3xl font-playfair font-semibold mb-4 text-gray-800">🎁 Lista de Presentes</h3>
+                    <p class="text-lg text-gray-600">Nenhum presente foi adicionado à lista ainda.</p>
+                `;
+                return;
+            }
+
+            try {
+                // Get existing gift selections
+                const { data: selections } = await supabase
+                    .from('gift_selections')
+                    .select('*')
+                    .eq('wedding_id', currentEvent.id);
+
+                const selectedGifts = selections || [];
+                
+                let giftListHtml = `
+                    <h3 class="text-3xl font-playfair font-semibold mb-6 text-gray-800">🎁 Lista de Presentes</h3>
+                    <p class="text-lg text-gray-600 mb-6">Escolha um presente da nossa lista de sugestões!</p>
+                    <div class="space-y-4">
+                `;
+
+                giftConfig.items.forEach((item, index) => {
+                    const selectedCount = selectedGifts.filter(s => s.gift_name === item.name).length;
+                    const remainingQuantity = item.quantity - selectedCount;
+                    const isAvailable = remainingQuantity > 0;
+                    const userSelected = selectedGifts.find(s => s.gift_name === item.name && s.guest_name === userResponse.guest_name);
+
+                    giftListHtml += `
+                        <div class="bg-white rounded-2xl p-6 border ${isAvailable ? 'border-yellow-200' : 'border-gray-300'} ${!isAvailable ? 'opacity-60' : ''}">
+                            <div class="flex justify-between items-center">
+                                <div class="flex-1">
+                                    <h4 class="text-xl font-semibold text-gray-800 mb-2">${item.name}</h4>
+                                    <div class="text-sm text-gray-600">
+                                        ${isAvailable ? 
+                                            `Disponível: ${remainingQuantity} de ${item.quantity}` : 
+                                            'Esgotado'
+                                        }
+                                    </div>
+                                    ${userSelected ? '<div class="text-green-600 font-semibold mt-2">✅ Você escolheu este presente</div>' : ''}
+                                </div>
+                                <div class="ml-4">
+                                    ${userSelected ? 
+                                        `<button onclick="unselectGift('${item.name}')" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 font-semibold">
+                                            ❌ Cancelar escolha
+                                        </button>` :
+                                        (isAvailable ? 
+                                            `<button onclick="selectGift('${item.name}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 font-semibold">
+                                                🎁 Escolher
+                                            </button>` :
+                                            `<button disabled class="bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed">
+                                                😔 Esgotado
+                                            </button>`
+                                        )
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                giftListHtml += `
+                    </div>
+                    <div class="text-center mt-6">
+                        <button onclick="skipGifts()" class="bg-gray-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-gray-600">
+                            ⏭️ Ignorar lista
+                        </button>
+                    </div>
+                `;
+
+                container.innerHTML = giftListHtml;
+
+            } catch (error) {
+                console.error('Error loading gift list:', error);
+                container.innerHTML = `
+                    <h3 class="text-3xl font-playfair font-semibold mb-4 text-gray-800">🎁 Lista de Presentes</h3>
+                    <p class="text-lg text-red-600">Erro ao carregar lista de presentes.</p>
+                `;
+            }
+        }
+
+        async function selectGift(giftName) {
+            try {
+                const { error } = await supabase
+                    .from('gift_selections')
+                    .insert({
+                        wedding_id: currentEvent.id,
+                        guest_name: userResponse.guest_name,
+                        gift_name: giftName
+                    });
+
+                if (error) throw error;
+
+                alert('🎁 Presente escolhido com sucesso!');
+                loadGiftList(); // Reload the list
+
+            } catch (error) {
+                console.error('Error selecting gift:', error);
+                alert('Erro ao escolher presente. Tente novamente.');
+            }
+        }
+
+        async function unselectGift(giftName) {
+            try {
+                const { error } = await supabase
+                    .from('gift_selections')
+                    .delete()
+                    .eq('wedding_id', currentEvent.id)
+                    .eq('guest_name', userResponse.guest_name)
+                    .eq('gift_name', giftName);
+
+                if (error) throw error;
+
+                alert('Escolha de presente cancelada.');
+                loadGiftList(); // Reload the list
+
+            } catch (error) {
+                console.error('Error unselecting gift:', error);
+                alert('Erro ao cancelar escolha. Tente novamente.');
+            }
+        }
+
         async function loadPublicMessages() {
             try {
                 const { data: messages } = await supabase
@@ -2221,5 +2772,5 @@
         });
 
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972ab98c04fd77dd',t:'MTc1NTc4NTU0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972ac465c24a77e0',t:'MTc1NTc4NTk4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
