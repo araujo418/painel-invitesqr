@@ -306,11 +306,7 @@
                         </div>
                     </form>
 
-                    <div class="mt-6 pt-4 border-t border-gray-200">
-                        <button onclick="showMasterLogin()" class="w-full btn btn-danger py-2">
-                            🔐 Acesso Master Admin
-                        </button>
-                    </div>
+
                 </div>
             </div>
         </section>
@@ -350,7 +346,9 @@
                         <button onclick="copyEventFullUrl()" class="btn btn-primary text-sm">📋 Link Completo</button>
                         <button onclick="copyEventNoCompanionUrl()" class="btn btn-secondary text-sm">📋 Sem Acompanhante</button>
                         <button onclick="showPasswordManager()" class="btn btn-secondary text-sm">🔑 Senha</button>
+                        <button onclick="showEventEditor()" class="btn btn-secondary text-sm">✏️ Editar Evento</button>
                         <button onclick="downloadReport()" class="btn btn-success text-sm">📄 Relatório</button>
+                        <button onclick="showDeleteOptions()" class="btn btn-danger text-sm">🗑️ Gerenciar</button>
                         <button onclick="logout()" class="btn btn-danger text-sm">🚪 Sair</button>
                     </div>
                 </div>
@@ -407,6 +405,140 @@
                         <button type="button" onclick="hidePasswordManager()" class="btn btn-secondary">❌ Cancelar</button>
                     </div>
                 </form>
+            </div>
+
+            <!-- Event Editor -->
+            <div id="event-editor" class="card p-6 mb-6 hidden">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Editar Evento</h3>
+                
+                <form id="edit-event-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Título do Evento *</label>
+                        <input type="text" id="edit-event-title" required class="input">
+                    </div>
+
+                    <!-- Configurações -->
+                    <div class="bg-gray-50 rounded-lg p-6 border">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Configurações do Evento</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="edit-enable-description" class="mr-3">
+                                <span class="text-sm text-gray-700">Mostrar descrição do evento</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="edit-enable-deadline" class="mr-3">
+                                <span class="text-sm text-gray-700">Definir prazo para confirmação</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="edit-enable-max-limit" class="mr-3">
+                                <span class="text-sm text-gray-700">Definir limite máximo</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="edit-enable-public-wall" class="mr-3">
+                                <span class="text-sm text-gray-700">Mural público de mensagens</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="edit-description-field">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descrição do Evento</label>
+                        <textarea id="edit-event-description" class="input h-24 resize-none"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Data do Evento *</label>
+                            <input type="date" id="edit-event-date" required class="input">
+                        </div>
+                        <div id="edit-deadline-field">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Prazo para Confirmação</label>
+                            <input type="date" id="edit-confirmation-deadline" class="input">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div id="edit-max-limit-field">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Limite Máximo de Confirmados</label>
+                            <input type="number" id="edit-max-confirmations" min="1" class="input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Acompanhantes *</label>
+                            <input type="number" id="edit-companion-limit" required min="0" max="10" class="input">
+                            <p class="text-sm text-gray-500 mt-1">0 = Sem acompanhantes | 1+ = Máximo por convidado</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="submit" class="btn btn-success">✅ Salvar Alterações</button>
+                        <button type="button" onclick="hideEventEditor()" class="btn btn-secondary">❌ Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Delete Options -->
+            <div id="delete-options" class="card p-6 mb-6 hidden">
+                <h3 class="text-xl font-semibold text-red-800 mb-4">🗑️ Opções de Exclusão</h3>
+                
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <p class="text-red-700 font-medium">⚠️ Atenção: Estas ações são irreversíveis!</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-white border rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Excluir Convidados Específicos</h4>
+                        <p class="text-sm text-gray-600 mb-3">Remove convidados individuais da lista</p>
+                        <button onclick="showGuestDeletion()" class="btn btn-danger text-sm">🗑️ Gerenciar Convidados</button>
+                    </div>
+
+                    <div class="bg-white border rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Limpar Todas as Mensagens</h4>
+                        <p class="text-sm text-gray-600 mb-3">Remove todas as mensagens do mural público</p>
+                        <button onclick="clearAllMessages()" class="btn btn-danger text-sm">🗑️ Limpar Mensagens</button>
+                    </div>
+
+                    <div class="bg-white border rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">Limpar Todos os Convidados</h4>
+                        <p class="text-sm text-gray-600 mb-3">Remove todos os convidados e suas confirmações</p>
+                        <button onclick="clearAllGuests()" class="btn btn-danger text-sm">🗑️ Limpar Todos</button>
+                    </div>
+
+                    <div class="bg-red-100 border border-red-300 rounded-lg p-4">
+                        <h4 class="font-semibold text-red-800 mb-2">Excluir Evento Completo</h4>
+                        <p class="text-sm text-red-700 mb-3">Remove permanentemente o evento e todos os dados</p>
+                        <button onclick="deleteEntireEvent()" class="btn btn-danger text-sm">🗑️ Excluir Evento</button>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button onclick="hideDeleteOptions()" class="btn btn-secondary">❌ Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Guest Deletion Manager -->
+            <div id="guest-deletion" class="card p-6 mb-6 hidden">
+                <h3 class="text-xl font-semibold text-red-800 mb-4">🗑️ Gerenciar Convidados</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left py-2 px-3">Selecionar</th>
+                                <th class="text-left py-2 px-3">Nome</th>
+                                <th class="text-left py-2 px-3">Acompanhante</th>
+                                <th class="text-left py-2 px-3">Status</th>
+                                <th class="text-left py-2 px-3">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="guest-deletion-list">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button onclick="deleteSelectedGuests()" class="btn btn-danger">🗑️ Excluir Selecionados</button>
+                    <button onclick="hideGuestDeletion()" class="btn btn-secondary">❌ Cancelar</button>
+                </div>
             </div>
 
             <!-- Guest List -->
@@ -992,6 +1124,124 @@
             document.getElementById('password-form').reset();
         }
 
+        // Event Editor
+        function showEventEditor() {
+            document.getElementById('event-editor').classList.remove('hidden');
+            
+            // Populate form with current event data
+            document.getElementById('edit-event-title').value = currentEvent.title;
+            document.getElementById('edit-event-description').value = currentEvent.description || '';
+            document.getElementById('edit-event-date').value = currentEvent.event_date;
+            document.getElementById('edit-confirmation-deadline').value = currentEvent.confirmation_deadline || '';
+            document.getElementById('edit-max-confirmations').value = currentEvent.max_confirmations || '';
+            document.getElementById('edit-companion-limit').value = currentEvent.companion_limit;
+            
+            // Set checkboxes
+            document.getElementById('edit-enable-description').checked = currentEvent.enable_description;
+            document.getElementById('edit-enable-deadline').checked = currentEvent.enable_deadline;
+            document.getElementById('edit-enable-max-limit').checked = currentEvent.enable_max_limit;
+            document.getElementById('edit-enable-public-wall').checked = currentEvent.enable_public_wall;
+            
+            // Setup field toggles for edit form
+            setupEditFieldToggles();
+        }
+
+        function hideEventEditor() {
+            document.getElementById('event-editor').classList.add('hidden');
+        }
+
+        function setupEditFieldToggles() {
+            const toggles = [
+                { checkbox: 'edit-enable-description', field: 'edit-description-field', input: 'edit-event-description' },
+                { checkbox: 'edit-enable-deadline', field: 'edit-deadline-field', input: 'edit-confirmation-deadline' },
+                { checkbox: 'edit-enable-max-limit', field: 'edit-max-limit-field', input: 'edit-max-confirmations' }
+            ];
+
+            toggles.forEach(({ checkbox, field, input }) => {
+                const checkboxEl = document.getElementById(checkbox);
+                const fieldEl = document.getElementById(field);
+                const inputEl = document.getElementById(input);
+
+                // Initial state
+                if (checkboxEl.checked) {
+                    fieldEl.style.display = 'block';
+                } else {
+                    fieldEl.style.display = 'none';
+                }
+
+                checkboxEl.addEventListener('change', () => {
+                    if (checkboxEl.checked) {
+                        fieldEl.style.display = 'block';
+                    } else {
+                        fieldEl.style.display = 'none';
+                        inputEl.value = '';
+                    }
+                });
+            });
+        }
+
+        // Delete Options
+        function showDeleteOptions() {
+            document.getElementById('delete-options').classList.remove('hidden');
+        }
+
+        function hideDeleteOptions() {
+            document.getElementById('delete-options').classList.add('hidden');
+        }
+
+        // Guest Deletion
+        function showGuestDeletion() {
+            document.getElementById('guest-deletion').classList.remove('hidden');
+            loadGuestDeletionList();
+        }
+
+        function hideGuestDeletion() {
+            document.getElementById('guest-deletion').classList.add('hidden');
+        }
+
+        async function loadGuestDeletionList() {
+            try {
+                const { data: rsvps } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', currentEvent.id)
+                    .order('created_at', { ascending: false });
+
+                const guestList = document.getElementById('guest-deletion-list');
+                guestList.innerHTML = '';
+
+                if (rsvps && rsvps.length > 0) {
+                    rsvps.forEach(rsvp => {
+                        const row = document.createElement('tr');
+                        row.className = 'border-b hover:bg-gray-50';
+                        row.innerHTML = `
+                            <td class="py-3 px-4">
+                                <input type="checkbox" class="guest-checkbox" data-id="${rsvp.id}">
+                            </td>
+                            <td class="py-3 px-4">${rsvp.guest_name}</td>
+                            <td class="py-3 px-4">${rsvp.companion_name || '-'}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-1 rounded-full text-xs ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${rsvp.attendance ? '✅ Confirmado' : '❌ Não Confirmado'}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <button onclick="deleteIndividualGuest(${rsvp.id}, '${rsvp.guest_name}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">
+                                    🗑️ Excluir
+                                </button>
+                            </td>
+                        `;
+                        guestList.appendChild(row);
+                    });
+                } else {
+                    guestList.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Nenhum convidado ainda</td></tr>';
+                }
+
+            } catch (error) {
+                console.error('Error loading guest deletion list:', error);
+            }
+        }
+
         document.getElementById('password-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -1027,6 +1277,167 @@
                 alert('Erro ao alterar senha. Tente novamente.');
             }
         });
+
+        // Edit Event Form
+        document.getElementById('edit-event-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            try {
+                const formData = {
+                    title: document.getElementById('edit-event-title').value.trim(),
+                    description: document.getElementById('edit-enable-description').checked ? 
+                        document.getElementById('edit-event-description').value.trim() : '',
+                    event_date: document.getElementById('edit-event-date').value,
+                    confirmation_deadline: document.getElementById('edit-enable-deadline').checked ? 
+                        document.getElementById('edit-confirmation-deadline').value : null,
+                    max_confirmations: document.getElementById('edit-enable-max-limit').checked ? 
+                        parseInt(document.getElementById('edit-max-confirmations').value) : null,
+                    companion_limit: parseInt(document.getElementById('edit-companion-limit').value),
+                    enable_description: document.getElementById('edit-enable-description').checked,
+                    enable_deadline: document.getElementById('edit-enable-deadline').checked,
+                    enable_max_limit: document.getElementById('edit-enable-max-limit').checked,
+                    enable_public_wall: document.getElementById('edit-enable-public-wall').checked
+                };
+
+                const { error } = await supabase
+                    .from('events')
+                    .update(formData)
+                    .eq('id', currentEvent.id);
+
+                if (error) throw error;
+
+                // Update current event object
+                Object.assign(currentEvent, formData);
+                saveSession(currentEvent);
+
+                alert('✅ Evento atualizado com sucesso!');
+                hideEventEditor();
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Error updating event:', error);
+                alert('Erro ao atualizar evento: ' + error.message);
+            }
+        });
+
+        // Delete Functions
+        async function deleteIndividualGuest(guestId, guestName) {
+            if (!confirm(`Tem certeza que deseja excluir o convidado "${guestName}"?`)) return;
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .delete()
+                    .eq('id', guestId);
+
+                if (error) throw error;
+
+                alert(`Convidado "${guestName}" excluído com sucesso!`);
+                loadGuestDeletionList();
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Error deleting guest:', error);
+                alert('Erro ao excluir convidado.');
+            }
+        }
+
+        async function deleteSelectedGuests() {
+            const checkboxes = document.querySelectorAll('.guest-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('Selecione pelo menos um convidado para excluir.');
+                return;
+            }
+
+            if (!confirm(`Tem certeza que deseja excluir ${checkboxes.length} convidado(s) selecionado(s)?`)) return;
+
+            try {
+                const guestIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
+                
+                const { error } = await supabase
+                    .from('rsvps')
+                    .delete()
+                    .in('id', guestIds);
+
+                if (error) throw error;
+
+                alert(`${checkboxes.length} convidado(s) excluído(s) com sucesso!`);
+                loadGuestDeletionList();
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Error deleting selected guests:', error);
+                alert('Erro ao excluir convidados selecionados.');
+            }
+        }
+
+        async function clearAllMessages() {
+            if (!confirm('Tem certeza que deseja limpar TODAS as mensagens? Esta ação é irreversível!')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .update({ message: null })
+                    .eq('wedding_id', currentEvent.id);
+
+                if (error) throw error;
+
+                alert('✅ Todas as mensagens foram removidas!');
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Error clearing messages:', error);
+                alert('Erro ao limpar mensagens.');
+            }
+        }
+
+        async function clearAllGuests() {
+            if (!confirm('Tem certeza que deseja excluir TODOS os convidados? Esta ação é irreversível!')) return;
+            if (!confirm('CONFIRMAÇÃO FINAL: Todos os convidados e suas confirmações serão perdidos permanentemente!')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .delete()
+                    .eq('wedding_id', currentEvent.id);
+
+                if (error) throw error;
+
+                alert('✅ Todos os convidados foram removidos!');
+                hideDeleteOptions();
+                await loadDashboard();
+
+            } catch (error) {
+                console.error('Error clearing all guests:', error);
+                alert('Erro ao limpar todos os convidados.');
+            }
+        }
+
+        async function deleteEntireEvent() {
+            if (!confirm(`Tem certeza que deseja excluir COMPLETAMENTE o evento "${currentEvent.title}"?`)) return;
+            if (!confirm('ATENÇÃO: Esta ação irá excluir o evento e TODOS os dados associados permanentemente!')) return;
+            if (!confirm('CONFIRMAÇÃO FINAL: Digite "EXCLUIR" para confirmar') && prompt('Digite "EXCLUIR" para confirmar:') !== 'EXCLUIR') return;
+
+            try {
+                // Delete all RSVPs first
+                await supabase.from('rsvps').delete().eq('wedding_id', currentEvent.id);
+                
+                // Delete event
+                const { error } = await supabase
+                    .from('events')
+                    .delete()
+                    .eq('id', currentEvent.id);
+
+                if (error) throw error;
+
+                alert('✅ Evento excluído completamente!');
+                logout();
+
+            } catch (error) {
+                console.error('Error deleting entire event:', error);
+                alert('Erro ao excluir evento.');
+            }
+        }
 
         // Copy Event URLs
         function copyEventFullUrl() {
@@ -1680,5 +2091,5 @@
         });
 
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a8b17325077dd',t:'MTc1NTc4MzYzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a9dc7e18477dd',t:'MTc1NTc4NDQwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
