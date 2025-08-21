@@ -793,7 +793,7 @@
                     event_date: eventData.eventDate,
                     confirmation_deadline: eventData.confirmationDeadline,
                     max_confirmations: eventData.maxConfirmations,
-                    companion_limit: eventData.companionLimit,
+                    companions_limit: eventData.companionLimit,
                     custom_url: eventData.customUrl,
                     enable_description: eventData.enableDescription,
                     enable_deadline: eventData.enableDeadline,
@@ -2523,17 +2523,17 @@
                                     <input type="text" id="guest-name" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
                                 </div>
                                 
-                                ${(allowCompanion && currentEvent.companion_limit > 0) ? `
+                                ${(allowCompanion && currentEvent.companions_limit > 0) ? `
                                 <div class="flex items-center gap-3 sm:gap-4 justify-center">
                                     <input type="checkbox" id="has-companion" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 rounded focus:ring-blue-500">
-                                    <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante ${currentEvent.companion_limit > 1 ? `(máx. ${currentEvent.companion_limit})` : ''}</label>
+                                    <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante ${currentEvent.companions_limit > 1 ? `(máx. ${currentEvent.companions_limit})` : ''}</label>
                                 </div>
                                 
                                 <div id="companion-field" class="hidden space-y-3">
-                                    ${Array.from({length: currentEvent.companion_limit}, (_, i) => `
+                                    ${Array.from({length: currentEvent.companions_limit}, (_, i) => `
                                         <input type="text" id="companion-name-${i+1}" placeholder="Nome do acompanhante ${i+1}" class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg companion-input" ${i > 0 ? 'style="display:none"' : ''}>
                                     `).join('')}
-                                    ${currentEvent.companion_limit > 1 ? `
+                                    ${currentEvent.companions_limit > 1 ? `
                                     <button type="button" id="add-companion-btn" class="text-blue-500 hover:text-blue-700 text-sm" style="display:none">
                                         + Adicionar outro acompanhante
                                     </button>
@@ -2587,7 +2587,7 @@
             });
             
             // Companion checkbox listener (only if companions are allowed)
-            if (allowCompanion && currentEvent.companion_limit > 0) {
+            if (allowCompanion && currentEvent.companions_limit > 0) {
                 document.getElementById('has-companion').addEventListener('change', function() {
                     const companionField = document.getElementById('companion-field');
                     if (this.checked) {
@@ -2595,13 +2595,13 @@
                         document.getElementById('companion-name-1').required = true;
                         
                         // Show add button if multiple companions allowed
-                        if (currentEvent.companion_limit > 1) {
+                        if (currentEvent.companions_limit > 1) {
                             document.getElementById('add-companion-btn').style.display = 'block';
                         }
                     } else {
                         companionField.classList.add('hidden');
                         // Clear all companion fields
-                        for (let i = 1; i <= currentEvent.companion_limit; i++) {
+                        for (let i = 1; i <= currentEvent.companions_limit; i++) {
                             const field = document.getElementById(`companion-name-${i}`);
                             if (field) {
                                 field.required = false;
@@ -2609,16 +2609,16 @@
                                 if (i > 1) field.style.display = 'none';
                             }
                         }
-                        if (currentEvent.companion_limit > 1) {
+                        if (currentEvent.companions_limit > 1) {
                             document.getElementById('add-companion-btn').style.display = 'none';
                         }
                     }
                 });
 
                 // Add companion button listener
-                if (currentEvent.companion_limit > 1) {
+                if (currentEvent.companions_limit > 1) {
                     document.getElementById('add-companion-btn').addEventListener('click', function() {
-                        for (let i = 2; i <= currentEvent.companion_limit; i++) {
+                        for (let i = 2; i <= currentEvent.companions_limit; i++) {
                             const field = document.getElementById(`companion-name-${i}`);
                             if (field && field.style.display === 'none') {
                                 field.style.display = 'block';
@@ -2694,8 +2694,8 @@
                 guestName = document.getElementById('guest-name').value;
                 
                 // Collect companion names
-                if (currentEvent.companion_limit > 0) {
-                    for (let i = 1; i <= currentEvent.companion_limit; i++) {
+                if (currentEvent.companions_limit > 0) {
+                    for (let i = 1; i <= currentEvent.companions_limit; i++) {
                         const field = document.getElementById(`companion-name-${i}`);
                         if (field && field.value.trim()) {
                             companionNames.push(field.value.trim());
@@ -3035,5 +3035,5 @@
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a48aef73e77e0',t:'MTc1NTc4MDkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a54a8b12177d9',t:'MTc1NTc4MTQwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
