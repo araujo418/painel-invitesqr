@@ -224,6 +224,8 @@
                         <input type="text" id="eventTitle" required placeholder="Ex: Evento Corporativo 2025" class="w-full px-6 py-4 premium-input rounded-xl focus:outline-none">
                     </div>
 
+
+
                     <!-- Opções de Configuração -->
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
                         <h3 class="font-semibold text-gray-800 mb-4">⚙️ Configurações do Site</h3>
@@ -571,42 +573,6 @@
             </div>
         </section>
 
-        <!-- Restricted Access Section -->
-        <section id="restricted-section" class="max-w-2xl mx-auto hidden">
-            <div class="premium-card rounded-3xl p-12 text-center">
-                <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center text-3xl text-white">🚫</div>
-                <h2 class="font-playfair text-4xl text-gray-800 mb-6 font-semibold">Acesso Restrito</h2>
-                <p class="text-xl text-gray-600 mb-8 leading-relaxed">
-                    Esta é uma área administrativa privada. Se você é um convidado, use o link específico que recebeu para acessar o evento.
-                </p>
-                
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-100">
-                    <h3 class="font-semibold text-gray-800 mb-4">👥 Para Convidados</h3>
-                    <p class="text-gray-600 mb-4">Use o link específico que você recebeu, que deve ter este formato:</p>
-                    <code class="text-sm text-blue-600 bg-white px-3 py-2 rounded-lg border">
-                        araujo418.github.io/painel-invitesqr/index.html?cliente=nome-do-evento
-                    </code>
-                </div>
-
-                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 mb-8 border border-purple-100">
-                    <h3 class="font-semibold text-gray-800 mb-4">🔐 Para Administradores</h3>
-                    <p class="text-gray-600 mb-4">Se você é o organizador do evento, faça login com suas credenciais:</p>
-                    <button onclick="showSection('login')" class="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                        🚀 Fazer Login
-                    </button>
-                </div>
-
-                <div class="pt-6 border-t border-gray-200">
-                    <p class="text-sm text-gray-500">
-                        Precisa criar um novo evento? 
-                        <button onclick="showSection('create')" class="text-blue-600 hover:text-blue-800 font-medium underline">
-                            Clique aqui
-                        </button>
-                    </p>
-                </div>
-            </div>
-        </section>
-
         <!-- Event Site View -->
         <section id="event-site-section" class="hidden">
             <div id="event-site-content">
@@ -644,11 +610,11 @@
         const clienteParam = urlParams.get('cliente');
 
         if (clienteParam) {
-            // Hide main content immediately for guest pages
+            // Hide main content immediately for guest pages (but keep login button visible)
             document.getElementById('main-header').classList.add('guest-loading');
             document.getElementById('main-navigation').classList.add('guest-loading');
             document.getElementById('main-footer').classList.add('guest-loading');
-            document.getElementById('login-btn-container').classList.add('guest-loading');
+            // Don't hide login button for guest pages
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         }
 
@@ -706,7 +672,8 @@
                     custom_url: eventData.customUrl,
                     enable_description: eventData.enableDescription,
                     enable_deadline: eventData.enableDeadline,
-                    enable_max_limit: eventData.enableMaxLimit
+                    enable_max_limit: eventData.enableMaxLimit,
+                    cover_image_url: eventData.coverImageUrl
                 })
                 .select()
                 .single();
@@ -821,7 +788,8 @@
                 customUrl: generateCustomUrl(eventTitle),
                 enableDescription: enableDescription,
                 enableDeadline: enableDeadline,
-                enableMaxLimit: enableMaxLimit
+                enableMaxLimit: enableMaxLimit,
+                coverImageUrl: null
             };
 
             // Enviar para o Supabase
@@ -1783,24 +1751,17 @@
                 // Setup field toggles for create form
                 setupFieldToggles();
                 
-                // Se não tem parâmetro cliente, verificar se é acesso direto ao painel
-                const currentPath = window.location.pathname;
-                const isDirectAccess = currentPath.includes('painel-invitesqr') || currentPath.includes('index.html');
+
                 
-                if (isDirectAccess) {
-                    // Acesso direto ao painel - mostrar página de acesso restrito
-                    showRestrictedAccess();
+                // Check for existing session
+                const session = loadSession();
+                if (session) {
+                    currentUser = session;
+                    currentEvent = session;
+                    loadDashboard();
+                    showSection('dashboard');
                 } else {
-                    // Check for existing session
-                    const session = loadSession();
-                    if (session) {
-                        currentUser = session;
-                        currentEvent = session;
-                        loadDashboard();
-                        showSection('dashboard');
-                    } else {
-                        showSection('home');
-                    }
+                    showSection('home');
                 }
             }
         });
@@ -2074,7 +2035,7 @@
             }
 
             try {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('rsvps')
                     .insert({
                         event_id: currentEvent.id,
@@ -2082,7 +2043,8 @@
                         companion_name: companionName || null,
                         attendance: attendance,
                         guest_count: companionName ? 2 : 1
-                    });
+                    })
+                    .select();
 
                 if (error) {
                     console.error('RSVP error:', error);
@@ -2141,13 +2103,14 @@
             const messageText = document.getElementById('message-text').value;
 
             try {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('messages')
                     .insert({
                         event_id: currentEvent.id,
                         guest_name: guestName,
                         message: messageText
-                    });
+                    })
+                    .select();
 
                 if (error) {
                     console.error('Message error:', error);
@@ -2166,21 +2129,12 @@
             }
         }
 
-        // Show Restricted Access Page
-        function showRestrictedAccess() {
-            // Hide header, navigation and footer for restricted access
-            document.getElementById('main-header').style.display = 'none';
-            document.getElementById('main-navigation').style.display = 'none';
-            document.getElementById('main-footer').style.display = 'none';
-            document.getElementById('login-btn-container').style.display = 'none';
-            
-            showSection('restricted');
-        }
+
 
         // Initialize
         if (!clienteParam) {
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972839bfc40b77da',t:'MTc1NTc1OTMzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729a42b64c577e0',t:'MTc1NTc3NDE3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
