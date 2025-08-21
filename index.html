@@ -758,20 +758,70 @@
 
         // Navigation
         function showSection(section) {
+            console.log('Showing section:', section);
+            
             // Hide all sections
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
             
             // Show selected section
-            document.getElementById(section + '-section').classList.remove('hidden');
+            const targetSection = document.getElementById(section + '-section');
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            } else {
+                console.error('Section not found:', section + '-section');
+                return;
+            }
             
             // Update navigation (only for home and create sections)
             if (section === 'home' || section === 'create') {
                 document.querySelectorAll('[id^="nav-"]').forEach(btn => {
                     btn.className = 'nav-tab';
                 });
-                document.getElementById('nav-' + section).className = 'nav-tab active';
+                const navButton = document.getElementById('nav-' + section);
+                if (navButton) {
+                    navButton.className = 'nav-tab active';
+                }
+            }
+            
+            // Show/hide main navigation and footer based on section
+            const mainNav = document.getElementById('main-navigation');
+            const mainFooter = document.getElementById('main-footer');
+            
+            if (section === 'event-site') {
+                mainNav.style.display = 'none';
+                mainFooter.style.display = 'none';
+            } else {
+                mainNav.style.display = 'block';
+                mainFooter.style.display = 'block';
             }
         }
+
+        // Make all functions globally available
+        window.showSection = showSection;
+        window.copyUrl = copyUrl;
+        window.copyUrlNoCompanion = copyUrlNoCompanion;
+        window.showPasswordSection = showPasswordSection;
+        window.hidePasswordSection = hidePasswordSection;
+        window.logout = logout;
+        window.showMasterAdminLogin = showMasterAdminLogin;
+        window.goBackFromLogin = goBackFromLogin;
+        window.loadMasterDashboard = loadMasterDashboard;
+        window.showEventDetails = showEventDetails;
+        window.hideEventDetails = hideEventDetails;
+        window.changeEventPassword = changeEventPassword;
+        window.copyEventUrlMaster = copyEventUrlMaster;
+        window.downloadEventReport = downloadEventReport;
+        window.deleteEvent = deleteEvent;
+        window.deleteGuest = deleteGuest;
+        window.deleteMessage = deleteMessage;
+        window.copyEventUrl = copyEventUrl;
+        window.copyEventUrlNoCompanion = copyEventUrlNoCompanion;
+        window.downloadGuestReport = downloadGuestReport;
+        window.submitRSVP = submitRSVP;
+        window.editResponse = editResponse;
+        window.submitMessage = submitMessage;
+        window.editMessage = editMessage;
+        window.updateMessage = updateMessage;
 
         // Função para gerar URL personalizada
         function generateCustomUrl(eventTitle) {
@@ -783,8 +833,10 @@
 
         // Função para criar o evento no Supabase
         async function createEvent(eventData) {
+            console.log('Criando evento com dados:', eventData);
+            
             const { data, error } = await supabase
-                .from('events')
+                .from('weddings')
                 .insert({
                     username: eventData.username,
                     password: eventData.password,
@@ -793,7 +845,7 @@
                     event_date: eventData.eventDate,
                     confirmation_deadline: eventData.confirmationDeadline,
                     max_confirmations: eventData.maxConfirmations,
-                    companions_limit: eventData.companionLimit,
+                    companion_limit: eventData.companionLimit,
                     custom_url: eventData.customUrl,
                     enable_description: eventData.enableDescription,
                     enable_deadline: eventData.enableDeadline,
@@ -804,9 +856,11 @@
                 .single();
 
             if (error) {
-                console.error('Supabase error:', error);
+                console.error('Erro do Supabase:', error);
                 throw error;
             }
+            
+            console.log('Evento criado com sucesso:', data);
             return data;
         }
 
@@ -927,9 +981,7 @@
 
             // Enviar para o Supabase
             try {
-                console.log('Enviando dados:', eventData);
                 const createdEvent = await createEvent(eventData);
-                console.log('Evento criado:', createdEvent);
                 
                 // Show success message with working URL
                 const generatedUrl = `https://araujo418.github.io/painel-invitesqr/index.html?cliente=${eventData.customUrl}`;
@@ -973,7 +1025,7 @@
                 
                 alert(errorMessage);
             } finally {
-                createButton.textContent = '✨ Criar Evento';
+                createButton.textContent = 'Criar Evento';
                 createButton.disabled = false;
             }
         });
@@ -998,7 +1050,7 @@
         // Função para login do administrador
         async function loginAdmin(username, password) {
             const { data, error } = await supabase
-                .from('events')
+                .from('weddings')
                 .select('*')
                 .eq('username', username)
                 .eq('password', password)
@@ -1043,7 +1095,7 @@
                 loginError.textContent = 'Usuário ou senha incorretos.';
                 loginError.classList.remove('hidden');
             } finally {
-                loginButton.textContent = '🚀 Acessar Painel';
+                loginButton.textContent = 'Acessar Painel';
                 loginButton.disabled = false;
             }
         });
@@ -1083,7 +1135,7 @@
 
             try {
                 const { error } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .update({ password: newPassword })
                     .eq('id', currentEvent.id);
 
@@ -1099,7 +1151,7 @@
                 console.error('Error changing password:', error);
                 alert('Erro ao alterar senha. Tente novamente.');
             } finally {
-                changeBtn.textContent = '✅ Alterar Senha';
+                changeBtn.textContent = 'Alterar Senha';
                 changeBtn.disabled = false;
             }
         });
@@ -1134,7 +1186,7 @@
                 masterLoginError.textContent = error.message;
                 masterLoginError.classList.remove('hidden');
             } finally {
-                masterLoginButton.textContent = '👑 Acessar';
+                masterLoginButton.textContent = 'Acessar';
                 masterLoginButton.disabled = false;
             }
         });
@@ -1144,7 +1196,7 @@
             try {
                 // Get all events
                 const { data: events } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .select('*')
                     .order('created_at', { ascending: false });
 
@@ -1237,7 +1289,7 @@
 
             try {
                 const { error } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .update({ password: newPassword })
                     .eq('id', eventId);
 
@@ -1265,7 +1317,7 @@
             try {
                 // Get event details
                 const { data: event } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .select('*')
                     .eq('id', eventId)
                     .single();
@@ -1516,7 +1568,7 @@
                 await supabase.from('rsvps').delete().eq('wedding_id', eventId);
                 
                 const { error } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .delete()
                     .eq('id', eventId);
 
@@ -1571,7 +1623,7 @@
             try {
                 // Get event details
                 const { data: event } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .select('*')
                     .eq('id', eventId)
                     .single();
@@ -2267,8 +2319,6 @@
                 // Setup field toggles for create form
                 setupFieldToggles();
                 
-
-                
                 // Check for existing session
                 const session = loadSession();
                 if (session) {
@@ -2287,7 +2337,7 @@
             try {
                 console.log('Testing database connection...');
                 const { data, error } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .select('count')
                     .limit(1);
 
@@ -2318,7 +2368,7 @@
                 }
 
                 const { data: event, error } = await supabase
-                    .from('events')
+                    .from('weddings')
                     .select('*')
                     .eq('custom_url', customUrl)
                     .single();
@@ -2339,6 +2389,10 @@
                 }
 
                 currentEvent = event;
+                
+                // Check for existing user response
+                await checkExistingResponse();
+                
                 renderEventSite();
                 showSection('event-site');
 
@@ -2476,6 +2530,308 @@
             }
         }
 
+        // Check for existing user response
+        async function checkExistingResponse() {
+            const guestName = localStorage.getItem(`guest_${currentEvent.id}`);
+            if (!guestName) return;
+
+            try {
+                const { data: response } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', currentEvent.id)
+                    .eq('guest_name', guestName)
+                    .single();
+
+                if (response) {
+                    userResponse = response;
+                }
+            } catch (error) {
+                console.log('No existing response found');
+            }
+        }
+
+        // Render RSVP Section
+        async function renderRSVPSection(isDeadlinePassed, allowCompanion) {
+            const container = document.getElementById('rsvp-container');
+            
+            if (userResponse) {
+                // Show response status
+                const statusMessage = userResponse.attendance ? 
+                    `✅ Você confirmou presença${userResponse.companion_name ? ` junto com ${userResponse.companion_name}` : ''}!` :
+                    '❌ Você informou que não poderá comparecer.';
+                
+                container.innerHTML = `
+                    <div class="response-status">
+                        <h3 class="text-2xl font-playfair font-semibold mb-2">Obrigado pela sua confirmação! ✨</h3>
+                        <p class="text-lg mb-4">${statusMessage}</p>
+                        <button onclick="editResponse()" class="edit-response-btn">
+                            ✏️ Editar resposta
+                        </button>
+                    </div>
+                `;
+            } else if (!isDeadlinePassed) {
+                // Show RSVP form
+                const hasDeadline = currentEvent.enable_deadline && currentEvent.confirmation_deadline;
+                
+                container.innerHTML = `
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-blue-100">
+                        <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">📝 Confirmação de Presença</h3>
+                        ${hasDeadline ? `<p class="text-lg text-gray-600 mb-6">⏰ Confirme até ${formatDate(currentEvent.confirmation_deadline)}</p>` : ''}
+                        
+                        <form id="rsvp-form" class="space-y-6">
+                            <div>
+                                <label class="block text-lg font-medium text-gray-700 mb-3">Seu nome completo *</label>
+                                <input type="text" id="guest-name" required placeholder="Digite seu nome completo" class="w-full premium-input text-lg p-4 rounded-xl">
+                            </div>
+
+                            ${allowCompanion && currentEvent.companion_limit > 0 ? `
+                            <div>
+                                <label class="block text-lg font-medium text-gray-700 mb-3">Nome do acompanhante (opcional)</label>
+                                <input type="text" id="companion-name" placeholder="Digite o nome do seu acompanhante" class="w-full premium-input text-lg p-4 rounded-xl">
+                                <p class="text-sm text-gray-500 mt-2">Máximo ${currentEvent.companion_limit} acompanhante${currentEvent.companion_limit > 1 ? 's' : ''} por convidado</p>
+                            </div>
+                            ` : ''}
+
+                            <div class="text-center">
+                                <p class="text-lg font-medium text-gray-700 mb-4">Você poderá comparecer ao evento?</p>
+                                <div class="flex gap-4 justify-center">
+                                    <button type="button" onclick="submitRSVP(true)" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                                        ✅ Sim, estarei presente!
+                                    </button>
+                                    <button type="button" onclick="submitRSVP(false)" class="bg-gradient-to-r from-red-500 to-rose-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                                        ❌ Não poderei comparecer
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            }
+        }
+
+        // Submit RSVP
+        async function submitRSVP(attendance) {
+            const guestName = document.getElementById('guest-name').value.trim();
+            const companionName = document.getElementById('companion-name')?.value.trim() || null;
+
+            if (!guestName) {
+                alert('Por favor, digite seu nome completo.');
+                return;
+            }
+
+            try {
+                // Check if max limit is reached (only for confirmations)
+                if (attendance && currentEvent.enable_max_limit && currentEvent.max_confirmations) {
+                    const { data: confirmedRsvps } = await supabase
+                        .from('rsvps')
+                        .select('*')
+                        .eq('wedding_id', currentEvent.id)
+                        .eq('attendance', true);
+
+                    const confirmedCount = confirmedRsvps ? confirmedRsvps.length : 0;
+                    if (confirmedCount >= currentEvent.max_confirmations) {
+                        alert('Desculpe, o limite máximo de confirmações foi atingido.');
+                        return;
+                    }
+                }
+
+                const { data, error } = await supabase
+                    .from('rsvps')
+                    .insert({
+                        wedding_id: currentEvent.id,
+                        guest_name: guestName,
+                        companion_name: companionName,
+                        attendance: attendance
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                userResponse = data;
+                localStorage.setItem(`guest_${currentEvent.id}`, guestName);
+
+                // Re-render RSVP section
+                renderRSVPSection(false, true);
+
+                alert(attendance ? '🎉 Obrigado! Sua presença foi confirmada!' : '😔 Obrigado por nos informar. Sentiremos sua falta!');
+
+            } catch (error) {
+                console.error('Error submitting RSVP:', error);
+                alert('Erro ao enviar confirmação. Tente novamente.');
+            }
+        }
+
+        // Edit Response
+        function editResponse() {
+            userResponse = null;
+            localStorage.removeItem(`guest_${currentEvent.id}`);
+            renderRSVPSection(false, true);
+        }
+
+        // Render Message Section
+        function renderMessageSection() {
+            const container = document.getElementById('message-container');
+            
+            if (userResponse && userResponse.attendance) {
+                // Show message form for confirmed guests
+                container.innerHTML = `
+                    <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">💌 Deixe uma mensagem especial</h3>
+                    <p class="text-lg text-gray-600 mb-6">Compartilhe seus sentimentos e expectativas para este momento especial!</p>
+                    
+                    ${userResponse.message ? `
+                        <div class="bg-white rounded-2xl p-6 mb-6 border border-purple-200">
+                            <h4 class="font-semibold text-gray-800 mb-2">Sua mensagem:</h4>
+                            <p class="text-gray-600 mb-4">"${userResponse.message}"</p>
+                            <button onclick="editMessage()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                                ✏️ Editar mensagem
+                            </button>
+                        </div>
+                    ` : `
+                        <form id="message-form" class="space-y-4">
+                            <textarea id="message-text" placeholder="Digite sua mensagem aqui..." class="w-full premium-input text-lg p-4 rounded-xl h-32 resize-none"></textarea>
+                            <div class="text-center">
+                                <button type="button" onclick="submitMessage()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-2xl text-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl">
+                                    💌 Enviar mensagem
+                                </button>
+                            </div>
+                        </form>
+                    `}
+                `;
+            } else {
+                container.innerHTML = `
+                    <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 text-gray-800">💌 Mensagens especiais</h3>
+                    <p class="text-lg text-gray-600">Confirme sua presença para deixar uma mensagem especial!</p>
+                `;
+            }
+        }
+
+        // Submit Message
+        async function submitMessage() {
+            const messageText = document.getElementById('message-text').value.trim();
+            
+            if (!messageText) {
+                alert('Por favor, digite uma mensagem.');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .update({ message: messageText })
+                    .eq('id', userResponse.id);
+
+                if (error) throw error;
+
+                userResponse.message = messageText;
+                renderMessageSection();
+                
+                // Reload public messages if enabled
+                if (currentEvent.enable_public_wall) {
+                    loadPublicMessages();
+                }
+
+                alert('💌 Mensagem enviada com sucesso!');
+
+            } catch (error) {
+                console.error('Error submitting message:', error);
+                alert('Erro ao enviar mensagem. Tente novamente.');
+            }
+        }
+
+        // Edit Message
+        function editMessage() {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `
+                <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">💌 Editar sua mensagem</h3>
+                
+                <form id="edit-message-form" class="space-y-4">
+                    <textarea id="edit-message-text" class="w-full premium-input text-lg p-4 rounded-xl h-32 resize-none">${userResponse.message}</textarea>
+                    <div class="text-center space-x-4">
+                        <button type="button" onclick="updateMessage()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-2xl font-semibold hover:from-purple-600 hover:to-pink-600">
+                            ✅ Salvar alterações
+                        </button>
+                        <button type="button" onclick="renderMessageSection()" class="bg-gray-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-gray-600">
+                            ❌ Cancelar
+                        </button>
+                    </div>
+                </form>
+            `;
+        }
+
+        // Update Message
+        async function updateMessage() {
+            const messageText = document.getElementById('edit-message-text').value.trim();
+            
+            if (!messageText) {
+                alert('Por favor, digite uma mensagem.');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .update({ message: messageText })
+                    .eq('id', userResponse.id);
+
+                if (error) throw error;
+
+                userResponse.message = messageText;
+                renderMessageSection();
+                
+                // Reload public messages if enabled
+                if (currentEvent.enable_public_wall) {
+                    loadPublicMessages();
+                }
+
+                alert('💌 Mensagem atualizada com sucesso!');
+
+            } catch (error) {
+                console.error('Error updating message:', error);
+                alert('Erro ao atualizar mensagem. Tente novamente.');
+            }
+        }
+
+        // Load Public Messages
+        async function loadPublicMessages() {
+            try {
+                const { data: messages } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', currentEvent.id)
+                    .eq('attendance', true)
+                    .not('message', 'is', null)
+                    .neq('message', '')
+                    .order('created_at', { ascending: false });
+
+                const messagesList = document.getElementById('public-messages-list');
+                
+                if (messages && messages.length > 0) {
+                    messagesList.innerHTML = messages.map(msg => `
+                        <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="font-semibold text-gray-800 text-lg">${msg.guest_name}</h4>
+                                <span class="text-sm text-gray-500">${formatDate(msg.created_at)}</span>
+                            </div>
+                            <p class="text-gray-600 leading-relaxed">"${msg.message}"</p>
+                        </div>
+                    `).join('');
+                } else {
+                    messagesList.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="text-6xl mb-4">💌</div>
+                            <p class="text-xl text-gray-500">Ainda não há mensagens no mural</p>
+                            <p class="text-gray-400 mt-2">Seja o primeiro a deixar uma mensagem especial!</p>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Error loading public messages:', error);
+            }
+        }
+
         // Render RSVP Section
         async function renderRSVPSection(isDeadlinePassed, allowCompanion) {
             const container = document.getElementById('rsvp-container');
@@ -2501,539 +2857,5 @@
                 
                 container.innerHTML = `
                     <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-blue-100">
-                        <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Confirma Presença?</h3>
-                        ${hasDeadline ? `<p class="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">⏰ Prazo até: ${formatDate(currentEvent.confirmation_deadline)}</p>` : ''}
-                        
-                        <form id="rsvp-form" class="space-y-4 sm:space-y-6">
-                            <!-- Confirmação SIM/NÃO -->
-                            <div class="flex justify-center gap-8 sm:gap-12 mb-6 sm:mb-8">
-                                <label class="flex items-center gap-2 sm:gap-3 cursor-pointer">
-                                    <input type="radio" name="attendance" value="yes" id="attendance-yes" class="w-5 h-5 sm:w-6 sm:h-6 text-green-500">
-                                    <span class="text-xl sm:text-2xl font-semibold text-gray-800">SIM</span>
-                                </label>
-                                <label class="flex items-center gap-2 sm:gap-3 cursor-pointer">
-                                    <input type="radio" name="attendance" value="no" id="attendance-no" class="w-5 h-5 sm:w-6 sm:h-6 text-red-500">
-                                    <span class="text-xl sm:text-2xl font-semibold text-gray-800">NÃO</span>
-                                </label>
-                            </div>
-                            
-                            <!-- Campos que aparecem quando marca SIM -->
-                            <div id="yes-fields" class="hidden space-y-4 sm:space-y-6">
-                                <div>
-                                    <input type="text" id="guest-name" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
-                                </div>
-                                
-                                ${(allowCompanion && currentEvent.companions_limit > 0) ? `
-                                <div class="flex items-center gap-3 sm:gap-4 justify-center">
-                                    <input type="checkbox" id="has-companion" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 rounded focus:ring-blue-500">
-                                    <label for="has-companion" class="text-gray-700 text-base sm:text-lg">Adicionar acompanhante ${currentEvent.companions_limit > 1 ? `(máx. ${currentEvent.companions_limit})` : ''}</label>
-                                </div>
-                                
-                                <div id="companion-field" class="hidden space-y-3">
-                                    ${Array.from({length: currentEvent.companions_limit}, (_, i) => `
-                                        <input type="text" id="companion-name-${i+1}" placeholder="Nome do acompanhante ${i+1}" class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg companion-input" ${i > 0 ? 'style="display:none"' : ''}>
-                                    `).join('')}
-                                    ${currentEvent.companions_limit > 1 ? `
-                                    <button type="button" id="add-companion-btn" class="text-blue-500 hover:text-blue-700 text-sm" style="display:none">
-                                        + Adicionar outro acompanhante
-                                    </button>
-                                    ` : ''}
-                                </div>
-                                ` : ''}
-                            </div>
-                            
-                            <!-- Campos que aparecem quando marca NÃO -->
-                            <div id="no-fields" class="hidden space-y-4 sm:space-y-6">
-                                <div>
-                                    <input type="text" id="guest-name-no" placeholder="Seu nome completo" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none text-base sm:text-lg">
-                                </div>
-                            </div>
-                            
-                            <div class="flex justify-center">
-                                <button type="submit" id="submit-rsvp" class="bg-gradient-to-r from-purple-500 to-blue-500 hover:shadow-xl text-white px-8 sm:px-12 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-300 disabled:opacity-50" disabled>
-                                    📝 Confirmar Resposta
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                `;
-
-                // Add event listeners for RSVP form
-                setupRSVPEventListeners(allowCompanion);
-            }
-        }
-
-        // Setup RSVP Event Listeners
-        function setupRSVPEventListeners(allowCompanion) {
-            // Radio button listeners
-            document.getElementById('attendance-yes').addEventListener('change', function() {
-                if (this.checked) {
-                    document.getElementById('yes-fields').classList.remove('hidden');
-                    document.getElementById('no-fields').classList.add('hidden');
-                    document.getElementById('submit-rsvp').disabled = false;
-                    document.getElementById('guest-name').required = true;
-                    document.getElementById('guest-name-no').required = false;
-                }
-            });
-            
-            document.getElementById('attendance-no').addEventListener('change', function() {
-                if (this.checked) {
-                    document.getElementById('no-fields').classList.remove('hidden');
-                    document.getElementById('yes-fields').classList.add('hidden');
-                    document.getElementById('submit-rsvp').disabled = false;
-                    document.getElementById('guest-name-no').required = true;
-                    document.getElementById('guest-name').required = false;
-                }
-            });
-            
-            // Companion checkbox listener (only if companions are allowed)
-            if (allowCompanion && currentEvent.companions_limit > 0) {
-                document.getElementById('has-companion').addEventListener('change', function() {
-                    const companionField = document.getElementById('companion-field');
-                    if (this.checked) {
-                        companionField.classList.remove('hidden');
-                        document.getElementById('companion-name-1').required = true;
-                        
-                        // Show add button if multiple companions allowed
-                        if (currentEvent.companions_limit > 1) {
-                            document.getElementById('add-companion-btn').style.display = 'block';
-                        }
-                    } else {
-                        companionField.classList.add('hidden');
-                        // Clear all companion fields
-                        for (let i = 1; i <= currentEvent.companions_limit; i++) {
-                            const field = document.getElementById(`companion-name-${i}`);
-                            if (field) {
-                                field.required = false;
-                                field.value = '';
-                                if (i > 1) field.style.display = 'none';
-                            }
-                        }
-                        if (currentEvent.companions_limit > 1) {
-                            document.getElementById('add-companion-btn').style.display = 'none';
-                        }
-                    }
-                });
-
-                // Add companion button listener
-                if (currentEvent.companions_limit > 1) {
-                    document.getElementById('add-companion-btn').addEventListener('click', function() {
-                        for (let i = 2; i <= currentEvent.companions_limit; i++) {
-                            const field = document.getElementById(`companion-name-${i}`);
-                            if (field && field.style.display === 'none') {
-                                field.style.display = 'block';
-                                break;
-                            }
-                        }
-                    });
-                }
-            }
-            
-            // Form submit listener
-            document.getElementById('rsvp-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const attendanceYes = document.getElementById('attendance-yes').checked;
-                const attendanceNo = document.getElementById('attendance-no').checked;
-                
-                if (attendanceYes) {
-                    submitRSVP(true);
-                } else if (attendanceNo) {
-                    submitRSVP(false);
-                }
-            });
-        }
-
-        // Render Message Section
-        function renderMessageSection() {
-            const container = document.getElementById('message-container');
-            
-            if (userResponse) {
-                // User has responded, show message form with pre-filled name
-                const displayName = userResponse.companion_name ? 
-                    `${userResponse.guest_name} e ${userResponse.companion_name}` : 
-                    userResponse.guest_name;
-                
-                container.innerHTML = `
-                    <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800">Deixe uma Mensagem</h3>
-                    <form id="message-form" class="space-y-4 sm:space-y-6">
-                        <div class="bg-white rounded-xl p-4 border">
-                            <p class="text-gray-700 font-medium">Mensagem de: <span class="text-purple-600">${displayName}</span></p>
-                        </div>
-                        <div class="relative">
-                            <textarea id="message-text" placeholder="Sua mensagem especial... 😊" required class="w-full px-4 sm:px-6 py-3 sm:py-4 premium-input rounded-xl focus:outline-none h-24 sm:h-32 text-base sm:text-lg resize-none"></textarea>
-                            <button type="button" onclick="toggleEmojiPicker('message-text')" class="emoji-toggle-btn absolute top-3 right-3 bg-gray-100 hover:bg-gray-200 rounded-lg p-2 text-lg transition-colors">
-                                😊
-                            </button>
-                        </div>
-                        <div class="text-center">
-                            <button type="submit" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:shadow-xl text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-300">
-                                💌 Enviar Mensagem
-                            </button>
-                        </div>
-                    </form>
-                `;
-            } else {
-                // User hasn't responded yet, hide message section completely
-                container.style.display = 'none';
-            }
-
-            // Setup message form if user has responded
-            if (userResponse) {
-                setTimeout(() => {
-                    createEmojiPicker('message-text');
-                    document.getElementById('message-form').addEventListener('submit', submitMessage);
-                }, 100);
-            }
-        }
-
-        // Submit RSVP
-        async function submitRSVP(attendance) {
-            let guestName, companionNames = [];
-            
-            if (attendance) {
-                guestName = document.getElementById('guest-name').value;
-                
-                // Collect companion names
-                if (currentEvent.companions_limit > 0) {
-                    for (let i = 1; i <= currentEvent.companions_limit; i++) {
-                        const field = document.getElementById(`companion-name-${i}`);
-                        if (field && field.value.trim()) {
-                            companionNames.push(field.value.trim());
-                        }
-                    }
-                }
-            } else {
-                guestName = document.getElementById('guest-name-no').value;
-            }
-
-            if (!guestName) {
-                alert('Por favor, digite seu nome');
-                return;
-            }
-
-            // Check if deadline has passed (only if deadline is enabled)
-            if (currentEvent.enable_deadline && currentEvent.confirmation_deadline) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const deadline = new Date(currentEvent.confirmation_deadline);
-                deadline.setHours(23, 59, 59, 999);
-                if (today > deadline) {
-                    alert('O prazo para confirmação já passou.');
-                    return;
-                }
-            }
-
-            // Check if event is full (only for confirmations and if limit is enabled)
-            if (attendance && currentEvent.enable_max_limit && currentEvent.max_confirmations) {
-                try {
-                    console.log('Checking capacity for event ID:', currentEvent.id);
-                    
-                    const { data: confirmedRsvps, error: checkError } = await supabase
-                        .from('rsvps')
-                        .select('id, attendance')
-                        .eq('wedding_id', currentEvent.id)
-                        .eq('attendance', true);
-
-                    console.log('Capacity check result:', { confirmedRsvps, checkError });
-
-                    if (checkError) {
-                        console.error('Error checking capacity:', checkError);
-                        alert(`Erro ao verificar capacidade: ${checkError.message}`);
-                        return;
-                    }
-
-                    const currentConfirmed = confirmedRsvps ? confirmedRsvps.length : 0;
-                    console.log(`Current confirmed: ${currentConfirmed}, Max allowed: ${currentEvent.max_confirmations}`);
-
-                    if (currentConfirmed >= currentEvent.max_confirmations) {
-                        alert('Desculpe, o evento já atingiu o limite máximo de confirmações.');
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error checking capacity:', error);
-                    alert(`Erro ao verificar capacidade: ${error.message}`);
-                    return;
-                }
-            }
-
-            try {
-                console.log('Submitting RSVP with data:', {
-                    wedding_id: currentEvent.id,
-                    guest_name: guestName,
-                    companion_name: companionName || null,
-                    attendance: attendance,
-                    message: null
-                });
-
-                const { data, error } = await supabase
-                    .from('rsvps')
-                    .insert({
-                        wedding_id: currentEvent.id,
-                        guest_name: guestName,
-                        companion_names: companionNames.length > 0 ? companionNames : null,
-                        attendance: attendance,
-                        message: null
-                    })
-                    .select();
-
-                if (error) {
-                    console.error('RSVP error details:', error);
-                    alert(`Erro ao confirmar presença: ${error.message || 'Erro desconhecido'}`);
-                    return;
-                }
-
-                console.log('RSVP submitted successfully:', data);
-                
-                // Store user response
-                userResponse = data[0];
-                
-                alert(attendance ? 'Presença confirmada! Obrigado!' : 'Obrigado por nos avisar!');
-                
-                // Re-render sections to show updated state
-                const urlParams = new URLSearchParams(window.location.search);
-                const allowCompanion = urlParams.get('companion') !== 'no';
-                renderRSVPSection(false, allowCompanion);
-                renderMessageSection();
-
-            } catch (error) {
-                console.error('Error submitting RSVP:', error);
-                alert('Erro de conexão. Verifique sua internet e tente novamente.');
-            }
-        }
-
-        // Load Public Messages for Event Site
-        async function loadPublicMessages() {
-            try {
-                console.log('Loading messages for event ID:', currentEvent.id);
-                
-                const { data: messages, error } = await supabase
-                    .from('rsvps')
-                    .select('id, guest_name, message, created_at')
-                    .eq('wedding_id', currentEvent.id)
-                    .not('message', 'is', null)
-                    .neq('message', '')
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                console.log('Messages loaded:', { messages, error });
-
-                const messagesList = document.getElementById('public-messages-list');
-                messagesList.innerHTML = '';
-
-                if (error) {
-                    console.error('Error loading messages:', error);
-                    messagesList.innerHTML = '<p class="text-center text-gray-500 py-8">Erro ao carregar mensagens</p>';
-                    return;
-                }
-
-                if (messages && messages.length > 0) {
-                    messages.forEach(message => {
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = 'bg-white rounded-xl p-4 shadow-sm';
-                        messageDiv.innerHTML = `
-                            <div class="flex justify-between items-start mb-2">
-                                <h4 class="font-semibold text-gray-800">${message.guest_name}</h4>
-                                <span class="text-sm text-gray-500">${formatDate(message.created_at)}</span>
-                            </div>
-                            <p class="text-gray-600">${message.message}</p>
-                        `;
-                        messagesList.appendChild(messageDiv);
-                    });
-                } else {
-                    messagesList.innerHTML = '<p class="text-center text-gray-500 py-8">Seja o primeiro a deixar uma mensagem! 💕</p>';
-                }
-
-            } catch (error) {
-                console.error('Error loading public messages:', error);
-                const messagesList = document.getElementById('public-messages-list');
-                messagesList.innerHTML = '<p class="text-center text-gray-500 py-8">Erro ao carregar mensagens</p>';
-            }
-        }
-
-        // Submit Message
-        async function submitMessage(e) {
-            e.preventDefault();
-            
-            const messageText = document.getElementById('message-text').value;
-
-            if (!messageText) {
-                alert('Por favor, escreva uma mensagem');
-                return;
-            }
-
-            if (!userResponse) {
-                alert('Você precisa confirmar sua presença primeiro');
-                return;
-            }
-
-            try {
-                console.log('Submitting message with data:', {
-                    wedding_id: currentEvent.id,
-                    guest_name: userResponse.guest_name,
-                    message: messageText,
-                    attendance: userResponse.attendance,
-                    companion_name: userResponse.companion_name
-                });
-
-                const { data, error } = await supabase
-                    .from('rsvps')
-                    .insert({
-                        wedding_id: currentEvent.id,
-                        guest_name: userResponse.guest_name,
-                        companion_name: userResponse.companion_name,
-                        attendance: userResponse.attendance,
-                        message: messageText
-                    })
-                    .select();
-
-                console.log('Message submission result:', { data, error });
-
-                if (error) {
-                    console.error('Message error details:', error);
-                    alert(`Erro ao enviar mensagem: ${error.message || 'Erro desconhecido'}`);
-                    return;
-                }
-
-                alert('Mensagem enviada com sucesso!');
-                document.getElementById('message-text').value = '';
-                
-                // Reload public messages to show the new one
-                loadPublicMessages();
-
-            } catch (error) {
-                console.error('Error submitting message:', error);
-                alert('Erro de conexão. Verifique sua internet e tente novamente.');
-            }
-        }
-
-        // Emoji Picker Functions
-        const emojis = [
-            '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣',
-            '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
-            '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜',
-            '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
-            '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
-            '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠',
-            '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨',
-            '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥',
-            '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧',
-            '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐',
-            '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑',
-            '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻',
-            '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸',
-            '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '❤️',
-            '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎',
-            '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘',
-            '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️',
-            '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉',
-            '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑',
-            '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴',
-            '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚',
-            '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲',
-            '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕',
-            '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷',
-            '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕',
-            '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️',
-            '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹',
-            '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤',
-            '🏧', '🚾', '♿', '🅿️', '🈳', '🈂️', '🛂', '🛃',
-            '🛄', '🛅', '🚹', '🚺', '🚼', '🚻', '🚮', '🎦',
-            '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖',
-            '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣',
-            '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'
-        ];
-
-        function createEmojiPicker(textareaId) {
-            const textarea = document.getElementById(textareaId);
-            if (!textarea) return;
-
-            // Create emoji picker container
-            const picker = document.createElement('div');
-            picker.className = 'emoji-picker';
-            picker.id = `emoji-picker-${textareaId}`;
-
-            // Create emoji grid
-            const grid = document.createElement('div');
-            grid.className = 'emoji-grid';
-
-            emojis.forEach(emoji => {
-                const btn = document.createElement('button');
-                btn.className = 'emoji-btn';
-                btn.textContent = emoji;
-                btn.type = 'button';
-                btn.onclick = () => {
-                    const cursorPos = textarea.selectionStart;
-                    const textBefore = textarea.value.substring(0, cursorPos);
-                    const textAfter = textarea.value.substring(textarea.selectionEnd);
-                    textarea.value = textBefore + emoji + textAfter;
-                    textarea.focus();
-                    textarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
-                    picker.classList.remove('show');
-                };
-                grid.appendChild(btn);
-            });
-
-            picker.appendChild(grid);
-            textarea.parentNode.style.position = 'relative';
-            textarea.parentNode.appendChild(picker);
-
-            return picker;
-        }
-
-        function toggleEmojiPicker(textareaId) {
-            const picker = document.getElementById(`emoji-picker-${textareaId}`);
-            if (picker) {
-                picker.classList.toggle('show');
-            }
-        }
-
-        // Close emoji picker when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-toggle-btn')) {
-                document.querySelectorAll('.emoji-picker').forEach(picker => {
-                    picker.classList.remove('show');
-                });
-            }
-        });
-
-        // Check User Response on page load
-        async function checkExistingResponse() {
-            // Check localStorage for saved response
-            const savedResponse = localStorage.getItem(`rsvp_${currentEvent.id}`);
-            if (savedResponse) {
-                try {
-                    const parsedResponse = JSON.parse(savedResponse);
-                    // Verify response still exists in database
-                    const { data: dbResponse } = await supabase
-                        .from('rsvps')
-                        .select('*')
-                        .eq('id', parsedResponse.id)
-                        .single();
-                    
-                    if (dbResponse) {
-                        userResponse = dbResponse;
-                        return dbResponse;
-                    } else {
-                        // Response was deleted, clear localStorage
-                        localStorage.removeItem(`rsvp_${currentEvent.id}`);
-                    }
-                } catch (error) {
-                    localStorage.removeItem(`rsvp_${currentEvent.id}`);
-                }
-            }
-            return null;
-        }
-
-        // Edit Response Function
-        function editResponse() {
-            userResponse = null;
-            renderEventSite();
-        }
-
-        // Initialize
-        if (!clienteParam) {
-            showSection('home');
-        }
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a54a8b12177d9',t:'MTc1NTc4MTQwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+                        <h3 class="text-2xl sm:text-3xl font-playfair font-semibold mb-4 sm:mb-6 text-gray-800
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a71ba211c77da',t:'MTc1NTc4MjU5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
