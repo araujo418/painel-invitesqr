@@ -137,9 +137,20 @@
     <header class="bg-white border-b border-gray-200 px-6 py-4" id="main-header">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-semibold text-gray-900">Invites</h1>
-            <button onclick="showLogin()" id="login-btn" class="btn btn-secondary">
-                👤 Login
-            </button>
+            <div id="header-buttons">
+                <button onclick="showLogin()" id="login-btn" class="btn btn-secondary">
+                    👤 Login
+                </button>
+                <button onclick="showDashboard()" id="dashboard-btn" class="btn btn-primary hidden">
+                    📊 Painel
+                </button>
+                <button onclick="showEventSite()" id="back-to-event-btn" class="btn btn-secondary hidden">
+                    ← Voltar ao Evento
+                </button>
+                <button onclick="logout()" id="logout-btn" class="btn btn-danger hidden">
+                    🚪 Sair
+                </button>
+            </div>
         </div>
     </header>
 
@@ -794,8 +805,49 @@ Deus lhe abençoe sempre!</textarea>
         }
 
         function showLogin() {
+            // Check if user is already logged in
+            if (currentUser) {
+                if (clienteParam) {
+                    // In guest mode, if logged in, go to dashboard
+                    showDashboard();
+                } else {
+                    // In admin mode, if logged in, go to dashboard
+                    showDashboard();
+                }
+                return;
+            }
+            
             hideAllSections();
             document.getElementById('login-section').classList.remove('hidden');
+        }
+
+        function updateHeaderButtons() {
+            const loginBtn = document.getElementById('login-btn');
+            const dashboardBtn = document.getElementById('dashboard-btn');
+            const backToEventBtn = document.getElementById('back-to-event-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (currentUser) {
+                // User is logged in
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+                
+                if (clienteParam) {
+                    // Guest mode - show dashboard and back to event buttons
+                    dashboardBtn.classList.remove('hidden');
+                    backToEventBtn.classList.remove('hidden');
+                } else {
+                    // Admin mode - only show dashboard button
+                    dashboardBtn.classList.remove('hidden');
+                    backToEventBtn.classList.add('hidden');
+                }
+            } else {
+                // User is not logged in
+                loginBtn.classList.remove('hidden');
+                dashboardBtn.classList.add('hidden');
+                backToEventBtn.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+            }
         }
 
         function showMasterLogin() {
@@ -858,16 +910,40 @@ Deus lhe abençoe sempre!</textarea>
 
         // Session Management
         function saveSession(data) {
-            localStorage.setItem('eventSession', JSON.stringify(data));
+            // Only save session in admin mode (not guest mode)
+            if (!clienteParam) {
+                localStorage.setItem('eventSession', JSON.stringify(data));
+            }
         }
 
         function loadSession() {
+            // Only load session in admin mode (not guest mode)
+            if (clienteParam) return null;
             const session = localStorage.getItem('eventSession');
             return session ? JSON.parse(session) : null;
         }
 
         function clearSession() {
             localStorage.removeItem('eventSession');
+        }
+
+        // Guest Session Management (separate from admin)
+        function saveGuestSession(data) {
+            if (clienteParam) {
+                localStorage.setItem(`guestSession_${clienteParam}`, JSON.stringify(data));
+            }
+        }
+
+        function loadGuestSession() {
+            if (!clienteParam) return null;
+            const session = localStorage.getItem(`guestSession_${clienteParam}`);
+            return session ? JSON.parse(session) : null;
+        }
+
+        function clearGuestSession() {
+            if (clienteParam) {
+                localStorage.removeItem(`guestSession_${clienteParam}`);
+            }
         }
 
         // Field Toggle Functions
@@ -1148,10 +1224,18 @@ Deus lhe abençoe sempre!</textarea>
 
                 currentEvent = data;
                 currentUser = data;
-                saveSession(data);
+                
+                if (clienteParam) {
+                    // Guest mode - save guest session
+                    saveGuestSession(data);
+                } else {
+                    // Admin mode - save admin session
+                    saveSession(data);
+                }
 
                 await loadDashboard();
                 showDashboard();
+                updateHeaderButtons();
 
             } catch (error) {
                 errorDiv.textContent = 'Usuário ou senha incorretos.';
@@ -1938,7 +2022,12 @@ Deus lhe abençoe sempre!</textarea>
             currentEvent = null;
             currentUser = null;
             isMasterAdmin = false;
-            clearSession();
+            
+            if (clienteParam) {
+                clearGuestSession();
+            } else {
+                clearSession();
+            }
             
             if (countdownInterval) {
                 clearInterval(countdownInterval);
@@ -1946,9 +2035,11 @@ Deus lhe abençoe sempre!</textarea>
             }
             
             hidePasswordManager();
+            updateHeaderButtons();
             
             if (clienteParam) {
-                showEventSite();
+                // Reload event site to get fresh event data
+                loadEventSite(clienteParam);
             } else {
                 showHome();
             }
@@ -1969,9 +2060,17 @@ Deus lhe abençoe sempre!</textarea>
                 }
 
                 currentEvent = event;
+                
+                // Check for existing guest session
+                const guestSession = loadGuestSession();
+                if (guestSession && guestSession.id === event.id) {
+                    currentUser = guestSession;
+                }
+                
                 await checkExistingResponse();
                 renderEventSite();
                 showEventSite();
+                updateHeaderButtons();
 
             } catch (error) {
                 console.error('Error loading event site:', error);
@@ -2765,12 +2864,14 @@ Deus lhe abençoe sempre!</textarea>
                     currentUser = session;
                     loadDashboard();
                     showDashboard();
+                    updateHeaderButtons();
                 } else {
                     showHome();
+                    updateHeaderButtons();
                 }
             }
         });
 
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972ac465c24a77e0',t:'MTc1NTc4NTk4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972ad65974a577d9',t:'MTc1NTc4NjcyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
