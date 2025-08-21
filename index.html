@@ -654,6 +654,7 @@
         let isMasterAdmin = false;
         let countdownInterval = null;
         let userResponse = null;
+        let companionCount = 0;
 
         // Check URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -1738,12 +1739,21 @@
             }
         }
 
-        function renderRSVPSection(allowCompanion) {
+        function renderRSVPSection(allowCompanion, isEditing = false) {
             const container = document.getElementById('rsvp-container');
             
-            if (userResponse) {
+            if (userResponse && !isEditing) {
+                const companions = [];
+                if (userResponse.companion_name) {
+                    const companionNames = userResponse.companion_name.split(',').map(name => name.trim()).filter(name => name);
+                    companions.push(...companionNames);
+                }
+                
+                const companionText = companions.length > 0 ? 
+                    ` junto com ${companions.join(', ')}` : '';
+                
                 const statusMessage = userResponse.attendance ? 
-                    `✅ Você confirmou presença${userResponse.companion_name ? ` junto com ${userResponse.companion_name}` : ''}!` :
+                    `✅ Você confirmou presença${companionText}!` :
                     '❌ Você informou que não poderá comparecer.';
                 
                 container.innerHTML = `
@@ -1757,22 +1767,36 @@
                 `;
             } else {
                 const hasDeadline = currentEvent.enable_deadline && currentEvent.confirmation_deadline;
+                const existingName = isEditing && userResponse ? userResponse.guest_name : '';
+                const existingCompanions = [];
+                if (isEditing && userResponse && userResponse.companion_name) {
+                    const companionNames = userResponse.companion_name.split(',').map(name => name.trim()).filter(name => name);
+                    existingCompanions.push(...companionNames);
+                }
+                const existingAttendance = isEditing && userResponse ? userResponse.attendance : null;
                 
                 container.innerHTML = `
                     <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 mb-8 border border-blue-100">
-                        <h3 class="text-3xl font-playfair font-semibold mb-6 text-gray-800">📝 Confirmação de Presença</h3>
+                        <h3 class="text-3xl font-playfair font-semibold mb-6 text-gray-800">📝 ${isEditing ? 'Editar ' : ''}Confirmação de Presença</h3>
                         ${hasDeadline ? `<p class="text-lg text-gray-600 mb-6">⏰ Confirme até ${formatDate(currentEvent.confirmation_deadline)}</p>` : ''}
                         
                         <form id="rsvp-form" class="space-y-6">
                             <div>
                                 <label class="block text-lg font-medium text-gray-700 mb-3">Seu nome completo *</label>
-                                <input type="text" id="guest-name" required placeholder="Digite seu nome completo" class="input text-lg p-4 rounded-xl">
+                                <input type="text" id="guest-name" required placeholder="Digite seu nome completo" value="${existingName}" class="input text-lg p-4 rounded-xl">
                             </div>
 
                             ${allowCompanion && currentEvent.companion_limit > 0 ? `
-                            <div>
-                                <label class="block text-lg font-medium text-gray-700 mb-3">Nome do acompanhante (opcional)</label>
-                                <input type="text" id="companion-name" placeholder="Digite o nome do seu acompanhante" class="input text-lg p-4 rounded-xl">
+                            <div id="companions-section">
+                                <div class="flex justify-between items-center mb-3">
+                                    <label class="block text-lg font-medium text-gray-700">Acompanhantes (opcional)</label>
+                                    <button type="button" onclick="addCompanionField()" id="add-companion-btn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 text-sm font-medium">
+                                        ➕ Adicionar Acompanhante
+                                    </button>
+                                </div>
+                                <div id="companion-fields" class="space-y-3">
+                                    <!-- Companion fields will be added here -->
+                                </div>
                                 <p class="text-sm text-gray-500 mt-2">Máximo ${currentEvent.companion_limit} acompanhante${currentEvent.companion_limit > 1 ? 's' : ''} por convidado</p>
                             </div>
                             ` : ''}
@@ -1780,17 +1804,35 @@
                             <div class="text-center">
                                 <p class="text-lg font-medium text-gray-700 mb-4">Você poderá comparecer ao evento?</p>
                                 <div class="flex gap-4 justify-center flex-wrap">
-                                    <button type="button" onclick="submitRSVP(true)" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                                    <button type="button" onclick="submitRSVP(true)" id="btn-yes" class="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${existingAttendance === true ? 'ring-4 ring-green-300' : ''}">
                                         ✅ Sim, estarei presente!
                                     </button>
-                                    <button type="button" onclick="submitRSVP(false)" class="bg-gradient-to-r from-red-500 to-rose-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                                    <button type="button" onclick="submitRSVP(false)" id="btn-no" class="bg-gradient-to-r from-red-500 to-rose-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-red-600 hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${existingAttendance === false ? 'ring-4 ring-red-300' : ''}">
                                         ❌ Não poderei comparecer
                                     </button>
                                 </div>
                             </div>
+
+                            ${isEditing ? `
+                            <div class="text-center">
+                                <button type="button" onclick="cancelEdit()" class="bg-gray-500 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-gray-600">
+                                    ❌ Cancelar
+                                </button>
+                            </div>
+                            ` : ''}
                         </form>
                     </div>
                 `;
+
+                // Add existing companion fields if editing
+                if (isEditing && allowCompanion && currentEvent.companion_limit > 0) {
+                    setTimeout(() => {
+                        existingCompanions.forEach(companionName => {
+                            addCompanionField(companionName);
+                        });
+                        updateAddCompanionButton();
+                    }, 100);
+                }
             }
         }
 
@@ -1831,10 +1873,73 @@
             }
         }
 
+        // Companion Management Functions
+        function addCompanionField(existingName = '') {
+            if (companionCount >= currentEvent.companion_limit) {
+                alert(`Máximo de ${currentEvent.companion_limit} acompanhante${currentEvent.companion_limit > 1 ? 's' : ''} permitido${currentEvent.companion_limit > 1 ? 's' : ''}.`);
+                return;
+            }
+
+            companionCount++;
+            const companionFields = document.getElementById('companion-fields');
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'flex gap-2 items-center';
+            fieldDiv.id = `companion-field-${companionCount}`;
+            
+            fieldDiv.innerHTML = `
+                <input type="text" 
+                       id="companion-${companionCount}" 
+                       placeholder="Nome do acompanhante ${companionCount}" 
+                       value="${existingName}"
+                       class="input text-lg p-3 rounded-xl flex-1">
+                <button type="button" 
+                        onclick="removeCompanionField(${companionCount})" 
+                        class="bg-red-500 text-white px-3 py-3 rounded-xl hover:bg-red-600 text-sm">
+                    🗑️
+                </button>
+            `;
+            
+            companionFields.appendChild(fieldDiv);
+            updateAddCompanionButton();
+        }
+
+        function removeCompanionField(fieldId) {
+            const field = document.getElementById(`companion-field-${fieldId}`);
+            if (field) {
+                field.remove();
+                companionCount--;
+                updateAddCompanionButton();
+            }
+        }
+
+        function updateAddCompanionButton() {
+            const addBtn = document.getElementById('add-companion-btn');
+            if (addBtn) {
+                if (companionCount >= currentEvent.companion_limit) {
+                    addBtn.style.display = 'none';
+                } else {
+                    addBtn.style.display = 'block';
+                }
+            }
+        }
+
+        function getCompanionNames() {
+            const companions = [];
+            for (let i = 1; i <= companionCount; i++) {
+                const field = document.getElementById(`companion-${i}`);
+                if (field && field.value.trim()) {
+                    companions.push(field.value.trim());
+                }
+            }
+            return companions;
+        }
+
         // RSVP Functions
         async function submitRSVP(attendance) {
             const guestName = document.getElementById('guest-name').value.trim();
-            const companionName = document.getElementById('companion-name')?.value.trim() || null;
+            const companions = getCompanionNames();
+            const companionName = companions.length > 0 ? companions.join(', ') : null;
 
             if (!guestName) {
                 alert('Por favor, digite seu nome completo.');
@@ -1857,21 +1962,41 @@
                     }
                 }
 
-                const { data, error } = await supabase
-                    .from('rsvps')
-                    .insert({
-                        wedding_id: currentEvent.id,
-                        guest_name: guestName,
-                        companion_name: companionName,
-                        attendance: attendance
-                    })
-                    .select()
-                    .single();
+                if (userResponse) {
+                    // Update existing response
+                    const { data, error } = await supabase
+                        .from('rsvps')
+                        .update({
+                            guest_name: guestName,
+                            companion_name: companionName,
+                            attendance: attendance
+                        })
+                        .eq('id', userResponse.id)
+                        .select()
+                        .single();
 
-                if (error) throw error;
+                    if (error) throw error;
+                    userResponse = data;
+                } else {
+                    // Create new response
+                    const { data, error } = await supabase
+                        .from('rsvps')
+                        .insert({
+                            wedding_id: currentEvent.id,
+                            guest_name: guestName,
+                            companion_name: companionName,
+                            attendance: attendance
+                        })
+                        .select()
+                        .single();
 
-                userResponse = data;
-                localStorage.setItem(`guest_${currentEvent.id}`, guestName);
+                    if (error) throw error;
+                    userResponse = data;
+                    localStorage.setItem(`guest_${currentEvent.id}`, guestName);
+                }
+
+                // Reset companion count
+                companionCount = 0;
 
                 renderRSVPSection(urlParams.get('companion') !== 'no');
                 renderMessageSection();
@@ -1885,9 +2010,14 @@
         }
 
         function editResponse() {
-            userResponse = null;
-            localStorage.removeItem(`guest_${currentEvent.id}`);
-            renderRSVPSection(urlParams.get('companion') !== 'no');
+            companionCount = 0; // Reset companion count
+            renderRSVPSection(urlParams.get('companion') !== 'no', true);
+            renderMessageSection();
+        }
+
+        function cancelEdit() {
+            companionCount = 0; // Reset companion count
+            renderRSVPSection(urlParams.get('companion') !== 'no', false);
             renderMessageSection();
         }
 
@@ -2091,5 +2221,5 @@
         });
 
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a9dc7e18477dd',t:'MTc1NTc4NDQwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972ab98c04fd77dd',t:'MTc1NTc4NTU0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
