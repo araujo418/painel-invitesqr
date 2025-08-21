@@ -672,7 +672,7 @@
                 };
 
                 const { data, error } = await supabase
-                    .from('weddings')
+                    .from('events')
                     .insert(formData)
                     .select()
                     .single();
@@ -731,7 +731,7 @@
 
             try {
                 const { data, error } = await supabase
-                    .from('weddings')
+                    .from('events')
                     .select('*')
                     .eq('username', username)
                     .eq('password', password)
@@ -908,7 +908,7 @@
             try {
                 // Get all events
                 const { data: events } = await supabase
-                    .from('weddings')
+                    .from('events')
                     .select('*')
                     .order('created_at', { ascending: false });
 
@@ -1010,7 +1010,7 @@
 
             try {
                 const { error } = await supabase
-                    .from('weddings')
+                    .from('events')
                     .update({ password: newPassword })
                     .eq('id', currentEvent.id);
 
@@ -1155,7 +1155,7 @@
                 
                 // Delete event
                 const { error } = await supabase
-                    .from('weddings')
+                    .from('events')
                     .delete()
                     .eq('id', eventId);
 
@@ -1195,7 +1195,7 @@
         async function loadEventSite(customUrl) {
             try {
                 const { data: event, error } = await supabase
-                    .from('weddings')
+                    .from('events')
                     .select('*')
                     .eq('custom_url', customUrl)
                     .single();
@@ -1680,5 +1680,5 @@
         });
 
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a8027c08277da',t:'MTc1NTc4MzE4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a8b17325077dd',t:'MTc1NTc4MzYzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
