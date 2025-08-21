@@ -6,6 +6,7 @@
     <title>Invites - Confirmação de Presença</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -137,24 +138,22 @@
             border-bottom: 1px solid rgba(229, 231, 235, 0.8);
         }
 
-        /* Premium styling for guest pages */
-        .premium-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background-size: 200% 200%;
-            animation: gradientShift 8s ease infinite;
-            color: white;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        /* Adjust content spacing for guest pages */
+        .guest-content {
+            padding-top: 80px;
         }
 
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        /* Clean styling for guest pages - same as main site */
+        .premium-card {
+            background: white;
+            color: #374151;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
         }
 
         .premium-input {
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: white;
+            border: 1px solid #d1d5db;
             color: #374151;
         }
 
@@ -353,7 +352,7 @@
 
         <!-- Client Login Section -->
         <section id="login-section" class="p-6 hidden">
-            <div class="max-w-md mx-auto">
+            <div class="max-w-md mx-auto guest-content">
                 <div class="simple-card p-6">
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">Login</h2>
                     <p class="text-sm text-gray-600 mb-6">Acesse seu painel para gerenciar seu evento</p>
@@ -371,12 +370,17 @@
 
                         <div id="loginError" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded border border-red-200"></div>
 
-                        <button type="submit" id="loginButton" class="w-full btn-primary py-3">
-                            Acessar Painel
-                        </button>
+                        <div class="flex gap-3">
+                            <button type="submit" id="loginButton" class="flex-1 btn-primary py-3">
+                                Acessar Painel
+                            </button>
+                            <button type="button" onclick="goBackFromLogin()" id="back-from-login" class="flex-1 btn-secondary py-3">
+                                Voltar
+                            </button>
+                        </div>
                     </form>
 
-                    <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div id="master-admin-access" class="mt-6 pt-4 border-t border-gray-200">
                         <button onclick="showMasterAdminLogin()" class="w-full btn-danger py-2 text-sm">
                             Acesso Master Admin
                         </button>
@@ -387,7 +391,7 @@
 
         <!-- Master Admin Login Section -->
         <section id="master-admin-section" class="p-6 hidden">
-            <div class="max-w-md mx-auto">
+            <div class="max-w-md mx-auto guest-content">
                 <div class="simple-card p-6">
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">Master Admin</h2>
                     <p class="text-sm text-gray-600 mb-6">Acesso administrativo para gerenciar todos os eventos</p>
@@ -529,7 +533,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-900">Lista de Convidados</h3>
                     <button onclick="downloadGuestReport()" class="btn-success text-sm">
-                        Baixar Relatório
+                        📄 Baixar PDF
                     </button>
                 </div>
                 
@@ -1114,7 +1118,7 @@
                                     📋 Link
                                 </button>
                                 <button onclick="downloadEventReport(${event.id}, '${event.title}')" class="bg-purple-500 text-white px-2 py-1 rounded text-xs hover:bg-purple-600">
-                                    📊 CSV
+                                    📄 PDF
                                 </button>
                                 <button onclick="deleteEvent(${event.id}, '${event.title}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">
                                     🗑️ Del
@@ -1165,7 +1169,7 @@
             });
         }
 
-        // Download Event Report (Master Admin)
+        // Download Event Report as PDF (Master Admin)
         async function downloadEventReport(eventId, eventTitle) {
             try {
                 // Get event details
@@ -1182,7 +1186,147 @@
                     .eq('wedding_id', eventId)
                     .order('created_at', { ascending: false });
 
-                // Get messages for this event (from rsvps table)
+                if (!rsvps || rsvps.length === 0) {
+                    alert('Nenhum convidado para exportar neste evento');
+                    return;
+                }
+
+                // Separate confirmed and not confirmed
+                const confirmed = rsvps.filter(r => r.attendance);
+                const notConfirmed = rsvps.filter(r => !r.attendance);
+
+                // Calculate statistics
+                const totalGuests = rsvps.length;
+                const confirmedGuests = confirmed.length;
+                const totalPeople = rsvps.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
+                const confirmedPeople = confirmed.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
+
+                // Create PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Set font to support special characters
+                doc.setFont('helvetica');
+
+                // Header
+                doc.setFontSize(18);
+                doc.setTextColor(40, 40, 40);
+                doc.text('RELATÓRIO COMPLETO DO EVENTO', 105, 20, { align: 'center' });
+
+                // Event info
+                doc.setFontSize(14);
+                doc.setTextColor(60, 60, 60);
+                doc.text(eventTitle, 105, 35, { align: 'center' });
+                doc.text(`Data do Evento: ${formatDate(event.event_date)}`, 105, 45, { align: 'center' });
+
+                // Event details box
+                doc.setFillColor(248, 250, 252);
+                doc.rect(20, 55, 170, 45, 'F');
+                doc.setDrawColor(148, 163, 184);
+                doc.rect(20, 55, 170, 45);
+
+                doc.setFontSize(12);
+                doc.setTextColor(51, 65, 85);
+                doc.text('DETALHES DO EVENTO', 105, 65, { align: 'center' });
+
+                doc.setFontSize(10);
+                doc.setTextColor(60, 60, 60);
+                doc.text(`Usuário: ${event.username}`, 25, 75);
+                doc.text(`Senha: ${event.password}`, 25, 82);
+                doc.text(`Limite Máximo: ${event.max_confirmations || 'Ilimitado'}`, 25, 89);
+                doc.text(`Prazo Confirmação: ${event.confirmation_deadline ? formatDate(event.confirmation_deadline) : 'Sem prazo'}`, 25, 96);
+
+                // Statistics box
+                doc.setFillColor(240, 248, 255);
+                doc.rect(20, 110, 170, 35, 'F');
+                doc.setDrawColor(59, 130, 246);
+                doc.rect(20, 110, 170, 35);
+
+                doc.setFontSize(12);
+                doc.setTextColor(30, 64, 175);
+                doc.text('ESTATÍSTICAS', 105, 120, { align: 'center' });
+
+                doc.setFontSize(10);
+                doc.setTextColor(60, 60, 60);
+                doc.text(`Total de Convidados: ${totalGuests}`, 25, 130);
+                doc.text(`Confirmados: ${confirmedGuests}`, 25, 137);
+                doc.text(`Total de Pessoas: ${totalPeople}`, 110, 130);
+                doc.text(`Pessoas Confirmadas: ${confirmedPeople}`, 110, 137);
+
+                let yPosition = 160;
+
+                // Function to add guest section
+                function addGuestSection(guests, title, color) {
+                    if (guests.length === 0) return yPosition;
+
+                    // Check if we need a new page
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    // Section header
+                    doc.setFillColor(color.bg.r, color.bg.g, color.bg.b);
+                    doc.rect(20, yPosition - 5, 170, 12, 'F');
+                    doc.setDrawColor(color.border.r, color.border.g, color.border.b);
+                    doc.rect(20, yPosition - 5, 170, 12);
+
+                    doc.setFontSize(12);
+                    doc.setTextColor(color.text.r, color.text.g, color.text.b);
+                    doc.text(`${title} (${guests.length})`, 25, yPosition + 2);
+
+                    yPosition += 20;
+
+                    // Guest list
+                    doc.setFontSize(10);
+                    doc.setTextColor(60, 60, 60);
+
+                    guests.forEach(rsvp => {
+                        // Check if we need a new page
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        // Main guest
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`• ${rsvp.guest_name}`, 25, yPosition);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(formatDate(rsvp.created_at), 150, yPosition);
+                        yPosition += 7;
+
+                        // Companion (if exists)
+                        if (rsvp.companion_name) {
+                            doc.setFont('helvetica', 'italic');
+                            doc.setTextColor(100, 100, 100);
+                            doc.text(`    └ ${rsvp.companion_name} (Acompanhante)`, 25, yPosition);
+                            doc.setFont('helvetica', 'normal');
+                            doc.setTextColor(60, 60, 60);
+                            yPosition += 7;
+                        }
+
+                        yPosition += 3; // Extra spacing between entries
+                    });
+
+                    yPosition += 10; // Extra spacing between sections
+                    return yPosition;
+                }
+
+                // Add confirmed guests
+                yPosition = addGuestSection(confirmed, '✓ CONFIRMADOS', {
+                    bg: { r: 240, g: 253, b: 244 },
+                    border: { r: 34, g: 197, b: 94 },
+                    text: { r: 21, g: 128, b: 61 }
+                });
+
+                // Add not confirmed guests
+                yPosition = addGuestSection(notConfirmed, '✗ NÃO CONFIRMADOS', {
+                    bg: { r: 254, g: 242, b: 242 },
+                    border: { r: 239, g: 68, b: 68 },
+                    text: { r: 185, g: 28, b: 28 }
+                });
+
+                // Add messages section if any exist
                 const { data: messages } = await supabase
                     .from('rsvps')
                     .select('*')
@@ -1191,68 +1335,78 @@
                     .neq('message', '')
                     .order('created_at', { ascending: false });
 
-                if (!rsvps || rsvps.length === 0) {
-                    alert('Nenhum convidado para exportar neste evento');
-                    return;
-                }
-
-                // Create comprehensive CSV content
-                let csvContent = `RELATÓRIO COMPLETO DO EVENTO: ${eventTitle}\n`;
-                csvContent += `Data do Evento: ${formatDate(event.event_date)}\n`;
-                csvContent += `Usuário: ${event.username}\n`;
-                csvContent += `Senha: ${event.password}\n`;
-                csvContent += `Limite Máximo: ${event.max_confirmations || 'Ilimitado'}\n`;
-                csvContent += `Prazo Confirmação: ${event.confirmation_deadline ? formatDate(event.confirmation_deadline) : 'Sem prazo'}\n\n`;
-                
-                csvContent += "LISTA DE CONVIDADOS\n";
-                csvContent += "Nome,Acompanhante,Status,Data de Confirmação,Total Pessoas\n";
-                
-                rsvps.forEach(rsvp => {
-                    const status = rsvp.attendance ? 'Confirmado' : 'Não Confirmado';
-                    const companion = rsvp.companion_name || 'Sem acompanhante';
-                    const date = formatDate(rsvp.created_at);
-                    const totalPeople = rsvp.companion_name ? 2 : 1;
-                    
-                    csvContent += `"${rsvp.guest_name}","${companion}","${status}","${date}","${totalPeople}"\n`;
-                });
-
-                // Add statistics
-                const totalGuests = rsvps.length;
-                const confirmedGuests = rsvps.filter(r => r.attendance).length;
-                const totalPeople = rsvps.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
-                const confirmedPeople = rsvps.filter(r => r.attendance).reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
-
-                csvContent += `\nESTATÍSTICAS\n`;
-                csvContent += `Total de Convidados: ${totalGuests}\n`;
-                csvContent += `Confirmados: ${confirmedGuests}\n`;
-                csvContent += `Total de Pessoas: ${totalPeople}\n`;
-                csvContent += `Pessoas Confirmadas: ${confirmedPeople}\n`;
-
-                // Add messages if any
                 if (messages && messages.length > 0) {
-                    csvContent += `\nMENSAGENS DOS CONVIDADOS\n`;
-                    csvContent += "Nome,Mensagem,Data\n";
+                    // Check if we need a new page
+                    if (yPosition > 200) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    // Messages header
+                    doc.setFillColor(252, 245, 255);
+                    doc.rect(20, yPosition - 5, 170, 12, 'F');
+                    doc.setDrawColor(168, 85, 247);
+                    doc.rect(20, yPosition - 5, 170, 12);
+
+                    doc.setFontSize(12);
+                    doc.setTextColor(107, 33, 168);
+                    doc.text(`💌 MENSAGENS DOS CONVIDADOS (${messages.length})`, 25, yPosition + 2);
+
+                    yPosition += 20;
+
+                    doc.setFontSize(9);
+                    doc.setTextColor(60, 60, 60);
+
                     messages.forEach(msg => {
-                        csvContent += `"${msg.guest_name}","${msg.message}","${formatDate(msg.created_at)}"\n`;
+                        // Check if we need a new page
+                        if (yPosition > 260) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        // Message header
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`${msg.guest_name}`, 25, yPosition);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(formatDate(msg.created_at), 150, yPosition);
+                        yPosition += 7;
+
+                        // Message content (wrap text if too long)
+                        const messageLines = doc.splitTextToSize(msg.message, 160);
+                        doc.setTextColor(80, 80, 80);
+                        messageLines.forEach(line => {
+                            if (yPosition > 270) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            doc.text(line, 25, yPosition);
+                            yPosition += 5;
+                        });
+
+                        doc.setTextColor(60, 60, 60);
+                        yPosition += 8; // Extra spacing between messages
                     });
                 }
 
-                // Create and download file
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `relatorio-completo-${eventTitle.replace(/[^a-z0-9]/gi, '-')}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // Footer
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
+                    doc.text(`Relatório Master Admin - Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 105, 295, { align: 'center' });
+                }
 
-                alert('📊 Relatório completo baixado com sucesso!');
+                // Save the PDF
+                const fileName = `relatorio-completo-${eventTitle.replace(/[^a-z0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+
+                alert('📄 Relatório PDF completo gerado com sucesso!');
 
             } catch (error) {
-                console.error('Error downloading event report:', error);
-                alert('Erro ao baixar relatório do evento. Tente novamente.');
+                console.error('Error generating PDF report:', error);
+                alert('Erro ao gerar relatório PDF. Tente novamente.');
             }
         }
 
@@ -1589,21 +1743,70 @@
                 guestList.innerHTML = '';
 
                 if (rsvps && rsvps.length > 0) {
-                    rsvps.forEach(rsvp => {
-                        const row = document.createElement('tr');
-                        row.className = 'border-b hover:bg-gray-50';
-                        row.innerHTML = `
-                            <td class="py-3 px-4">${rsvp.guest_name}</td>
-                            <td class="py-3 px-4">${rsvp.companion_name || '-'}</td>
-                            <td class="py-3 px-4">
-                                <span class="px-2 py-1 rounded-full text-xs ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                    ${rsvp.attendance ? '✅ Confirmado' : '❌ Não Confirmado'}
-                                </span>
+                    // Separate confirmed and not confirmed
+                    const confirmed = rsvps.filter(r => r.attendance);
+                    const notConfirmed = rsvps.filter(r => !r.attendance);
+
+                    // Function to create guest rows
+                    function createGuestRows(guests, isConfirmed) {
+                        guests.forEach(rsvp => {
+                            // Main guest row
+                            const mainRow = document.createElement('tr');
+                            mainRow.className = 'border-b hover:bg-gray-50';
+                            mainRow.innerHTML = `
+                                <td class="py-3 px-4 font-semibold">${rsvp.guest_name}</td>
+                                <td class="py-3 px-4">-</td>
+                                <td class="py-3 px-4">
+                                    <span class="px-2 py-1 rounded-full text-xs ${isConfirmed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${isConfirmed ? '✅ Confirmado' : '❌ Não Confirmado'}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">${formatDate(rsvp.created_at)}</td>
+                            `;
+                            guestList.appendChild(mainRow);
+
+                            // Companion row (if exists)
+                            if (rsvp.companion_name) {
+                                const companionRow = document.createElement('tr');
+                                companionRow.className = 'border-b hover:bg-gray-50 bg-gray-25';
+                                companionRow.innerHTML = `
+                                    <td class="py-2 px-4 pl-8 text-gray-600 italic">${rsvp.companion_name}</td>
+                                    <td class="py-2 px-4 text-sm text-gray-500">Acompanhante</td>
+                                    <td class="py-2 px-4">
+                                        <span class="px-2 py-1 rounded-full text-xs ${isConfirmed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${isConfirmed ? '✅ Confirmado' : '❌ Não Confirmado'}
+                                        </span>
+                                    </td>
+                                    <td class="py-2 px-4 text-sm text-gray-500">${formatDate(rsvp.created_at)}</td>
+                                `;
+                                guestList.appendChild(companionRow);
+                            }
+                        });
+                    }
+
+                    // Add confirmed guests first
+                    if (confirmed.length > 0) {
+                        const sectionRow = document.createElement('tr');
+                        sectionRow.innerHTML = `
+                            <td colspan="4" class="py-3 px-4 bg-green-50 font-bold text-green-800 border-b-2 border-green-200">
+                                ✅ CONFIRMADOS (${confirmed.length})
                             </td>
-                            <td class="py-3 px-4">${formatDate(rsvp.created_at)}</td>
                         `;
-                        guestList.appendChild(row);
-                    });
+                        guestList.appendChild(sectionRow);
+                        createGuestRows(confirmed, true);
+                    }
+
+                    // Add not confirmed guests
+                    if (notConfirmed.length > 0) {
+                        const sectionRow = document.createElement('tr');
+                        sectionRow.innerHTML = `
+                            <td colspan="4" class="py-3 px-4 bg-red-50 font-bold text-red-800 border-b-2 border-red-200">
+                                ❌ NÃO CONFIRMADOS (${notConfirmed.length})
+                            </td>
+                        `;
+                        guestList.appendChild(sectionRow);
+                        createGuestRows(notConfirmed, false);
+                    }
                 } else {
                     guestList.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Nenhum convidado ainda</td></tr>';
                 }
@@ -1665,7 +1868,7 @@
             });
         }
 
-        // Download Guest Report
+        // Download Guest Report as PDF
         async function downloadGuestReport() {
             try {
                 const { data: rsvps } = await supabase
@@ -1679,31 +1882,205 @@
                     return;
                 }
 
-                // Create CSV content
-                let csvContent = "Nome,Acompanhante,Status,Data de Confirmação\n";
-                
-                rsvps.forEach(rsvp => {
-                    const status = rsvp.attendance ? 'Confirmado' : 'Não Confirmado';
-                    const companion = rsvp.companion_name || 'Sem acompanhante';
-                    const date = formatDate(rsvp.created_at);
-                    
-                    csvContent += `"${rsvp.guest_name}","${companion}","${status}","${date}"\n`;
+                // Separate confirmed and not confirmed
+                const confirmed = rsvps.filter(r => r.attendance);
+                const notConfirmed = rsvps.filter(r => !r.attendance);
+
+                // Calculate statistics
+                const totalGuests = rsvps.length;
+                const confirmedGuests = confirmed.length;
+                const totalPeople = rsvps.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
+                const confirmedPeople = confirmed.reduce((sum, r) => sum + (r.companion_name ? 2 : 1), 0);
+
+                // Create PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Set font to support special characters
+                doc.setFont('helvetica');
+
+                // Header
+                doc.setFontSize(20);
+                doc.setTextColor(40, 40, 40);
+                doc.text('RELATÓRIO DE CONVIDADOS', 105, 20, { align: 'center' });
+
+                // Event info
+                doc.setFontSize(14);
+                doc.setTextColor(60, 60, 60);
+                doc.text(currentEvent.title, 105, 35, { align: 'center' });
+                doc.text(`Data do Evento: ${formatDate(currentEvent.event_date)}`, 105, 45, { align: 'center' });
+
+                // Statistics box
+                doc.setFillColor(240, 248, 255);
+                doc.rect(20, 55, 170, 35, 'F');
+                doc.setDrawColor(59, 130, 246);
+                doc.rect(20, 55, 170, 35);
+
+                doc.setFontSize(12);
+                doc.setTextColor(30, 64, 175);
+                doc.text('ESTATÍSTICAS', 105, 65, { align: 'center' });
+
+                doc.setFontSize(10);
+                doc.setTextColor(60, 60, 60);
+                doc.text(`Total de Convidados: ${totalGuests}`, 25, 75);
+                doc.text(`Confirmados: ${confirmedGuests}`, 25, 82);
+                doc.text(`Total de Pessoas: ${totalPeople}`, 110, 75);
+                doc.text(`Pessoas Confirmadas: ${confirmedPeople}`, 110, 82);
+
+                let yPosition = 105;
+
+                // Function to add guest section
+                function addGuestSection(guests, title, color) {
+                    if (guests.length === 0) return yPosition;
+
+                    // Check if we need a new page
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    // Section header
+                    doc.setFillColor(color.bg.r, color.bg.g, color.bg.b);
+                    doc.rect(20, yPosition - 5, 170, 12, 'F');
+                    doc.setDrawColor(color.border.r, color.border.g, color.border.b);
+                    doc.rect(20, yPosition - 5, 170, 12);
+
+                    doc.setFontSize(12);
+                    doc.setTextColor(color.text.r, color.text.g, color.text.b);
+                    doc.text(`${title} (${guests.length})`, 25, yPosition + 2);
+
+                    yPosition += 20;
+
+                    // Guest list
+                    doc.setFontSize(10);
+                    doc.setTextColor(60, 60, 60);
+
+                    guests.forEach(rsvp => {
+                        // Check if we need a new page
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        // Main guest
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`• ${rsvp.guest_name}`, 25, yPosition);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(formatDate(rsvp.created_at), 150, yPosition);
+                        yPosition += 7;
+
+                        // Companion (if exists)
+                        if (rsvp.companion_name) {
+                            doc.setFont('helvetica', 'italic');
+                            doc.setTextColor(100, 100, 100);
+                            doc.text(`    └ ${rsvp.companion_name} (Acompanhante)`, 25, yPosition);
+                            doc.setFont('helvetica', 'normal');
+                            doc.setTextColor(60, 60, 60);
+                            yPosition += 7;
+                        }
+
+                        yPosition += 3; // Extra spacing between entries
+                    });
+
+                    yPosition += 10; // Extra spacing between sections
+                    return yPosition;
+                }
+
+                // Add confirmed guests
+                yPosition = addGuestSection(confirmed, '✓ CONFIRMADOS', {
+                    bg: { r: 240, g: 253, b: 244 },
+                    border: { r: 34, g: 197, b: 94 },
+                    text: { r: 21, g: 128, b: 61 }
                 });
 
-                // Create and download file
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `relatorio-convidados-${currentEvent.title.replace(/[^a-z0-9]/gi, '-')}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // Add not confirmed guests
+                yPosition = addGuestSection(notConfirmed, '✗ NÃO CONFIRMADOS', {
+                    bg: { r: 254, g: 242, b: 242 },
+                    border: { r: 239, g: 68, b: 68 },
+                    text: { r: 185, g: 28, b: 28 }
+                });
+
+                // Add messages section if any exist
+                const { data: messages } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('wedding_id', currentEvent.id)
+                    .not('message', 'is', null)
+                    .neq('message', '')
+                    .order('created_at', { ascending: false });
+
+                if (messages && messages.length > 0) {
+                    // Check if we need a new page
+                    if (yPosition > 200) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    // Messages header
+                    doc.setFillColor(252, 245, 255);
+                    doc.rect(20, yPosition - 5, 170, 12, 'F');
+                    doc.setDrawColor(168, 85, 247);
+                    doc.rect(20, yPosition - 5, 170, 12);
+
+                    doc.setFontSize(12);
+                    doc.setTextColor(107, 33, 168);
+                    doc.text(`💌 MENSAGENS DOS CONVIDADOS (${messages.length})`, 25, yPosition + 2);
+
+                    yPosition += 20;
+
+                    doc.setFontSize(9);
+                    doc.setTextColor(60, 60, 60);
+
+                    messages.forEach(msg => {
+                        // Check if we need a new page
+                        if (yPosition > 260) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        // Message header
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`${msg.guest_name}`, 25, yPosition);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(formatDate(msg.created_at), 150, yPosition);
+                        yPosition += 7;
+
+                        // Message content (wrap text if too long)
+                        const messageLines = doc.splitTextToSize(msg.message, 160);
+                        doc.setTextColor(80, 80, 80);
+                        messageLines.forEach(line => {
+                            if (yPosition > 270) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            doc.text(line, 25, yPosition);
+                            yPosition += 5;
+                        });
+
+                        doc.setTextColor(60, 60, 60);
+                        yPosition += 8; // Extra spacing between messages
+                    });
+                }
+
+                // Footer
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
+                    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 105, 295, { align: 'center' });
+                }
+
+                // Save the PDF
+                const fileName = `relatorio-${currentEvent.title.replace(/[^a-z0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+
+                alert('📄 Relatório PDF gerado com sucesso!');
 
             } catch (error) {
-                console.error('Error downloading report:', error);
-                alert('Erro ao baixar relatório. Tente novamente.');
+                console.error('Error generating PDF report:', error);
+                alert('Erro ao gerar relatório PDF. Tente novamente.');
             }
         }
 
@@ -1893,6 +2270,23 @@
                     👤 Login
                 </button>
             `;
+
+            // Hide master admin access for guests
+            document.getElementById('master-admin-access').style.display = 'none';
+        }
+
+        // Go back from login (for guest pages)
+        function goBackFromLogin() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const clienteParam = urlParams.get('cliente');
+            
+            if (clienteParam) {
+                // If on guest page, go back to event site
+                showSection('event-site');
+            } else {
+                // If on main site, go back to home
+                showSection('home');
+            }
         }
 
         // Render Event Site for Guests
@@ -1910,7 +2304,7 @@
             const allowCompanion = urlParams.get('companion') !== 'no';
             
             content.innerHTML = `
-                <div class="max-w-4xl mx-auto px-4">
+                <div class="max-w-4xl mx-auto px-4 guest-content">
                     <div class="premium-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-12 text-center">
                         <h1 class="font-playfair text-3xl sm:text-5xl lg:text-7xl text-gray-800 mb-4 sm:mb-6 font-bold tracking-tight">${currentEvent.title}</h1>
                         <div class="w-16 sm:w-24 h-1 bg-gradient-to-r from-purple-400 to-blue-400 mx-auto mb-6 sm:mb-8 rounded-full"></div>
@@ -2295,5 +2689,5 @@
             showSection('home');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9729ff59355677d7',t:'MTc1NTc3NzkxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972a2374658077e3',t:'MTc1NTc3OTM5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
