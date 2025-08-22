@@ -5,37 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invites - Sistema de Confirmação de Presença</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .card-shadow {
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .mobile-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            z-index: 50;
-        }
-        .mobile-container {
-            padding-bottom: 80px;
-        }
-        @media (min-width: 768px) {
-            .mobile-nav { display: none; }
-            .mobile-container { padding-bottom: 0; }
-        }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-shadow { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; z-index: 50; }
+        .mobile-container { padding-bottom: 80px; }
+        @media (min-width: 768px) { .mobile-nav { display: none; } .mobile-container { padding-bottom: 0; } }
+        .message-bubble { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-left: 4px solid #8b5cf6; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -43,21 +22,26 @@
     <div class="mobile-nav md:hidden">
         <div class="flex justify-around py-2">
             <button onclick="showSection('home')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                <span class="text-xl">🏠</span>
-                <span class="text-xs">Início</span>
+                <span class="text-xl">🏠</span><span class="text-xs">Início</span>
             </button>
+            <div id="mobile-profile-nav" class="hidden">
+                <button onclick="showSection('profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
+                    <span class="text-xl">👤</span><span class="text-xs">Perfil</span>
+                </button>
+            </div>
             <button onclick="showSection('about')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                <span class="text-xl">ℹ️</span>
-                <span class="text-xs">Sobre</span>
+                <span class="text-xl">ℹ️</span><span class="text-xs">Sobre</span>
             </button>
-            <button onclick="showSection('contact')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                <span class="text-xl">📞</span>
-                <span class="text-xs">Contacto</span>
-            </button>
-            <button onclick="showSection('login')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                <span class="text-xl">👤</span>
-                <span class="text-xs">Login</span>
-            </button>
+            <div id="mobile-login-nav">
+                <button onclick="showSection('login')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
+                    <span class="text-xl">🔑</span><span class="text-xs">Login</span>
+                </button>
+            </div>
+            <div id="mobile-user-nav" class="hidden">
+                <button onclick="loadUserDashboard()" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
+                    <span class="text-xl">📊</span><span class="text-xs">Painel</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -65,16 +49,23 @@
     <nav class="bg-white shadow-lg sticky top-0 z-40 hidden md:block">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <h1 class="text-2xl font-bold text-purple-600">Invites</h1>
-                </div>
+                <h1 class="text-2xl font-bold text-purple-600">Invites</h1>
                 <div class="flex space-x-6">
-                    <a href="#" onclick="showSection('home')" class="text-gray-700 hover:text-purple-600 transition-colors">Menu</a>
-                    <a href="#" onclick="showSection('about')" class="text-gray-700 hover:text-purple-600 transition-colors">Sobre Nós</a>
-                    <a href="#" onclick="showSection('contact')" class="text-gray-700 hover:text-purple-600 transition-colors">Contacto</a>
+                    <a href="#" onclick="showSection('home')" class="text-gray-700 hover:text-purple-600">Menu</a>
+                    <div id="user-profile-nav" class="hidden">
+                        <a href="#" onclick="showSection('profile')" class="text-gray-700 hover:text-purple-600">Perfil</a>
+                    </div>
+                    <a href="#" onclick="showSection('about')" class="text-gray-700 hover:text-purple-600">Sobre Nós</a>
                 </div>
                 <div class="flex space-x-3">
-                    <button onclick="showSection('login')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">Login</button>
+                    <div id="user-info-nav" class="hidden flex items-center space-x-3">
+                        <span class="text-gray-700">Olá, <span id="nav-username"></span></span>
+                        <button onclick="loadUserDashboard()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Painel</button>
+                        <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Sair</button>
+                    </div>
+                    <div id="login-nav" class="flex space-x-3">
+                        <button onclick="showSection('login')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Login</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,10 +74,12 @@
     <div class="mobile-container">
         <!-- Home Section -->
         <div id="home-section" class="section">
-            <!-- Mobile Header -->
             <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
                 <div class="flex justify-between items-center">
                     <h1 class="text-xl font-bold text-purple-600">Invites</h1>
+                    <div id="mobile-user-info" class="hidden text-sm text-gray-600">
+                        Olá, <span id="mobile-username"></span>
+                    </div>
                 </div>
             </div>
 
@@ -94,34 +87,81 @@
                 <div class="max-w-lg mx-auto text-center">
                     <h1 class="text-3xl md:text-5xl font-bold mb-4">Sistema de Confirmação</h1>
                     <p class="text-lg md:text-xl mb-6">Crie páginas personalizadas para seus eventos</p>
-                    <button onclick="showSection('register')" class="w-full md:w-auto bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">Criar Conta Gratuita</button>
+                    <button onclick="showSection('register')" class="w-full md:w-auto bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Criar Conta Gratuita</button>
                 </div>
             </div>
 
             <div class="max-w-4xl mx-auto py-8 px-4">
                 <div class="grid gap-6">
-                    <div class="bg-white p-6 rounded-lg card-shadow">
-                        <div class="text-center">
-                            <div class="text-3xl mb-3">🎉</div>
-                            <h3 class="text-lg font-semibold mb-2">Eventos Personalizados</h3>
-                            <p class="text-gray-600 text-sm">Crie páginas únicas para casamentos, aniversários e outros eventos especiais</p>
-                        </div>
+                    <div class="bg-white p-6 rounded-lg card-shadow text-center">
+                        <div class="text-3xl mb-3">🎉</div>
+                        <h3 class="text-lg font-semibold mb-2">Eventos Personalizados</h3>
+                        <p class="text-gray-600 text-sm">Crie páginas únicas para casamentos, aniversários e outros eventos especiais</p>
                     </div>
-                    <div class="bg-white p-6 rounded-lg card-shadow">
-                        <div class="text-center">
-                            <div class="text-3xl mb-3">📱</div>
-                            <h3 class="text-lg font-semibold mb-2">Links Personalizados</h3>
-                            <p class="text-gray-600 text-sm">Gere links específicos com e sem acompanhantes para diferentes convidados</p>
-                        </div>
+                    <div class="bg-white p-6 rounded-lg card-shadow text-center">
+                        <div class="text-3xl mb-3">📱</div>
+                        <h3 class="text-lg font-semibold mb-2">Links Personalizados</h3>
+                        <p class="text-gray-600 text-sm">Gere links específicos com e sem acompanhantes para diferentes convidados</p>
                     </div>
-                    <div class="bg-white p-6 rounded-lg card-shadow">
-                        <div class="text-center">
-                            <div class="text-3xl mb-3">📊</div>
-                            <h3 class="text-lg font-semibold mb-2">Gestão Completa</h3>
-                            <p class="text-gray-600 text-sm">Acompanhe confirmações, mensagens e gerencie todos os aspectos do seu evento</p>
-                        </div>
+                    <div class="bg-white p-6 rounded-lg card-shadow text-center">
+                        <div class="text-3xl mb-3">📊</div>
+                        <h3 class="text-lg font-semibold mb-2">Gestão Completa</h3>
+                        <p class="text-gray-600 text-sm">Acompanhe confirmações, mensagens e gerencie todos os aspectos do seu evento</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile-section" class="section hidden">
+            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
+                <h2 class="text-xl font-bold text-center">Meu Perfil</h2>
+            </div>
+            <div class="max-w-2xl mx-auto py-8 px-4">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h2 class="text-2xl font-bold mb-6 hidden md:block">Meu Perfil</h2>
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nome Completo</label>
+                                <input type="text" id="profile-full-name" class="w-full p-3 border rounded-lg" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
+                                <input type="text" id="profile-username" class="w-full p-3 border rounded-lg bg-gray-50" readonly>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Senha Atual</label>
+                            <div class="flex">
+                                <input type="password" id="profile-password" class="flex-1 p-3 border rounded-l-lg bg-gray-50" readonly>
+                                <button onclick="togglePasswordVisibility()" class="bg-gray-500 text-white px-4 py-3 rounded-r-lg hover:bg-gray-600" id="toggle-password-btn">👁️</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button onclick="enableProfileEdit()" class="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700">Editar Perfil</button>
+                            <button onclick="downloadUserReport()" class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">Baixar Relatório</button>
+                        </div>
+                        
+                        <div id="profile-edit-form" class="hidden space-y-4 border-t pt-6">
+                            <h3 class="text-lg font-semibold">Editar Informações</h3>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Novo Nome Completo</label>
+                                <input type="text" id="edit-full-name" class="w-full p-3 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nova Senha</label>
+                                <input type="password" id="edit-password" class="w-full p-3 border rounded-lg">
+                            </div>
+                            <div class="flex space-x-3">
+                                <button onclick="saveProfileChanges()" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Salvar</button>
+                                <button onclick="cancelProfileEdit()" class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -134,38 +174,12 @@
             <div class="max-w-4xl mx-auto py-8 px-4">
                 <div class="bg-white rounded-lg p-6 card-shadow">
                     <h2 class="text-2xl font-bold mb-4 hidden md:block">Sobre Nós</h2>
-                    <p class="text-gray-700 mb-4" id="about-content">
+                    <p class="text-gray-700 mb-4">
                         O Invites é uma plataforma inovadora que simplifica a organização de eventos através de um sistema inteligente de confirmação de presença. Nossa missão é tornar a gestão de convidados mais eficiente e elegante.
                     </p>
                     <p class="text-gray-700">
                         Com anos de experiência em tecnologia e eventos, desenvolvemos uma solução completa que atende desde pequenas celebrações até grandes eventos corporativos.
                     </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contact Section -->
-        <div id="contact-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Contacto</h2>
-            </div>
-            <div class="max-w-4xl mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold mb-4 hidden md:block">Contacto</h2>
-                    <div class="space-y-6">
-                        <div>
-                            <h3 class="text-lg font-semibold mb-3">Informações de Contacto</h3>
-                            <div class="space-y-2" id="contact-info">
-                                <p class="flex items-center text-sm"><span class="font-semibold mr-2">WhatsApp:</span> +244 959 823 409</p>
-                                <p class="flex items-center text-sm"><span class="font-semibold mr-2">Horário:</span> Segunda a Sexta, 8h às 18h</p>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold mb-3">Entre em Contacto</h3>
-                            <p class="text-gray-600 text-sm">Para dúvidas ou suporte, entre em contacto através do WhatsApp acima.</p>
-                        </div>
-                    </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -181,23 +195,21 @@
                     <form id="register-form" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium mb-2">Nome Completo</label>
-                            <input type="text" id="full-name" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Seu nome completo" required>
+                            <input type="text" id="full-name" class="w-full p-3 border rounded-lg" placeholder="Seu nome completo" required>
                         </div>
                         
-
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
-                                <input type="text" id="username" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Seu usuário" required>
+                                <input type="text" id="username" class="w-full p-3 border rounded-lg" placeholder="Seu usuário" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-2">Senha</label>
-                                <input type="password" id="password" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Sua senha" required>
+                                <input type="password" id="password" class="w-full p-3 border rounded-lg" placeholder="Sua senha" required>
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">Criar Conta</button>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Criar Conta</button>
                     </form>
 
                     <div id="account-created" class="hidden mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -229,20 +241,41 @@
                     <form id="token-form" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium mb-2">Token de Acesso</label>
-                            <input type="text" id="access-token" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="INV-XXXXXXXXXX" pattern="INV-[A-Z0-9]{12}" title="Formato: INV-XXXXXXXXXX" required>
-                            <p class="text-xs text-gray-500 mt-1">Formato esperado: INV-XXXXXXXXXX</p>
+                            <input type="text" id="access-token" class="w-full p-3 border rounded-lg" placeholder="INV-XXXXXXXXXX" required>
                         </div>
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">Validar Token</button>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Validar Token</button>
                     </form>
-
-                    <div id="token-error" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <p class="text-red-700 text-sm">Token inválido. Verifique o token e tente novamente.</p>
-                    </div>
 
                     <div id="token-success" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                         <h3 class="font-semibold text-green-800 mb-2">Token Validado!</h3>
                         <p class="text-green-700 text-sm mb-3">Sua conta foi ativada com sucesso. Agora pode criar seus eventos.</p>
                         <button onclick="proceedToLogin()" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Continuar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Section -->
+        <div id="login-section" class="section hidden">
+            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
+                <h2 class="text-xl font-bold text-center">Login</h2>
+            </div>
+            <div class="max-w-md mx-auto py-8 px-4">
+                <div class="bg-white rounded-lg p-6 card-shadow">
+                    <h2 class="text-2xl font-bold text-center mb-6 hidden md:block">Login</h2>
+                    <form id="login-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
+                            <input type="text" id="login-username" class="w-full p-3 border rounded-lg" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Senha</label>
+                            <input type="password" id="login-password" class="w-full p-3 border rounded-lg" required>
+                        </div>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Entrar</button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <button onclick="showSection('register')" class="text-purple-600 text-sm hover:underline">Não tem conta? Criar agora</button>
                     </div>
                 </div>
             </div>
@@ -262,33 +295,23 @@
                     <form id="create-event-form" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium mb-2">Nome do Evento</label>
-                            <input type="text" id="event-title" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Ex: Casamento João & Maria" required>
+                            <input type="text" id="event-title" class="w-full p-3 border rounded-lg" placeholder="Ex: Casamento João & Maria" required>
                         </div>
                         
                         <div>
                             <label class="block text-sm font-medium mb-2">Descrição do Evento (Opcional)</label>
-                            <textarea id="event-description" rows="3" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Descreva seu evento..."></textarea>
+                            <textarea id="event-description" rows="3" class="w-full p-3 border rounded-lg" placeholder="Descreva seu evento..."></textarea>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2">Data do Evento</label>
-                                <input type="date" id="event-date" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                                <input type="date" id="event-date" class="w-full p-3 border rounded-lg" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-2">Prazo para Confirmação (Opcional)</label>
-                                <input type="date" id="confirmation-deadline" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Limite Máximo de Confirmações (Opcional)</label>
-                                <input type="number" id="max-confirmations" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Ex: 150">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Limite de Acompanhantes</label>
-                                <input type="number" id="companion-limit" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Ex: 2" value="1" required>
+                                <label class="block text-sm font-medium mb-2">Prazo para Confirmação</label>
+                                <input type="date" id="confirmation-deadline" class="w-full p-3 border rounded-lg">
+                                <p class="text-xs text-gray-500 mt-1">Deixe vazio para não definir prazo</p>
                             </div>
                         </div>
 
@@ -310,7 +333,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">Criar Evento</button>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Criar Evento</button>
                     </form>
 
                     <div id="event-created" class="hidden mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -321,34 +344,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Login Section -->
-        <div id="login-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Login</h2>
-            </div>
-            <div class="max-w-md mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold text-center mb-6 hidden md:block">Login</h2>
-                    <form id="login-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
-                            <input type="text" id="login-username" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Senha</label>
-                            <input type="password" id="login-password" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" required>
-                        </div>
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">Entrar</button>
-                    </form>
-                    <div class="mt-4 text-center">
-                        <button onclick="showSection('register')" class="text-purple-600 text-sm hover:underline">Não tem conta? Criar agora</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
 
         <!-- User Dashboard -->
         <div id="user-dashboard" class="section hidden">
@@ -363,100 +358,72 @@
             </div>
 
             <div class="max-w-6xl mx-auto py-6 px-4">
-                <!-- Events List -->
-                <div id="user-events-list" class="mb-6">
-                    <!-- Events will be populated here -->
-                </div>
+                <div id="user-events-list" class="mb-6"></div>
 
-                <!-- Event Details (shown when event is selected) -->
                 <div id="event-details" class="hidden">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                        <h3 class="text-sm font-semibold mb-1">Confirmados</h3>
-                        <p class="text-2xl font-bold text-green-600" id="confirmed-count">0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                        <h3 class="text-sm font-semibold mb-1">Recusados</h3>
-                        <p class="text-2xl font-bold text-red-600" id="declined-count">0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                        <h3 class="text-sm font-semibold mb-1">Total</h3>
-                        <p class="text-2xl font-bold text-blue-600" id="total-rsvps">0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                        <h3 class="text-sm font-semibold mb-1">Acompanhantes</h3>
-                        <p class="text-2xl font-bold text-purple-600" id="total-companions">0</p>
-                    </div>
-                </div>
-
-                <div class="space-y-6">
-                    <div class="bg-white rounded-lg p-4 card-shadow">
-                        <h3 class="text-lg font-semibold mb-4">Links do Evento</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Link COM Acompanhante</label>
-                                <div class="flex">
-                                    <input type="text" id="link-with-companion" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-xs" readonly>
-                                    <button onclick="copyLink('link-with-companion')" class="bg-purple-600 text-white px-3 py-2 rounded-r-lg hover:bg-purple-700 text-xs">Copiar</button>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Link SEM Acompanhante</label>
-                                <div class="flex">
-                                    <input type="text" id="link-without-companion" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-xs" readonly>
-                                    <button onclick="copyLink('link-without-companion')" class="bg-purple-600 text-white px-3 py-2 rounded-r-lg hover:bg-purple-700 text-xs">Copiar</button>
-                                </div>
-                            </div>
+                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
+                            <h3 class="text-sm font-semibold mb-1">Confirmados</h3>
+                            <p class="text-2xl font-bold text-green-600" id="confirmed-count">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
+                            <h3 class="text-sm font-semibold mb-1">Recusados</h3>
+                            <p class="text-2xl font-bold text-red-600" id="declined-count">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
+                            <h3 class="text-sm font-semibold mb-1">Total</h3>
+                            <p class="text-2xl font-bold text-blue-600" id="total-rsvps">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
+                            <h3 class="text-sm font-semibold mb-1">Acompanhantes</h3>
+                            <p class="text-2xl font-bold text-purple-600" id="total-companions">0</p>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-lg p-4 card-shadow">
-                        <h3 class="text-lg font-semibold mb-4">Configurações</h3>
-                        <div class="space-y-3">
-                            <label class="flex items-center">
-                                <input type="checkbox" id="enable-description" class="mr-3" checked>
-                                <span class="text-sm">Mostrar descrição do evento</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="enable-deadline" class="mr-3" checked>
-                                <span class="text-sm">Definir prazo para confirmação</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="enable-max-limit" class="mr-3" checked>
-                                <span class="text-sm">Definir limite máximo</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="enable-public-wall" class="mr-3" checked>
-                                <span class="text-sm">Mural público de mensagens</span>
-                            </label>
-                        </div>
-                        <button onclick="saveEventSettings()" class="mt-4 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Salvar Configurações</button>
-                    </div>
-
-                    <div class="bg-white rounded-lg p-4 card-shadow">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold">Sistema de Presentes</h3>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="enable-gifts" class="mr-2" onchange="toggleGiftSystem()">
-                                <span class="text-sm">Ativar Presentes</span>
-                            </label>
-                        </div>
-                        
-                        <div id="gift-system-config" class="hidden space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Tipo de Sistema</label>
-                                <select id="gift-system-type" class="w-full p-2 border rounded-lg" onchange="toggleGiftType()">
-                                    <option value="none">Desativado</option>
-                                    <option value="bank">Transferência Bancária</option>
-                                    <option value="list">Lista de Presentes</option>
-                                </select>
-                            </div>
-
-                            <!-- Bank Transfer Configuration -->
-                            <div id="bank-config" class="hidden space-y-3">
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-lg p-4 card-shadow">
+                            <h3 class="text-lg font-semibold mb-4">Links do Evento</h3>
+                            <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-2">Mensagem Personalizada</label>
-                                    <textarea id="bank-message" rows="6" class="w-full p-2 border rounded-lg text-sm" placeholder="Digite sua mensagem...">Querido(a) convidado(a)!
+                                    <label class="block text-sm font-medium mb-2">Link COM Acompanhante</label>
+                                    <div class="flex">
+                                        <input type="text" id="link-with-companion" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-xs" readonly>
+                                        <button onclick="copyLink('link-with-companion')" class="bg-purple-600 text-white px-3 py-2 rounded-r-lg hover:bg-purple-700 text-xs">Copiar</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Link SEM Acompanhante</label>
+                                    <div class="flex">
+                                        <input type="text" id="link-without-companion" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-xs" readonly>
+                                        <button onclick="copyLink('link-without-companion')" class="bg-purple-600 text-white px-3 py-2 rounded-r-lg hover:bg-purple-700 text-xs">Copiar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 card-shadow">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Sistema de Presentes</h3>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="enable-gifts" class="mr-2" onchange="toggleGiftSystem()">
+                                    <span class="text-sm">Ativar Presentes</span>
+                                </label>
+                            </div>
+                            
+                            <div id="gift-system-config" class="hidden space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Tipo de Sistema</label>
+                                    <select id="gift-system-type" class="w-full p-2 border rounded-lg" onchange="toggleGiftType()">
+                                        <option value="none">Desativado</option>
+                                        <option value="bank">Transferência Bancária</option>
+                                        <option value="list">Lista de Presentes</option>
+                                    </select>
+                                </div>
+
+                                <div id="bank-config" class="hidden space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Mensagem Personalizada</label>
+                                        <textarea id="bank-message" rows="6" class="w-full p-2 border rounded-lg text-sm" placeholder="Digite sua mensagem...">Querido(a) convidado(a)!
 Caso queira nos presentear, agradecemos
 desde já o seu lindo gesto e gostaríamos
 que o fizesse por transferência bancária.
@@ -467,59 +434,47 @@ Titular Diogo dos santos Inglês
 
 Muito obrigado(a)!
 Deus lhe abençoe sempre!</textarea>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">IBAN</label>
-                                        <input type="text" id="bank-iban" class="w-full p-2 border rounded-lg text-sm" value="AO. 7210158">
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Nome do Titular</label>
-                                        <input type="text" id="bank-holder" class="w-full p-2 border rounded-lg text-sm" value="Diogo dos santos Inglês">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium mb-2">IBAN</label>
+                                            <input type="text" id="bank-iban" class="w-full p-2 border rounded-lg text-sm" value="AO. 7210158">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium mb-2">Nome do Titular</label>
+                                            <input type="text" id="bank-holder" class="w-full p-2 border rounded-lg text-sm" value="Diogo dos santos Inglês">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Gift List Configuration -->
-                            <div id="list-config" class="hidden space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <label class="block text-sm font-medium">Lista de Presentes</label>
-                                    <button onclick="addGiftItem()" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ Adicionar</button>
+                                <div id="list-config" class="hidden space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <label class="block text-sm font-medium">Lista de Presentes</label>
+                                        <button onclick="addGiftItem()" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ Adicionar</button>
+                                    </div>
+                                    <div id="gift-items-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
                                 </div>
-                                <div id="gift-items-list" class="space-y-2 max-h-40 overflow-y-auto">
-                                    <!-- Gift items will be populated here -->
-                                </div>
-                            </div>
 
-                            <button onclick="saveGiftSettings()" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Salvar Configurações</button>
-                        </div>
-                    </div>
-
-                    <!-- Gift Statistics -->
-                    <div id="gift-stats" class="bg-white rounded-lg p-4 card-shadow hidden">
-                        <h3 class="text-lg font-semibold mb-4">Estatísticas de Presentes</h3>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div class="text-center p-3 bg-green-50 rounded-lg">
-                                <p class="text-2xl font-bold text-green-600" id="gifts-chosen">0</p>
-                                <p class="text-sm text-green-700">Presentes Escolhidos</p>
-                            </div>
-                            <div class="text-center p-3 bg-blue-50 rounded-lg">
-                                <p class="text-2xl font-bold text-blue-600" id="gifts-available">0</p>
-                                <p class="text-sm text-blue-700">Ainda Disponíveis</p>
+                                <button onclick="saveGiftSettings()" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Salvar Configurações</button>
                             </div>
                         </div>
-                        <div id="gift-choices-list" class="space-y-2 max-h-60 overflow-y-auto">
-                            <!-- Gift choices will be populated here -->
-                        </div>
-                    </div>
 
-                    <div class="bg-white rounded-lg p-4 card-shadow">
-                        <h3 class="text-lg font-semibold mb-4">Confirmações Recentes</h3>
-                        <div id="recent-rsvps-list" class="space-y-3">
-                            <!-- RSVPs will be populated here -->
+                        <div id="message-wall" class="bg-white rounded-lg p-4 card-shadow">
+                            <h3 class="text-lg font-semibold mb-4">Mural de Mensagens</h3>
+                            <div id="messages-list" class="space-y-3 max-h-60 overflow-y-auto mb-4"></div>
+                            <div class="text-center text-gray-500 text-sm" id="no-messages">
+                                Nenhuma mensagem ainda. As mensagens dos convidados aparecerão aqui.
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 card-shadow">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Confirmações Recentes</h3>
+                                <button onclick="downloadEventReport()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">📄 Relatório PDF</button>
+                            </div>
+                            <div id="recent-rsvps-list" class="space-y-3"></div>
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -528,27 +483,9 @@ Deus lhe abençoe sempre!</textarea>
         <div id="guest-rsvp" class="section hidden">
             <div class="min-h-screen gradient-bg flex items-center justify-center px-4">
                 <div class="max-w-lg w-full">
-                    <!-- Countdown Timer -->
-                    <div id="countdown-timer" class="bg-white rounded-lg p-4 card-shadow mb-4 text-center hidden">
-                        <p class="text-sm text-gray-600 mb-2">Tempo restante para confirmação:</p>
-                        <div class="flex justify-center space-x-4 text-lg font-bold">
-                            <div class="text-center">
-                                <div id="days" class="text-2xl text-purple-600">00</div>
-                                <div class="text-xs text-gray-500">DIAS</div>
-                            </div>
-                            <div class="text-center">
-                                <div id="hours" class="text-2xl text-purple-600">00</div>
-                                <div class="text-xs text-gray-500">HORAS</div>
-                            </div>
-                            <div class="text-center">
-                                <div id="minutes" class="text-2xl text-purple-600">00</div>
-                                <div class="text-xs text-gray-500">MIN</div>
-                            </div>
-                            <div class="text-center">
-                                <div id="seconds" class="text-2xl text-purple-600">00</div>
-                                <div class="text-xs text-gray-500">SEG</div>
-                            </div>
-                        </div>
+                    <div id="deadline-notice" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-center hidden">
+                        <p class="text-yellow-800 font-semibold">⏰ Por favor confirme sua presença até:</p>
+                        <p class="text-yellow-700 text-lg font-bold" id="deadline-date"></p>
                     </div>
 
                     <div class="bg-white rounded-lg p-6 card-shadow">
@@ -561,12 +498,12 @@ Deus lhe abençoe sempre!</textarea>
                         <form id="rsvp-form" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2">Seu Nome Completo</label>
-                                <input type="text" id="guest-name" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                                <input type="text" id="guest-name" class="w-full p-3 border rounded-lg" required>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium mb-2">Confirmação de Presença</label>
-                                <select id="attendance-status" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                                <select id="attendance-status" class="w-full p-3 border rounded-lg" required>
                                     <option value="">Selecione uma opção</option>
                                     <option value="true">Confirmo minha presença</option>
                                     <option value="false">Não poderei comparecer</option>
@@ -575,21 +512,18 @@ Deus lhe abençoe sempre!</textarea>
 
                             <div id="companion-section" class="hidden">
                                 <label class="block text-sm font-medium mb-2">Acompanhantes</label>
-                                <div id="companion-inputs">
-                                    <!-- Companion inputs will be generated here -->
-                                </div>
+                                <div id="companion-inputs"></div>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium mb-2">Mensagem (Opcional)</label>
-                                <textarea id="guest-message" rows="3" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Deixe uma mensagem carinhosa..."></textarea>
+                                <textarea id="guest-message" rows="3" class="w-full p-3 border rounded-lg" placeholder="Deixe uma mensagem carinhosa..."></textarea>
                             </div>
 
-                            <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">Confirmar Presença</button>
+                            <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Confirmar Presença</button>
                         </form>
                     </div>
 
-                    <!-- Gift Section -->
                     <div id="gift-section" class="hidden bg-white rounded-lg p-6 card-shadow mt-4">
                         <div class="text-center mb-6">
                             <div class="text-3xl mb-3">🎁</div>
@@ -597,7 +531,6 @@ Deus lhe abençoe sempre!</textarea>
                             <p class="text-gray-600 text-sm">Se desejar nos presentear, escolha uma das opções abaixo</p>
                         </div>
 
-                        <!-- Bank Transfer Option -->
                         <div id="bank-gift-option" class="hidden">
                             <div class="bg-gray-50 p-4 rounded-lg mb-4">
                                 <pre id="bank-gift-message" class="text-sm text-gray-700 whitespace-pre-wrap font-sans"></pre>
@@ -612,16 +545,21 @@ Deus lhe abençoe sempre!</textarea>
                             </div>
                         </div>
 
-                        <!-- Gift List Option -->
                         <div id="list-gift-option" class="hidden">
-                            <div class="space-y-3 mb-4 max-h-60 overflow-y-auto" id="available-gifts">
-                                <!-- Gift items will be populated here -->
-                            </div>
+                            <div class="space-y-3 mb-4 max-h-60 overflow-y-auto" id="available-gifts"></div>
                             <button onclick="skipGifts()" class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">Ignorar Presentes</button>
                         </div>
                     </div>
 
-                    <!-- Success Message -->
+                    <div id="guest-message-wall" class="hidden bg-white rounded-lg p-6 card-shadow mt-4">
+                        <div class="text-center mb-4">
+                            <div class="text-2xl mb-2">💬</div>
+                            <h3 class="text-lg font-bold mb-2">Mural de Mensagens</h3>
+                            <p class="text-gray-600 text-sm">Veja as mensagens carinhosas dos outros convidados</p>
+                        </div>
+                        <div id="guest-messages-list" class="space-y-3 max-h-60 overflow-y-auto"></div>
+                    </div>
+
                     <div id="success-message" class="hidden bg-white rounded-lg p-6 card-shadow mt-4 text-center">
                         <div class="text-4xl mb-3">🎉</div>
                         <h3 class="text-xl font-bold mb-2">Confirmação Enviada!</h3>
@@ -632,291 +570,49 @@ Deus lhe abençoe sempre!</textarea>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="bg-gray-800 text-white py-6 text-center">
         <p class="text-sm">© 2025 Invites - Sistema de Confirmação de Presença</p>
     </footer>
 
     <script>
-        // Supabase configuration
-        const SUPABASE_URL = 'https://ybbhynfttwogkdsnqmvu.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzY3MDIsImV4cCI6MjA3MTI1MjcwMn0.LPMGW_OPKiwTEKhyzl_v2Snb9nVeZg0wP4Ot6zKrCn0';
-        
-        // Initialize Supabase client
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Global variables
         let currentUser = null;
         let currentEvent = null;
-        let isAdmin = false;
+        let users = JSON.parse(localStorage.getItem('invites_users') || '[]');
+        let events = JSON.parse(localStorage.getItem('invites_events') || '[]');
+        let rsvps = JSON.parse(localStorage.getItem('invites_rsvps') || '[]');
+        let gifts = JSON.parse(localStorage.getItem('invites_gifts') || '[]');
 
-        // Site content (can be moved to database later)
-        const siteContent = {
-            about: "O Invites é uma plataforma inovadora que simplifica a organização de eventos através de um sistema inteligente de confirmação de presença. Nossa missão é tornar a gestão de convidados mais eficiente e elegante.",
-            contact: "WhatsApp: +244 959 823 409\nHorário: Segunda a Sexta, 8h às 18h"
-        };
-
-        // Admin panel data structure - all data that admin needs access to
-        const adminDataStructure = {
-            // User management
-            users: {
-                table: 'users',
-                fields: ['id', 'username', 'full_name', 'password', 'token', 'is_active', 'created_at', 'last_login'],
-                actions: ['view', 'edit', 'activate', 'deactivate', 'delete', 'reset_password', 'regenerate_token']
-            },
-            
-            // Event management
-            events: {
-                table: 'events',
-                fields: ['id', 'user_id', 'title', 'description', 'event_date', 'confirmation_deadline', 'max_confirmations', 'companion_limit', 'custom_url', 'enable_description', 'enable_deadline', 'enable_max_limit', 'enable_public_wall', 'enable_gifts', 'gift_config', 'created_at'],
-                actions: ['view', 'edit', 'delete', 'duplicate', 'export_rsvps', 'view_statistics']
-            },
-            
-            // RSVP management
-            rsvps: {
-                table: 'rsvps',
-                fields: ['id', 'wedding_id', 'guest_name', 'companion_name', 'attendance', 'message', 'created_at'],
-                actions: ['view', 'edit', 'delete', 'export']
-            },
-            
-            // Gift selections
-            gift_selections: {
-                table: 'gift_selections',
-                fields: ['id', 'event_id', 'guest_name', 'gift_name', 'selection_type', 'created_at'],
-                actions: ['view', 'edit', 'delete']
-            },
-            
-            // Notifications
-            admin_notifications: {
-                table: 'admin_notifications',
-                fields: ['id', 'type', 'user_id', 'username', 'full_name', 'token', 'created_at', 'is_read', 'priority', 'data'],
-                actions: ['view', 'mark_read', 'delete', 'bulk_actions']
-            },
-            
-            // Activity logs
-            admin_activity_logs: {
-                table: 'admin_activity_logs',
-                fields: ['id', 'action', 'data', 'timestamp', 'ip_address', 'user_agent'],
-                actions: ['view', 'export', 'filter']
-            },
-            
-            // System statistics
-            system_statistics: {
-                table: 'system_statistics',
-                fields: ['id', 'action', 'event_id', 'user_id', 'timestamp', 'date'],
-                actions: ['view', 'generate_reports', 'export']
-            },
-            
-            // Site content management
-            site_content: {
-                table: 'site_content',
-                fields: ['id', 'section', 'content', 'updated_at', 'updated_by'],
-                actions: ['view', 'edit']
-            }
-        };
-
-        // Admin functions that will be accessible from admin panel
-        const adminFunctions = {
-            // User management
-            async getUserList(filters = {}) {
-                let query = supabaseClient.from('users').select('*');
-                if (filters.active !== undefined) query = query.eq('is_active', filters.active);
-                if (filters.search) query = query.or(`username.ilike.%${filters.search}%,full_name.ilike.%${filters.search}%`);
-                return await query.order('created_at', { ascending: false });
-            },
-            
-            async activateUser(userId) {
-                const result = await supabaseClient.from('users').update({ is_active: true }).eq('id', userId);
-                if (!result.error) {
-                    await logAdminActivity('user_activated', { user_id: userId, admin_action: true });
-                }
-                return result;
-            },
-            
-            async deactivateUser(userId) {
-                const result = await supabaseClient.from('users').update({ is_active: false }).eq('id', userId);
-                if (!result.error) {
-                    await logAdminActivity('user_deactivated', { user_id: userId, admin_action: true });
-                }
-                return result;
-            },
-            
-            async regenerateUserToken(userId) {
-                const newToken = generateUniqueToken();
-                const result = await supabaseClient.from('users').update({ token: newToken }).eq('id', userId);
-                if (!result.error) {
-                    await logAdminActivity('token_regenerated', { user_id: userId, new_token: newToken, admin_action: true });
-                }
-                return { ...result, token: newToken };
-            },
-            
-            // Event management
-            async getEventList(filters = {}) {
-                let query = supabaseClient.from('events').select('*, users(username, full_name)');
-                if (filters.user_id) query = query.eq('user_id', filters.user_id);
-                if (filters.date_from) query = query.gte('event_date', filters.date_from);
-                if (filters.date_to) query = query.lte('event_date', filters.date_to);
-                return await query.order('created_at', { ascending: false });
-            },
-            
-            async getEventStatistics(eventId) {
-                const [rsvps, gifts] = await Promise.all([
-                    supabaseClient.from('rsvps').select('*').eq('wedding_id', eventId),
-                    supabaseClient.from('gift_selections').select('*').eq('event_id', eventId)
-                ]);
-                
-                const confirmed = rsvps.data?.filter(r => r.attendance === true).length || 0;
-                const declined = rsvps.data?.filter(r => r.attendance === false).length || 0;
-                const companions = rsvps.data?.filter(r => r.companion_name).length || 0;
-                
-                return {
-                    total_rsvps: rsvps.data?.length || 0,
-                    confirmed,
-                    declined,
-                    companions,
-                    gifts_selected: gifts.data?.length || 0
-                };
-            },
-            
-            // System statistics
-            async getSystemStats(dateRange = 30) {
-                const startDate = new Date();
-                startDate.setDate(startDate.getDate() - dateRange);
-                
-                const [users, events, rsvps, activities] = await Promise.all([
-                    supabaseClient.from('users').select('created_at').gte('created_at', startDate.toISOString()),
-                    supabaseClient.from('events').select('created_at').gte('created_at', startDate.toISOString()),
-                    supabaseClient.from('rsvps').select('created_at').gte('created_at', startDate.toISOString()),
-                    supabaseClient.from('system_statistics').select('*').gte('timestamp', startDate.toISOString())
-                ]);
-                
-                return {
-                    new_users: users.data?.length || 0,
-                    new_events: events.data?.length || 0,
-                    new_rsvps: rsvps.data?.length || 0,
-                    total_activities: activities.data?.length || 0,
-                    daily_breakdown: this.generateDailyBreakdown(activities.data || [])
-                };
-            },
-            
-            generateDailyBreakdown(activities) {
-                const breakdown = {};
-                activities.forEach(activity => {
-                    const date = activity.date || activity.timestamp.split('T')[0];
-                    if (!breakdown[date]) {
-                        breakdown[date] = { registrations: 0, events: 0, rsvps: 0, tokens: 0 };
-                    }
-                    switch(activity.action) {
-                        case 'user_registration': breakdown[date].registrations++; break;
-                        case 'event_creation': breakdown[date].events++; break;
-                        case 'rsvp_submission': breakdown[date].rsvps++; break;
-                        case 'token_validation': breakdown[date].tokens++; break;
-                    }
-                });
-                return breakdown;
-            },
-            
-            // Notifications
-            async getNotifications(filters = {}) {
-                let query = supabaseClient.from('admin_notifications').select('*');
-                if (filters.unread_only) query = query.eq('is_read', false);
-                if (filters.type) query = query.eq('type', filters.type);
-                return await query.order('created_at', { ascending: false });
-            },
-            
-            async markNotificationRead(notificationId) {
-                return await supabaseClient.from('admin_notifications').update({ is_read: true }).eq('id', notificationId);
-            }
-        };
-
-        // Token generation and validation functions
-        function generateUniqueToken() {
-            const timestamp = Date.now().toString();
-            const random = Math.random().toString(36).substring(2, 15);
-            const hash = btoa(timestamp + random).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
-            return `INV-${hash.toUpperCase()}`;
+        // Utility functions
+        function saveData() {
+            localStorage.setItem('invites_users', JSON.stringify(users));
+            localStorage.setItem('invites_events', JSON.stringify(events));
+            localStorage.setItem('invites_rsvps', JSON.stringify(rsvps));
+            localStorage.setItem('invites_gifts', JSON.stringify(gifts));
         }
 
-        async function sendAdminNotification(userData, token) {
-            try {
-                // Store notification in database for admin panel access
-                const notification = {
-                    type: 'new_account',
-                    user_id: userData.id,
-                    username: userData.username,
-                    full_name: userData.full_name,
-                    token: token,
-                    created_at: new Date().toISOString(),
-                    is_read: false,
-                    priority: 'high',
-                    data: {
-                        user_data: userData,
-                        action_required: 'token_validation',
-                        whatsapp_message: `🔔 Nova conta criada no Invites!\n\nUsuário: ${userData.username}\nNome: ${userData.full_name}\nToken: ${token}\n\nAcesse o painel admin para gerenciar.`
-                    }
-                };
-                
-                // Insert notification into admin_notifications table for panel access
-                const { data, error } = await supabaseClient
-                    .from('admin_notifications')
-                    .insert([notification]);
-                
-                if (error) {
-                    console.error('Erro ao salvar notificação:', error);
-                }
-                
-                // Also create admin activity log
-                await logAdminActivity('new_account_request', {
-                    user_id: userData.id,
-                    username: userData.username,
-                    full_name: userData.full_name,
-                    token: token,
-                    timestamp: new Date().toISOString()
-                });
-                
-                console.log('Notificação salva para painel admin:', notification);
-                return true;
-            } catch (err) {
-                console.error('Erro ao enviar notificação:', err);
-                return false;
-            }
+        function generateId() {
+            return Date.now().toString() + Math.random().toString(36).substr(2, 9);
         }
 
-        // Admin activity logging for panel access
-        async function logAdminActivity(action, data) {
-            try {
-                const activity = {
-                    action: action,
-                    data: data,
-                    timestamp: new Date().toISOString(),
-                    ip_address: 'client_side', // Will be updated by admin panel
-                    user_agent: navigator.userAgent
-                };
-                
-                await supabaseClient
-                    .from('admin_activity_logs')
-                    .insert([activity]);
-            } catch (err) {
-                console.error('Erro ao registrar atividade:', err);
+        function generateToken() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let token = 'INV-';
+            for (let i = 0; i < 12; i++) {
+                token += chars.charAt(Math.floor(Math.random() * chars.length));
             }
+            return token;
         }
 
-        // System statistics for admin panel
-        async function updateSystemStats(action, eventId = null, userId = null) {
-            try {
-                const statsUpdate = {
-                    action: action,
-                    event_id: eventId,
-                    user_id: userId,
-                    timestamp: new Date().toISOString(),
-                    date: new Date().toISOString().split('T')[0] // For daily stats
-                };
-                
-                await supabaseClient
-                    .from('system_statistics')
-                    .insert([statsUpdate]);
-            } catch (err) {
-                console.error('Erro ao atualizar estatísticas:', err);
-            }
+        function generateCustomUrl(title) {
+            return title.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                + '-' + Date.now().toString().slice(-6);
         }
 
         // Navigation functions
@@ -933,16 +629,121 @@ Deus lhe abençoe sempre!</textarea>
                 targetSection.classList.add('animate-fade-in');
             }
             
-            if (sectionName === 'about') {
-                loadSiteContent();
+            if (sectionName === 'profile' && currentUser) {
+                loadUserProfile();
             }
         }
 
-        // Token section functions
+        // User session management
+        function saveUserSession(user) {
+            localStorage.setItem('current_user', JSON.stringify(user));
+        }
+
+        function loadUserSession() {
+            const saved = localStorage.getItem('current_user');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                updateUserInterface();
+            }
+        }
+
+        function updateUserInterface() {
+            if (currentUser) {
+                document.getElementById('user-info-nav').classList.remove('hidden');
+                document.getElementById('user-profile-nav').classList.remove('hidden');
+                document.getElementById('mobile-profile-nav').classList.remove('hidden');
+                document.getElementById('mobile-user-nav').classList.remove('hidden');
+                document.getElementById('mobile-user-info').classList.remove('hidden');
+                
+                document.getElementById('login-nav').classList.add('hidden');
+                document.getElementById('mobile-login-nav').classList.add('hidden');
+                
+                document.getElementById('nav-username').textContent = currentUser.username;
+                document.getElementById('mobile-username').textContent = currentUser.username;
+            } else {
+                document.getElementById('user-info-nav').classList.add('hidden');
+                document.getElementById('user-profile-nav').classList.add('hidden');
+                document.getElementById('mobile-profile-nav').classList.add('hidden');
+                document.getElementById('mobile-user-nav').classList.add('hidden');
+                document.getElementById('mobile-user-info').classList.add('hidden');
+                
+                document.getElementById('login-nav').classList.remove('hidden');
+                document.getElementById('mobile-login-nav').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            currentEvent = null;
+            localStorage.removeItem('current_user');
+            updateUserInterface();
+            showSection('home');
+        }
+
+        // Profile functions
+        function loadUserProfile() {
+            if (!currentUser) return;
+            
+            document.getElementById('profile-full-name').value = currentUser.full_name || '';
+            document.getElementById('profile-username').value = currentUser.username || '';
+            document.getElementById('profile-password').value = currentUser.password || '';
+        }
+
+        function togglePasswordVisibility() {
+            const passwordField = document.getElementById('profile-password');
+            const toggleBtn = document.getElementById('toggle-password-btn');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleBtn.textContent = '🙈';
+            } else {
+                passwordField.type = 'password';
+                toggleBtn.textContent = '👁️';
+            }
+        }
+
+        function enableProfileEdit() {
+            document.getElementById('profile-edit-form').classList.remove('hidden');
+            document.getElementById('edit-full-name').value = currentUser.full_name || '';
+            document.getElementById('edit-password').value = '';
+        }
+
+        function cancelProfileEdit() {
+            document.getElementById('profile-edit-form').classList.add('hidden');
+        }
+
+        function saveProfileChanges() {
+            const newFullName = document.getElementById('edit-full-name').value.trim();
+            const newPassword = document.getElementById('edit-password').value.trim();
+            
+            if (!newFullName) {
+                alert('Nome completo é obrigatório');
+                return;
+            }
+            
+            currentUser.full_name = newFullName;
+            if (newPassword) {
+                currentUser.password = newPassword;
+            }
+            
+            // Update in users array
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) {
+                users[userIndex] = currentUser;
+                saveData();
+            }
+            
+            saveUserSession(currentUser);
+            updateUserInterface();
+            loadUserProfile();
+            cancelProfileEdit();
+            
+            alert('Perfil atualizado com sucesso!');
+        }
+
+        // Token functions
         function showTokenSection() {
             showSection('token');
-            
-            // Check if we have stored username
             const pendingUsername = localStorage.getItem('pending_username');
             if (pendingUsername) {
                 document.getElementById('pending-username').textContent = pendingUsername;
@@ -951,89 +752,111 @@ Deus lhe abençoe sempre!</textarea>
 
         function proceedToLogin() {
             if (currentUser) {
+                updateUserInterface();
                 loadUserDashboard();
             } else {
                 showSection('login');
             }
         }
 
-        // Load site content
-        function loadSiteContent() {
-            document.getElementById('about-content').textContent = siteContent.about;
-            document.getElementById('contact-info').innerHTML = siteContent.contact.split('\n').map(line => `<p class="text-sm">${line}</p>`).join('');
-        }
-
-        // Generate automatic URL from event title
-        function generateCustomUrl(title) {
-            return title.toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '') // Remove accents
-                .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-                .replace(/\s+/g, '-') // Replace spaces with hyphens
-                .replace(/-+/g, '-') // Replace multiple hyphens with single
-                .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
-                + '-' + Date.now().toString().slice(-6); // Add timestamp for uniqueness
-        }
-
-        // Registration form handler (creates user account and generates unique token)
-        document.getElementById('register-form').addEventListener('submit', async function(e) {
+        // Form handlers
+        document.getElementById('register-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
+            const fullName = document.getElementById('full-name').value;
+            const password = document.getElementById('password').value;
             
-            // Generate unique token
-            const uniqueToken = generateUniqueToken();
+            // Check if username exists
+            if (users.find(u => u.username === username)) {
+                alert('Nome de usuário já existe');
+                return;
+            }
             
-            const formData = {
-                full_name: document.getElementById('full-name').value,
+            const token = generateToken();
+            const newUser = {
+                id: generateId(),
                 username: username,
-                password: document.getElementById('password').value,
-                token: uniqueToken,
-                is_active: false
+                full_name: fullName,
+                password: password,
+                token: token,
+                is_active: false,
+                created_at: new Date().toISOString()
             };
             
-            try {
-                // Insert user into Supabase
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .insert([formData])
-                    .select();
-                
-                if (error) {
-                    if (error.code === '23505') {
-                        alert('Nome de usuário já existe');
-                    } else {
-                        alert('Erro ao criar conta: ' + error.message);
-                    }
-                    return;
-                }
-                
-                // Store user data for token section
-                localStorage.setItem('pending_username', username);
-                localStorage.setItem('pending_user_id', data[0].id);
-                localStorage.setItem('generated_token', uniqueToken);
-                
-                document.getElementById('pending-username').textContent = username;
-                
-                // Send notification to admin and log activity
-                await sendAdminNotification(data[0], uniqueToken);
-                await updateSystemStats('user_registration', null, data[0].id);
-                
-                document.getElementById('account-created').classList.remove('hidden');
-                this.reset();
-            } catch (err) {
-                alert('Erro de conexão: ' + err.message);
-            }
+            users.push(newUser);
+            saveData();
+            
+            localStorage.setItem('pending_username', username);
+            localStorage.setItem('pending_user_id', newUser.id);
+            
+            document.getElementById('pending-username').textContent = username;
+            document.getElementById('account-created').classList.remove('hidden');
+            this.reset();
         });
 
-        // Create event form handler
-        document.getElementById('create-event-form').addEventListener('submit', async function(e) {
+        document.getElementById('token-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const enteredToken = document.getElementById('access-token').value.trim();
+            const pendingUserId = localStorage.getItem('pending_user_id');
+            
+            const user = users.find(u => u.id === pendingUserId);
+            if (!user || user.token !== enteredToken) {
+                alert('Token inválido');
+                return;
+            }
+            
+            user.is_active = true;
+            user.last_login = new Date().toISOString();
+            saveData();
+            
+            currentUser = user;
+            saveUserSession(user);
+            updateUserInterface();
+            
+            document.getElementById('token-success').classList.remove('hidden');
+            
+            localStorage.removeItem('pending_username');
+            localStorage.removeItem('pending_user_id');
+        });
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            if (!user) {
+                alert('Credenciais inválidas');
+                return;
+            }
+            
+            if (!user.is_active) {
+                localStorage.setItem('pending_username', username);
+                localStorage.setItem('pending_user_id', user.id);
+                document.getElementById('pending-username').textContent = username;
+                showTokenSection();
+                return;
+            }
+            
+            user.last_login = new Date().toISOString();
+            saveData();
+            
+            currentUser = user;
+            saveUserSession(user);
+            updateUserInterface();
+            loadUserDashboard();
+        });
+
+        document.getElementById('create-event-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const eventTitle = document.getElementById('event-title').value;
             const customUrl = generateCustomUrl(eventTitle);
-            
             const giftType = document.querySelector('input[name="gift-type"]:checked').value;
+            
             let giftConfig = null;
             let enableGifts = false;
 
@@ -1047,300 +870,102 @@ Deus lhe abençoe sempre!</textarea>
                 };
             } else if (giftType === 'list') {
                 enableGifts = true;
-                giftConfig = {
-                    type: 'list',
-                    items: []
-                };
+                giftConfig = { type: 'list', items: [] };
             }
 
-            const formData = {
+            const newEvent = {
+                id: generateId(),
                 user_id: currentUser.id,
                 title: eventTitle,
                 description: document.getElementById('event-description').value || null,
                 event_date: document.getElementById('event-date').value,
                 confirmation_deadline: document.getElementById('confirmation-deadline').value || null,
-                max_confirmations: parseInt(document.getElementById('max-confirmations').value) || null,
-                companion_limit: parseInt(document.getElementById('companion-limit').value) || 1,
                 custom_url: customUrl,
-                enable_description: !!document.getElementById('event-description').value,
-                enable_deadline: !!document.getElementById('confirmation-deadline').value,
-                enable_max_limit: !!document.getElementById('max-confirmations').value,
-                enable_public_wall: true,
                 enable_gifts: enableGifts,
-                gift_config: giftConfig
+                gift_config: giftConfig,
+                created_at: new Date().toISOString()
             };
             
-            try {
-                // Insert event into Supabase
-                const { data, error } = await supabaseClient
-                    .from('events')
-                    .insert([formData])
-                    .select();
-                
-                if (error) {
-                    if (error.code === '23505') {
-                        alert('URL personalizada já existe');
-                    } else {
-                        alert('Erro ao criar evento: ' + error.message);
-                    }
-                    return;
-                }
-                
-                currentEvent = data[0];
-                
-                // Log event creation for admin panel
-                await logAdminActivity('event_created', {
-                    event_id: data[0].id,
-                    user_id: currentUser.id,
-                    event_title: data[0].title,
-                    event_date: data[0].event_date,
-                    custom_url: data[0].custom_url,
-                    timestamp: new Date().toISOString()
-                });
-                await updateSystemStats('event_creation', data[0].id, currentUser.id);
-                
-                document.getElementById('event-created').classList.remove('hidden');
-                this.reset();
-            } catch (err) {
-                alert('Erro de conexão: ' + err.message);
-            }
+            events.push(newEvent);
+            saveData();
+            
+            currentEvent = newEvent;
+            document.getElementById('event-created').classList.remove('hidden');
+            this.reset();
         });
 
-        // Login form handler
-        document.getElementById('login-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // Dashboard functions
+        function loadUserDashboard() {
+            showSection('user-dashboard');
             
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
+            const userEvents = events.filter(e => e.user_id === currentUser.id);
+            const container = document.getElementById('user-events-list');
+            container.innerHTML = '';
             
-            try {
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single();
-                
-                if (error || !data) {
-                    alert('Credenciais inválidas');
-                    return;
-                }
-                
-                // Check if user has valid token and is active
-                if (!data.is_active || !data.token) {
-                    localStorage.setItem('pending_username', username);
-                    localStorage.setItem('pending_user_id', data.id);
-                    document.getElementById('pending-username').textContent = username;
-                    showTokenSection();
-                    return;
-                }
-                
-                currentUser = data;
-                saveUserSession(data);
-                loadUserDashboard();
-            } catch (err) {
-                alert('Erro de conexão: ' + err.message);
-            }
-        });
-
-        // Token form handler
-        document.getElementById('token-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const enteredToken = document.getElementById('access-token').value.trim();
-            const pendingUsername = localStorage.getItem('pending_username');
-            const pendingUserId = localStorage.getItem('pending_user_id');
-            
-            if (!pendingUsername || !pendingUserId) {
-                alert('Sessão expirada. Faça login novamente.');
-                showSection('login');
+            if (userEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg p-6 card-shadow text-center">
+                        <div class="text-4xl mb-3">🎉</div>
+                        <h3 class="text-lg font-semibold mb-2">Nenhum evento criado</h3>
+                        <p class="text-gray-600 mb-4">Crie seu primeiro evento para começar a receber confirmações!</p>
+                        <button onclick="showSection('create-event')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Criar Primeiro Evento</button>
+                    </div>
+                `;
                 return;
             }
             
-            try {
-                // Get user data to validate token
-                const { data: userData, error: userError } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('id', pendingUserId)
-                    .single();
+            userEvents.forEach(event => {
+                const eventRsvps = rsvps.filter(r => r.wedding_id === event.id);
+                const confirmed = eventRsvps.filter(r => r.attendance === true).length;
+                const total = eventRsvps.length;
                 
-                if (userError || !userData) {
-                    alert('Erro ao validar token. Tente novamente.');
-                    return;
-                }
+                const div = document.createElement('div');
+                div.className = 'bg-white rounded-lg p-4 card-shadow mb-4 cursor-pointer hover:shadow-lg transition-shadow';
+                div.onclick = () => selectEvent(event);
                 
-                // Validate token
-                if (userData.token !== enteredToken) {
-                    document.getElementById('token-error').classList.remove('hidden');
-                    document.getElementById('token-success').classList.add('hidden');
-                    return;
-                }
+                const eventDate = new Date(event.event_date);
+                const isUpcoming = eventDate > new Date();
                 
-                // Token is valid, activate user account
-                const { data: updatedUser, error: updateError } = await supabaseClient
-                    .from('users')
-                    .update({ is_active: true })
-                    .eq('id', pendingUserId)
-                    .select()
-                    .single();
-                
-                if (updateError) {
-                    alert('Erro ao ativar conta: ' + updateError.message);
-                    return;
-                }
-                
-                // Clear error and show success
-                document.getElementById('token-error').classList.add('hidden');
-                document.getElementById('token-success').classList.remove('hidden');
-                
-                // Store activated user and save session
-                currentUser = updatedUser;
-                saveUserSession(updatedUser);
-                
-                // Log token validation for admin panel
-                await logAdminActivity('token_validated', {
-                    user_id: updatedUser.id,
-                    username: updatedUser.username,
-                    token: enteredToken,
-                    timestamp: new Date().toISOString()
-                });
-                await updateSystemStats('token_validation', null, updatedUser.id);
-                
-                // Clear pending data from localStorage
-                localStorage.removeItem('pending_username');
-                localStorage.removeItem('pending_user_id');
-                localStorage.removeItem('generated_token');
-                
-            } catch (err) {
-                alert('Erro de conexão: ' + err.message);
-            }
-        });
-
-
-
-        // Load user dashboard
-        async function loadUserDashboard() {
-            showSection('user-dashboard');
-            
-            try {
-                // Load user's events
-                const { data: events, error } = await supabaseClient
-                    .from('events')
-                    .select('*')
-                    .eq('user_id', currentUser.id)
-                    .order('created_at', { ascending: false });
-                
-                if (error) {
-                    console.error('Erro ao carregar eventos:', error);
-                    return;
-                }
-                
-                const container = document.getElementById('user-events-list');
-                container.innerHTML = '';
-                
-                if (events.length === 0) {
-                    container.innerHTML = `
-                        <div class="bg-white rounded-lg p-6 card-shadow text-center">
-                            <div class="text-4xl mb-3">🎉</div>
-                            <h3 class="text-lg font-semibold mb-2">Nenhum evento criado</h3>
-                            <p class="text-gray-600 mb-4">Crie seu primeiro evento para começar a receber confirmações!</p>
-                            <button onclick="showSection('create-event')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Criar Primeiro Evento</button>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Show events list
-                events.forEach(event => {
-                    const div = document.createElement('div');
-                    div.className = 'bg-white rounded-lg p-4 card-shadow mb-4 cursor-pointer hover:shadow-lg transition-shadow';
-                    div.onclick = () => selectEvent(event);
-                    
-                    const eventDate = new Date(event.event_date);
-                    const isUpcoming = eventDate > new Date();
-                    
-                    div.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold mb-1">${event.title}</h3>
-                                <p class="text-sm text-gray-600 mb-2">${eventDate.toLocaleDateString('pt-BR')}</p>
-                                ${event.description ? `<p class="text-xs text-gray-500 mb-2">${event.description}</p>` : ''}
-                                <div class="flex items-center space-x-4 text-xs">
-                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">ID: ${event.custom_url}</span>
-                                    <span class="${isUpcoming ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} px-2 py-1 rounded">
-                                        ${isUpcoming ? 'Ativo' : 'Finalizado'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm font-semibold text-purple-600" id="event-stats-${event.id}">Carregando...</p>
-                                <p class="text-xs text-gray-500">confirmações</p>
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold mb-1">${event.title}</h3>
+                            <p class="text-sm text-gray-600 mb-2">${eventDate.toLocaleDateString('pt-BR')}</p>
+                            ${event.description ? `<p class="text-xs text-gray-500 mb-2">${event.description}</p>` : ''}
+                            <div class="flex items-center space-x-4 text-xs">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">ID: ${event.custom_url}</span>
+                                <span class="${isUpcoming ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} px-2 py-1 rounded">
+                                    ${isUpcoming ? 'Ativo' : 'Finalizado'}
+                                </span>
                             </div>
                         </div>
-                    `;
-                    container.appendChild(div);
-                    
-                    // Load stats for this event
-                    loadEventStats(event.id);
-                });
-                
-            } catch (err) {
-                console.error('Erro de conexão:', err);
-            }
+                        <div class="text-right">
+                            <p class="text-sm font-semibold text-purple-600">${confirmed}/${total}</p>
+                            <p class="text-xs text-gray-500">confirmações</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
         }
 
-        // Load stats for a specific event
-        async function loadEventStats(eventId) {
-            try {
-                const { data: rsvps, error } = await supabaseClient
-                    .from('rsvps')
-                    .select('*')
-                    .eq('wedding_id', eventId);
-                
-                if (!error && rsvps) {
-                    const confirmed = rsvps.filter(r => r.attendance === true).length;
-                    const total = rsvps.length;
-                    document.getElementById(`event-stats-${eventId}`).textContent = `${confirmed}/${total}`;
-                }
-            } catch (err) {
-                console.error('Erro ao carregar stats:', err);
-            }
-        }
-
-        // Select an event to view details
         function selectEvent(event) {
             currentEvent = event;
             
-            // Hide events list and show event details
             document.getElementById('user-events-list').style.display = 'none';
             document.getElementById('event-details').classList.remove('hidden');
             
-            // Generate event links - clean URLs without showing main site
             const baseUrl = window.location.origin + window.location.pathname;
             document.getElementById('link-with-companion').value = `${baseUrl}?event=${currentEvent.custom_url}&companion=true`;
             document.getElementById('link-without-companion').value = `${baseUrl}?event=${currentEvent.custom_url}&companion=false`;
             
-            // Load settings
-            document.getElementById('enable-description').checked = currentEvent.enable_description || false;
-            document.getElementById('enable-deadline').checked = currentEvent.enable_deadline || false;
-            document.getElementById('enable-max-limit').checked = currentEvent.enable_max_limit || false;
-            document.getElementById('enable-public-wall').checked = currentEvent.enable_public_wall || false;
             document.getElementById('enable-gifts').checked = currentEvent.enable_gifts || false;
             
-            // Load gift configuration
             loadGiftConfiguration();
-            
             updateUserStats();
             loadRecentRSVPs();
+            loadMessageWall();
             
-            // Load gift statistics if gifts are enabled
-            if (currentEvent.enable_gifts) {
-                document.getElementById('gift-stats').classList.remove('hidden');
-                loadGiftStatistics();
-            }
-            
-            // Add back button
             const backButton = document.createElement('button');
             backButton.className = 'mb-4 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600';
             backButton.textContent = '← Voltar aos Eventos';
@@ -1356,128 +981,97 @@ Deus lhe abençoe sempre!</textarea>
             }
         }
 
-
-
-        // Update user statistics
-        async function updateUserStats() {
-            try {
-                const { data: rsvps, error } = await supabaseClient
-                    .from('rsvps')
-                    .select('*')
-                    .eq('wedding_id', currentEvent.id);
-                
-                if (error) {
-                    console.error('Erro ao carregar RSVPs:', error);
-                    return;
-                }
-                
-                const confirmed = rsvps.filter(r => r.attendance === true).length;
-                const declined = rsvps.filter(r => r.attendance === false).length;
-                const companions = rsvps.filter(r => r.companion_name).length;
-                
-                document.getElementById('confirmed-count').textContent = confirmed;
-                document.getElementById('declined-count').textContent = declined;
-                document.getElementById('total-rsvps').textContent = rsvps.length;
-                document.getElementById('total-companions').textContent = companions;
-            } catch (err) {
-                console.error('Erro de conexão:', err);
-            }
+        function updateUserStats() {
+            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id);
+            const confirmed = eventRsvps.filter(r => r.attendance === true).length;
+            const declined = eventRsvps.filter(r => r.attendance === false).length;
+            const companions = eventRsvps.filter(r => r.companion_name).length;
+            
+            document.getElementById('confirmed-count').textContent = confirmed;
+            document.getElementById('declined-count').textContent = declined;
+            document.getElementById('total-rsvps').textContent = eventRsvps.length;
+            document.getElementById('total-companions').textContent = companions;
         }
 
-
-
-        // Load recent RSVPs for user
-        async function loadRecentRSVPs() {
-            try {
-                const { data: rsvps, error } = await supabaseClient
-                    .from('rsvps')
-                    .select('*')
-                    .eq('wedding_id', currentEvent.id)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-                
-                if (error) {
-                    console.error('Erro ao carregar RSVPs:', error);
-                    return;
-                }
-                
-                const container = document.getElementById('recent-rsvps-list');
-                container.innerHTML = '';
-                
-                rsvps.forEach(rsvp => {
-                    const div = document.createElement('div');
-                    div.className = 'p-3 border rounded-lg';
-                    div.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-semibold text-sm">${rsvp.guest_name}</p>
-                                ${rsvp.companion_name ? `<p class="text-xs text-gray-600">+ ${rsvp.companion_name}</p>` : ''}
-                                ${rsvp.message ? `<p class="text-xs text-gray-500 mt-1">"${rsvp.message}"</p>` : ''}
-                            </div>
-                            <span class="text-xs px-2 py-1 rounded ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                ${rsvp.attendance ? 'Confirmado' : 'Recusado'}
-                            </span>
+        function loadRecentRSVPs() {
+            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 5);
+            
+            const container = document.getElementById('recent-rsvps-list');
+            container.innerHTML = '';
+            
+            eventRsvps.forEach(rsvp => {
+                const div = document.createElement('div');
+                div.className = 'p-3 border rounded-lg';
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-semibold text-sm">${rsvp.guest_name}</p>
+                            ${rsvp.companion_name ? `<p class="text-xs text-gray-600">+ ${rsvp.companion_name}</p>` : ''}
+                            ${rsvp.message ? `<p class="text-xs text-gray-500 mt-1">"${rsvp.message}"</p>` : ''}
                         </div>
-                    `;
-                    container.appendChild(div);
-                });
-            } catch (err) {
-                console.error('Erro de conexão:', err);
-            }
+                        <span class="text-xs px-2 py-1 rounded ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${rsvp.attendance ? 'Confirmado' : 'Recusado'}
+                        </span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
         }
 
-
-
-        // Save event settings
-        async function saveEventSettings() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('events')
-                    .update({
-                        enable_description: document.getElementById('enable-description').checked,
-                        enable_deadline: document.getElementById('enable-deadline').checked,
-                        enable_max_limit: document.getElementById('enable-max-limit').checked,
-                        enable_public_wall: document.getElementById('enable-public-wall').checked,
-                        enable_gifts: document.getElementById('enable-gifts').checked
-                    })
-                    .eq('id', currentEvent.id)
-                    .select();
+        function loadMessageWall() {
+            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id && r.message)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            const container = document.getElementById('messages-list');
+            const noMessages = document.getElementById('no-messages');
+            
+            if (eventRsvps.length === 0) {
+                container.innerHTML = '';
+                noMessages.style.display = 'block';
+                return;
+            }
+            
+            noMessages.style.display = 'none';
+            container.innerHTML = '';
+            
+            eventRsvps.forEach(rsvp => {
+                const div = document.createElement('div');
+                div.className = 'message-bubble p-3 rounded-lg';
                 
-                if (error) {
-                    alert('Erro ao salvar configurações: ' + error.message);
-                    return;
+                const hasCompanions = rsvp.companion_name && rsvp.companion_name.trim();
+                const isPlural = hasCompanions;
+                
+                let guestInfo = rsvp.guest_name;
+                if (hasCompanions) {
+                    const companions = rsvp.companion_name.split(',').map(c => c.trim());
+                    guestInfo += ` e ${companions.join(', ')}`;
                 }
                 
-                currentEvent = data[0];
-                
-                // Log settings change for admin panel
-                await logAdminActivity('event_settings_updated', {
-                    event_id: currentEvent.id,
-                    user_id: currentUser.id,
-                    settings: {
-                        enable_description: data[0].enable_description,
-                        enable_deadline: data[0].enable_deadline,
-                        enable_max_limit: data[0].enable_max_limit,
-                        enable_public_wall: data[0].enable_public_wall,
-                        enable_gifts: data[0].enable_gifts
-                    },
-                    timestamp: new Date().toISOString()
-                });
-                
-                alert('Configurações salvas com sucesso!');
-            } catch (err) {
-                alert('Erro de conexão: ' + err.message);
-            }
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-semibold text-sm text-purple-700">${guestInfo}</span>
+                        <span class="text-xs text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    <p class="text-sm text-gray-700">${rsvp.message}</p>
+                    <div class="mt-2 text-xs text-gray-500">
+                        ${rsvp.attendance ? 
+                            (isPlural ? 'Confirmaram presença' : 'Confirmou presença') : 
+                            (isPlural ? 'Não comparecerão' : 'Não comparecerá')
+                        }
+                    </div>
+                `;
+                container.appendChild(div);
+            });
         }
 
-        // Copy link function
         function copyLink(inputId) {
             const input = document.getElementById(inputId);
             input.select();
             input.setSelectionRange(0, 99999);
             document.execCommand('copy');
             
-            // Show feedback
             const button = input.nextElementSibling;
             const originalText = button.textContent;
             button.textContent = 'Copiado!';
@@ -1491,21 +1085,15 @@ Deus lhe abençoe sempre!</textarea>
             }, 2000);
         }
 
-        // Gift management functions
+        // Gift system functions
         function toggleGiftSystem() {
             const enabled = document.getElementById('enable-gifts').checked;
             const configSection = document.getElementById('gift-system-config');
-            const statsSection = document.getElementById('gift-stats');
             
             if (enabled) {
                 configSection.classList.remove('hidden');
-                if (currentEvent && currentEvent.gift_config) {
-                    statsSection.classList.remove('hidden');
-                    loadGiftStatistics();
-                }
             } else {
                 configSection.classList.add('hidden');
-                statsSection.classList.add('hidden');
             }
         }
 
@@ -1585,793 +1173,396 @@ Deus lhe abençoe sempre!</textarea>
             loadGiftItems();
         }
 
-        async function saveGiftSettings() {
-            try {
-                const type = document.getElementById('gift-system-type').value;
-                let giftConfig = null;
+        function saveGiftSettings() {
+            const type = document.getElementById('gift-system-type').value;
+            let giftConfig = null;
+            
+            if (type === 'bank') {
+                giftConfig = {
+                    type: 'bank',
+                    message: document.getElementById('bank-message').value,
+                    iban: document.getElementById('bank-iban').value,
+                    holder: document.getElementById('bank-holder').value
+                };
+            } else if (type === 'list') {
+                giftConfig = currentEvent.gift_config;
+            }
+            
+            currentEvent.enable_gifts = type !== 'none';
+            currentEvent.gift_config = giftConfig;
+            
+            // Update in events array
+            const eventIndex = events.findIndex(e => e.id === currentEvent.id);
+            if (eventIndex !== -1) {
+                events[eventIndex] = currentEvent;
+                saveData();
+            }
+            
+            alert('Configurações de presentes salvas com sucesso!');
+        }
+
+        // Report functions
+        function downloadUserReport() {
+            if (!currentUser) return;
+            
+            const userEvents = events.filter(e => e.user_id === currentUser.id);
+            const allRsvps = rsvps.filter(r => userEvents.some(e => e.id === r.wedding_id));
+            
+            generateUserPDFReport(currentUser, userEvents, allRsvps);
+        }
+
+        function downloadEventReport() {
+            if (!currentEvent) return;
+            
+            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id);
+            const eventGifts = gifts.filter(g => g.event_id === currentEvent.id);
+            
+            generateEventPDFReport(currentEvent, eventRsvps, eventGifts);
+        }
+
+        function generateUserPDFReport(user, events, rsvps) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(20);
+            doc.text('Relatório do Usuário - Invites', 20, 20);
+            
+            doc.setFontSize(12);
+            doc.text(`Nome: ${user.full_name}`, 20, 35);
+            doc.text(`Usuário: ${user.username}`, 20, 45);
+            doc.text(`Membro desde: ${new Date(user.created_at).toLocaleDateString('pt-BR')}`, 20, 55);
+            doc.text(`Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 65);
+            
+            let yPos = 80;
+            
+            doc.setFontSize(16);
+            doc.text('Resumo dos Eventos', 20, yPos);
+            yPos += 15;
+            
+            doc.setFontSize(12);
+            doc.text(`Total de eventos criados: ${events.length}`, 20, yPos);
+            yPos += 10;
+            
+            const totalRsvps = rsvps.length;
+            const confirmedRsvps = rsvps.filter(r => r.attendance === true).length;
+            
+            doc.text(`Total de confirmações recebidas: ${totalRsvps}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Confirmações positivas: ${confirmedRsvps}`, 20, yPos);
+            yPos += 20;
+            
+            if (events.length > 0) {
+                doc.setFontSize(16);
+                doc.text('Detalhes dos Eventos', 20, yPos);
+                yPos += 15;
                 
-                if (type === 'bank') {
-                    giftConfig = {
-                        type: 'bank',
-                        message: document.getElementById('bank-message').value,
-                        iban: document.getElementById('bank-iban').value,
-                        holder: document.getElementById('bank-holder').value
-                    };
-                } else if (type === 'list') {
-                    giftConfig = currentEvent.gift_config;
-                }
+                events.forEach((event, index) => {
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(14);
+                    doc.text(`${index + 1}. ${event.title}`, 20, yPos);
+                    yPos += 10;
+                    
+                    doc.setFontSize(10);
+                    doc.text(`Data: ${new Date(event.event_date).toLocaleDateString('pt-BR')}`, 25, yPos);
+                    yPos += 8;
+                    
+                    const eventRsvps = rsvps.filter(r => r.wedding_id === event.id);
+                    const eventConfirmed = eventRsvps.filter(r => r.attendance === true).length;
+                    
+                    doc.text(`Confirmações: ${eventConfirmed} (${eventRsvps.length} total)`, 25, yPos);
+                    yPos += 15;
+                });
+            }
+            
+            doc.save(`relatorio-usuario-${user.username}-${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        function generateEventPDFReport(event, rsvps, gifts) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(20);
+            doc.text('Relatório do Evento - Invites', 20, 20);
+            
+            doc.setFontSize(16);
+            doc.text(event.title, 20, 35);
+            
+            doc.setFontSize(12);
+            doc.text(`Data do evento: ${new Date(event.event_date).toLocaleDateString('pt-BR')}`, 20, 50);
+            doc.text(`Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 60);
+            
+            let yPos = 75;
+            
+            const confirmed = rsvps.filter(r => r.attendance === true);
+            const declined = rsvps.filter(r => r.attendance === false);
+            
+            doc.setFontSize(16);
+            doc.text('Estatísticas', 20, yPos);
+            yPos += 15;
+            
+            doc.setFontSize(12);
+            doc.text(`Total de confirmações: ${rsvps.length}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Confirmaram presença: ${confirmed.length}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Não comparecerão: ${declined.length}`, 20, yPos);
+            yPos += 20;
+            
+            if (confirmed.length > 0) {
+                doc.setFontSize(16);
+                doc.text('Lista de Confirmados', 20, yPos);
+                yPos += 15;
                 
-                const { data, error } = await supabaseClient
-                    .from('events')
-                    .update({
-                        enable_gifts: type !== 'none',
-                        gift_config: giftConfig
-                    })
-                    .eq('id', currentEvent.id)
-                    .select();
-                
-                if (error) {
-                    alert('Erro ao salvar configurações de presentes: ' + error.message);
-                    return;
-                }
-                
-                currentEvent = data[0];
-                alert('Configurações de presentes salvas com sucesso!');
-            } catch (err) {
-                alert('Erro de conexão: ' + err.message);
+                confirmed.forEach((rsvp, index) => {
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    let guestText = `${index + 1}. ${rsvp.guest_name}`;
+                    
+                    if (rsvp.companion_name) {
+                        guestText += ` + ${rsvp.companion_name}`;
+                    }
+                    
+                    doc.text(guestText, 20, yPos);
+                    yPos += 10;
+                });
+            }
+            
+            const eventName = event.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+            doc.save(`relatorio-evento-${eventName}-${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Guest RSVP functions
+        function loadGuestRSVP() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventUrl = urlParams.get('event');
+            const allowCompanion = urlParams.get('companion') === 'true';
+            
+            if (!eventUrl) return;
+            
+            const event = events.find(e => e.custom_url === eventUrl);
+            if (!event) {
+                alert('Evento não encontrado');
+                return;
+            }
+            
+            window.currentEventData = event;
+            window.allowCompanion = allowCompanion;
+            
+            showSection('guest-rsvp');
+            
+            document.getElementById('rsvp-event-title').textContent = event.title;
+            document.getElementById('rsvp-event-date').textContent = new Date(event.event_date).toLocaleDateString('pt-BR');
+            
+            if (event.description) {
+                document.getElementById('rsvp-event-description').textContent = event.description;
+            } else {
+                document.getElementById('rsvp-event-description').style.display = 'none';
+            }
+            
+            // Show deadline if set
+            if (event.confirmation_deadline) {
+                const deadlineDate = new Date(event.confirmation_deadline);
+                document.getElementById('deadline-date').textContent = deadlineDate.toLocaleDateString('pt-BR');
+                document.getElementById('deadline-notice').classList.remove('hidden');
+            }
+            
+            // Setup companion section
+            if (allowCompanion) {
+                document.getElementById('companion-section').classList.remove('hidden');
+                setupCompanionInputs();
             }
         }
 
-        // Guest gift functions
+        function setupCompanionInputs() {
+            const container = document.getElementById('companion-inputs');
+            container.innerHTML = `
+                <input type="text" id="companion-1" class="w-full p-3 border rounded-lg mb-2" placeholder="Nome do acompanhante">
+            `;
+        }
+
+        document.getElementById('rsvp-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const guestName = document.getElementById('guest-name').value;
+            const attendance = document.getElementById('attendance-status').value === 'true';
+            const message = document.getElementById('guest-message').value;
+            
+            let companionName = '';
+            if (window.allowCompanion) {
+                const companion1 = document.getElementById('companion-1').value.trim();
+                if (companion1) {
+                    companionName = companion1;
+                }
+            }
+            
+            const newRsvp = {
+                id: generateId(),
+                wedding_id: window.currentEventData.id,
+                guest_name: guestName,
+                companion_name: companionName,
+                attendance: attendance,
+                message: message,
+                created_at: new Date().toISOString()
+            };
+            
+            rsvps.push(newRsvp);
+            saveData();
+            
+            // Show gift section if enabled
+            if (window.currentEventData.enable_gifts && attendance) {
+                showGiftSection();
+            } else {
+                showSuccessMessage();
+            }
+        });
+
+        function showGiftSection() {
+            document.getElementById('gift-section').classList.remove('hidden');
+            
+            const giftConfig = window.currentEventData.gift_config;
+            if (giftConfig.type === 'bank') {
+                document.getElementById('bank-gift-option').classList.remove('hidden');
+                document.getElementById('bank-gift-message').textContent = giftConfig.message;
+                document.getElementById('display-iban').value = giftConfig.iban;
+            } else if (giftConfig.type === 'list') {
+                document.getElementById('list-gift-option').classList.remove('hidden');
+                loadAvailableGifts();
+            }
+        }
+
+        function loadAvailableGifts() {
+            const container = document.getElementById('available-gifts');
+            const giftConfig = window.currentEventData.gift_config;
+            
+            if (!giftConfig.items) return;
+            
+            container.innerHTML = '';
+            giftConfig.items.forEach((item, index) => {
+                const selectedCount = gifts.filter(g => g.event_id === window.currentEventData.id && g.gift_name === item.name).length;
+                const available = item.quantity - selectedCount;
+                
+                if (available > 0) {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50';
+                    div.onclick = () => selectGift(item.name);
+                    div.innerHTML = `
+                        <span class="font-medium">${item.name}</span>
+                        <span class="text-sm text-gray-500">${available} disponível(is)</span>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        function selectGift(giftName) {
+            const newGift = {
+                id: generateId(),
+                event_id: window.currentEventData.id,
+                guest_name: document.getElementById('guest-name').value,
+                gift_name: giftName,
+                selection_type: 'list',
+                created_at: new Date().toISOString()
+            };
+            
+            gifts.push(newGift);
+            saveData();
+            
+            showSuccessMessage();
+        }
+
         function copyIban() {
             const input = document.getElementById('display-iban');
             input.select();
-            input.setSelectionRange(0, 99999);
             document.execCommand('copy');
             
             const button = event.target;
-            const originalText = button.textContent;
             button.textContent = 'Copiado!';
             button.classList.add('bg-green-600');
-            button.classList.remove('bg-purple-600');
-            
             setTimeout(() => {
-                button.textContent = originalText;
+                button.textContent = 'Copiar IBAN';
                 button.classList.remove('bg-green-600');
                 button.classList.add('bg-purple-600');
             }, 2000);
         }
 
         function skipGifts() {
-            document.getElementById('gift-section').style.display = 'none';
-            document.getElementById('success-message').classList.remove('hidden');
-            addEditButton();
+            showSuccessMessage();
         }
 
         function confirmGiftChoice() {
+            const newGift = {
+                id: generateId(),
+                event_id: window.currentEventData.id,
+                guest_name: document.getElementById('guest-name').value,
+                gift_name: 'Transferência Bancária',
+                selection_type: 'bank',
+                created_at: new Date().toISOString()
+            };
+            
+            gifts.push(newGift);
+            saveData();
+            
+            showSuccessMessage();
+        }
+
+        function showSuccessMessage() {
             document.getElementById('gift-section').style.display = 'none';
             document.getElementById('success-message').classList.remove('hidden');
-            addEditButton();
-        }
-
-        async function selectGift(itemName) {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const eventUrl = urlParams.get('event');
-                
-                // Get event data
-                const { data: event, error: eventError } = await supabaseClient
-                    .from('events')
-                    .select('*')
-                    .eq('custom_url', eventUrl)
-                    .single();
-                
-                if (eventError) {
-                    alert('Erro ao carregar evento');
-                    return;
-                }
-                
-                // Save gift selection to database
-                const { data, error } = await supabaseClient
-                    .from('gift_selections')
-                    .insert([{
-                        event_id: event.id,
-                        guest_name: document.getElementById('guest-name').value,
-                        gift_name: itemName,
-                        selection_type: 'list'
-                    }]);
-                
-                if (error) {
-                    console.error('Erro ao salvar seleção:', error);
-                }
-                
-                document.getElementById('gift-section').style.display = 'none';
-                document.getElementById('success-message').classList.remove('hidden');
-                addEditButton();
-                
-            } catch (err) {
-                alert('Erro ao selecionar presente: ' + err.message);
-            }
-        }
-
-        async function confirmGiftChoice() {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const eventUrl = urlParams.get('event');
-                
-                // Get event data
-                const { data: event, error: eventError } = await supabaseClient
-                    .from('events')
-                    .select('*')
-                    .eq('custom_url', eventUrl)
-                    .single();
-                
-                if (eventError) {
-                    alert('Erro ao carregar evento');
-                    return;
-                }
-                
-                // Save bank transfer selection
-                const { data, error } = await supabaseClient
-                    .from('gift_selections')
-                    .insert([{
-                        event_id: event.id,
-                        guest_name: document.getElementById('guest-name').value,
-                        gift_name: 'Transferência Bancária',
-                        selection_type: 'bank'
-                    }]);
-                
-                if (error) {
-                    console.error('Erro ao salvar seleção:', error);
-                }
-                
-                document.getElementById('gift-section').style.display = 'none';
-                document.getElementById('success-message').classList.remove('hidden');
-                
-            } catch (err) {
-                alert('Erro ao confirmar presente: ' + err.message);
-            }
-        }
-
-        async function loadGiftStatistics() {
-            try {
-                const { data: selections, error } = await supabaseClient
-                    .from('gift_selections')
-                    .select('*')
-                    .eq('event_id', currentEvent.id);
-                
-                if (error) {
-                    console.error('Erro ao carregar estatísticas:', error);
-                    return;
-                }
-                
-                const giftConfig = currentEvent.gift_config;
-                let totalAvailable = 0;
-                let totalChosen = selections.length;
-                
-                if (giftConfig && giftConfig.type === 'list') {
-                    totalAvailable = giftConfig.items.reduce((sum, item) => sum + item.quantity, 0);
-                    
-                    // Load detailed gift choices
-                    const container = document.getElementById('gift-choices-list');
-                    container.innerHTML = '';
-                    
-                    // Group selections by gift name
-                    const selectionsByGift = {};
-                    selections.forEach(selection => {
-                        if (!selectionsByGift[selection.gift_name]) {
-                            selectionsByGift[selection.gift_name] = [];
-                        }
-                        selectionsByGift[selection.gift_name].push(selection);
-                    });
-                    
-                    // Show each gift item with selections
-                    giftConfig.items.forEach(item => {
-                        const selectedCount = selectionsByGift[item.name] ? selectionsByGift[item.name].length : 0;
-                        const remaining = item.quantity - selectedCount;
-                        
-                        const div = document.createElement('div');
-                        div.className = 'flex justify-between items-center p-2 border rounded-lg';
-                        div.innerHTML = `
-                            <div>
-                                <p class="font-semibold text-sm">${item.name}</p>
-                                <p class="text-xs text-gray-600">${selectedCount} escolhido(s) de ${item.quantity}</p>
-                            </div>
-                            <span class="text-xs px-2 py-1 rounded ${remaining > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                ${remaining} restante(s)
-                            </span>
-                        `;
-                        container.appendChild(div);
-                    });
-                } else if (giftConfig && giftConfig.type === 'bank') {
-                    totalAvailable = '∞';
-                    
-                    const container = document.getElementById('gift-choices-list');
-                    container.innerHTML = `
-                        <div class="p-3 border rounded-lg">
-                            <p class="font-semibold text-sm">Transferências Bancárias</p>
-                            <p class="text-xs text-gray-600">${totalChosen} pessoa(s) escolheram esta opção</p>
-                        </div>
-                    `;
-                }
-                
-                document.getElementById('gifts-chosen').textContent = totalChosen;
-                document.getElementById('gifts-available').textContent = totalAvailable === '∞' ? '∞' : (totalAvailable - totalChosen);
-                
-            } catch (err) {
-                console.error('Erro ao carregar estatísticas:', err);
-            }
-        }
-
-        async function showGiftSection(giftConfig, eventId) {
-            document.getElementById('gift-section').classList.remove('hidden');
             
-            if (giftConfig.type === 'bank') {
-                document.getElementById('bank-gift-option').classList.remove('hidden');
-                document.getElementById('list-gift-option').classList.add('hidden');
-                document.getElementById('bank-gift-message').textContent = giftConfig.message;
-                document.getElementById('display-iban').value = giftConfig.iban;
-            } else if (giftConfig.type === 'list') {
-                document.getElementById('list-gift-option').classList.remove('hidden');
-                document.getElementById('bank-gift-option').classList.add('hidden');
-                
-                // Get current gift selections to check availability
-                const { data: selections, error } = await supabaseClient
-                    .from('gift_selections')
-                    .select('*')
-                    .eq('event_id', eventId);
-                
-                const selectionsByGift = {};
-                if (selections) {
-                    selections.forEach(selection => {
-                        if (!selectionsByGift[selection.gift_name]) {
-                            selectionsByGift[selection.gift_name] = 0;
-                        }
-                        selectionsByGift[selection.gift_name]++;
-                    });
-                }
-                
-                const container = document.getElementById('available-gifts');
-                container.innerHTML = '';
-                
-                giftConfig.items.forEach(item => {
-                    const selectedCount = selectionsByGift[item.name] || 0;
-                    const remaining = item.quantity - selectedCount;
-                    
-                    if (remaining > 0) {
-                        const div = document.createElement('div');
-                        div.className = 'flex justify-between items-center p-3 border rounded-lg';
-                        div.innerHTML = `
-                            <div>
-                                <span class="text-sm font-medium">${item.name}</span>
-                                <p class="text-xs text-gray-600">${remaining} disponível(is)</p>
-                            </div>
-                            <button onclick="selectGift('${item.name}')" class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">Escolher</button>
-                        `;
-                        container.appendChild(div);
-                    } else {
-                        const div = document.createElement('div');
-                        div.className = 'flex justify-between items-center p-3 border rounded-lg opacity-50';
-                        div.innerHTML = `
-                            <div>
-                                <span class="text-sm font-medium">${item.name}</span>
-                                <p class="text-xs text-gray-600">Esgotado</p>
-                            </div>
-                            <button disabled class="bg-gray-400 text-white px-3 py-1 rounded text-sm cursor-not-allowed">Indisponível</button>
-                        `;
-                        container.appendChild(div);
-                    }
-                });
-                
-                // If no gifts available, show message
-                if (container.children.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center p-4 text-gray-600">
-                            <p class="text-sm">Todos os presentes já foram escolhidos.</p>
-                            <p class="text-xs mt-1">Obrigado pelo interesse!</p>
-                        </div>
-                    `;
-                }
+            // Show message wall if enabled
+            if (window.currentEventData.enable_public_wall) {
+                loadGuestMessageWall();
+                document.getElementById('guest-message-wall').classList.remove('hidden');
             }
         }
 
-        // RSVP form handler
-        document.getElementById('rsvp-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        function loadGuestMessageWall() {
+            const eventRsvps = rsvps.filter(r => r.wedding_id === window.currentEventData.id && r.message)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             
-            const urlParams = new URLSearchParams(window.location.search);
-            const eventUrl = urlParams.get('event');
+            const container = document.getElementById('guest-messages-list');
+            container.innerHTML = '';
             
-            if (!eventUrl) {
-                document.body.innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center px-4">
-                        <div class="bg-white rounded-lg p-6 text-center max-w-md">
-                            <div class="text-4xl mb-4">❌</div>
-                            <h2 class="text-xl font-bold mb-2">Link Inválido</h2>
-                            <p class="text-gray-600">Este link não é válido.</p>
-                        </div>
+            eventRsvps.forEach(rsvp => {
+                const div = document.createElement('div');
+                div.className = 'message-bubble p-3 rounded-lg';
+                
+                let guestInfo = rsvp.guest_name;
+                if (rsvp.companion_name) {
+                    guestInfo += ` e ${rsvp.companion_name}`;
+                }
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-semibold text-sm text-purple-700">${guestInfo}</span>
+                        <span class="text-xs text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
+                    <p class="text-sm text-gray-700">${rsvp.message}</p>
                 `;
-                return;
-            }
+                container.appendChild(div);
+            });
+        }
+
+        // Initialize app
+        window.addEventListener('load', function() {
+            loadUserSession();
             
-            try {
-                // Get event by custom_url
-                const { data: event, error: eventError } = await supabaseClient
-                    .from('events')
-                    .select('*')
-                    .eq('custom_url', eventUrl)
-                    .single();
-                
-                if (eventError || !event) {
-                    document.body.innerHTML = `
-                        <div class="min-h-screen flex items-center justify-center px-4">
-                            <div class="bg-white rounded-lg p-6 text-center max-w-md">
-                                <div class="text-4xl mb-4">❌</div>
-                                <h2 class="text-xl font-bold mb-2">Evento não encontrado</h2>
-                                <p class="text-gray-600">Este evento não existe ou foi removido.</p>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Collect companion names
-                const companionInputs = document.querySelectorAll('#companion-inputs input');
-                const companions = Array.from(companionInputs)
-                    .map(input => input.value.trim())
-                    .filter(name => name.length > 0);
-
-                const guestName = document.getElementById('guest-name').value;
-                const rsvpData = {
-                    wedding_id: event.id,
-                    guest_name: guestName,
-                    companion_name: companions.length > 0 ? companions.join(', ') : null,
-                    attendance: document.getElementById('attendance-status').value === 'true',
-                    message: document.getElementById('guest-message').value || null
-                };
-                
-                // Check if this guest already has an RSVP
-                const { data: existingRsvp, error: checkError } = await supabaseClient
-                    .from('rsvps')
-                    .select('*')
-                    .eq('wedding_id', event.id)
-                    .eq('guest_name', guestName)
-                    .single();
-                
-                let result;
-                if (existingRsvp) {
-                    // Update existing RSVP
-                    result = await supabaseClient
-                        .from('rsvps')
-                        .update(rsvpData)
-                        .eq('id', existingRsvp.id);
-                } else {
-                    // Insert new RSVP
-                    result = await supabaseClient
-                        .from('rsvps')
-                        .insert([rsvpData]);
-                }
-                
-                if (result.error) {
-                    document.body.innerHTML = `
-                        <div class="min-h-screen flex items-center justify-center px-4">
-                            <div class="bg-white rounded-lg p-6 text-center max-w-md">
-                                <div class="text-4xl mb-4">⚠️</div>
-                                <h2 class="text-xl font-bold mb-2">Erro ao Enviar</h2>
-                                <p class="text-gray-600">Não foi possível enviar sua confirmação. Tente novamente.</p>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Save to localStorage for persistence
-                localStorage.setItem(`rsvp_${eventUrl}`, JSON.stringify(rsvpData));
-                
-                // Log RSVP for admin panel statistics
-                await logAdminActivity('rsvp_submitted', {
-                    event_id: event.id,
-                    guest_name: rsvpData.guest_name,
-                    attendance: rsvpData.attendance,
-                    has_companion: !!rsvpData.companion_name,
-                    companion_count: rsvpData.companion_name ? rsvpData.companion_name.split(', ').length : 0,
-                    timestamp: new Date().toISOString()
-                });
-                await updateSystemStats('rsvp_submission', event.id, null);
-                
-                // Check if gifts are enabled and show gift section
-                if (event.enable_gifts && event.gift_config && rsvpData.attendance) {
-                    document.getElementById('rsvp-form').parentElement.style.display = 'none';
-                    document.getElementById('countdown-timer').style.display = 'none';
-                    await showGiftSection(event.gift_config, event.id);
-                } else {
-                    // Show success message directly
-                    document.getElementById('rsvp-form').parentElement.style.display = 'none';
-                    document.getElementById('countdown-timer').style.display = 'none';
-                    document.getElementById('success-message').classList.remove('hidden');
-                    
-                    // Add edit button to success message
-                    addEditButton();
-                }
-                
-            } catch (err) {
-                document.body.innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center px-4">
-                        <div class="bg-white rounded-lg p-6 text-center max-w-md">
-                            <div class="text-4xl mb-4">⚠️</div>
-                            <h2 class="text-xl font-bold mb-2">Erro de Conexão</h2>
-                            <p class="text-gray-600">Verifique sua conexão e tente novamente.</p>
-                        </div>
-                    </div>
-                `;
-            }
-        });
-
-        // Handle attendance status change
-        document.getElementById('attendance-status').addEventListener('change', function() {
-            const companionSection = document.getElementById('companion-section');
+            // Check if this is a guest RSVP page
             const urlParams = new URLSearchParams(window.location.search);
-            const allowCompanion = urlParams.get('companion') === 'true';
-            
-            if (this.value === 'true' && allowCompanion) {
-                companionSection.classList.remove('hidden');
-                // Only generate inputs if container is empty (not editing)
-                if (document.getElementById('companion-inputs').children.length === 0) {
-                    generateCompanionInputs();
-                }
+            if (urlParams.get('event')) {
+                loadGuestRSVP();
             } else {
-                companionSection.classList.add('hidden');
-                document.getElementById('companion-inputs').innerHTML = '';
+                showSection('home');
             }
         });
-
-        let companionCount = 0;
-
-        function generateCompanionInputs() {
-            const container = document.getElementById('companion-inputs');
-            
-            // Add button to add companions
-            if (container.children.length === 0) {
-                const addButton = document.createElement('div');
-                addButton.className = 'mb-3';
-                addButton.innerHTML = `
-                    <button type="button" onclick="addCompanionInput()" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm">
-                        + Adicionar Acompanhante
-                    </button>
-                `;
-                container.appendChild(addButton);
-            }
-        }
-
-        function addCompanionInput() {
-            const container = document.getElementById('companion-inputs');
-            const companionLimit = window.currentEventData?.companion_limit || 1;
-            
-            // Count current companion inputs (excluding the add button)
-            const currentInputs = container.querySelectorAll('input').length;
-            
-            if (currentInputs >= companionLimit) {
-                alert(`Limite máximo de ${companionLimit} acompanhante(s) atingido.`);
-                return;
-            }
-            
-            companionCount++;
-            const div = document.createElement('div');
-            div.className = 'mb-2 flex items-center space-x-2';
-            div.id = `companion-${companionCount}`;
-            div.innerHTML = `
-                <input type="text" 
-                       name="companion-${companionCount}" 
-                       class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-purple-500 text-sm" 
-                       placeholder="Nome do acompanhante">
-                <button type="button" onclick="removeCompanionInput(${companionCount})" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 text-sm">
-                    ×
-                </button>
-            `;
-            
-            // Insert before the add button
-            const addButton = container.querySelector('div');
-            container.insertBefore(div, addButton);
-        }
-
-        function removeCompanionInput(id) {
-            const element = document.getElementById(`companion-${id}`);
-            if (element) {
-                element.remove();
-            }
-        }
-
-        // Logout function
-        function logout() {
-            currentUser = null;
-            currentEvent = null;
-            isAdmin = false;
-            
-            // Clear session data
-            clearUserSession();
-            
-            // Reset event details view
-            document.getElementById('user-events-list').style.display = 'block';
-            document.getElementById('event-details').classList.add('hidden');
-            
-            showSection('home');
-        }
-
-        // Countdown timer function
-        function startCountdown(deadline) {
-            const countdownTimer = document.getElementById('countdown-timer');
-            const daysEl = document.getElementById('days');
-            const hoursEl = document.getElementById('hours');
-            const minutesEl = document.getElementById('minutes');
-            const secondsEl = document.getElementById('seconds');
-            
-            function updateCountdown() {
-                const now = new Date().getTime();
-                const distance = new Date(deadline).getTime() - now;
-                
-                if (distance < 0) {
-                    countdownTimer.innerHTML = '<p class="text-red-600 font-semibold">Prazo para confirmação expirado</p>';
-                    return;
-                }
-                
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                
-                daysEl.textContent = days.toString().padStart(2, '0');
-                hoursEl.textContent = hours.toString().padStart(2, '0');
-                minutesEl.textContent = minutes.toString().padStart(2, '0');
-                secondsEl.textContent = seconds.toString().padStart(2, '0');
-            }
-            
-            updateCountdown();
-            setInterval(updateCountdown, 1000);
-            countdownTimer.classList.remove('hidden');
-        }
-
-        // Functions for editing responses
-        function addEditButton() {
-            const successMessage = document.getElementById('success-message');
-            if (!successMessage.querySelector('.edit-button')) {
-                const editButton = document.createElement('button');
-                editButton.className = 'edit-button mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors';
-                editButton.textContent = 'Editar Resposta';
-                editButton.onclick = editResponse;
-                successMessage.appendChild(editButton);
-            }
-        }
-
-        function editResponse() {
-            // Hide success message and show form again
-            document.getElementById('success-message').classList.add('hidden');
-            document.getElementById('rsvp-form').parentElement.style.display = 'block';
-            document.getElementById('countdown-timer').style.display = 'block';
-            
-            // Load existing data
-            loadExistingRsvp();
-        }
-
-        async function loadExistingRsvp() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const eventUrl = urlParams.get('event');
-            
-            // Try to load from localStorage first
-            const savedData = localStorage.getItem(`rsvp_${eventUrl}`);
-            if (savedData) {
-                const rsvpData = JSON.parse(savedData);
-                populateForm(rsvpData);
-                return;
-            }
-            
-            // If not in localStorage, try to load from database
-            try {
-                const { data: event, error: eventError } = await supabaseClient
-                    .from('events')
-                    .select('*')
-                    .eq('custom_url', eventUrl)
-                    .single();
-                
-                if (eventError || !event) return;
-                
-                // Get existing RSVP by guest name (we'll need to ask for name first)
-                const guestName = prompt('Digite seu nome para carregar sua resposta anterior:');
-                if (!guestName) return;
-                
-                const { data: rsvp, error: rsvpError } = await supabaseClient
-                    .from('rsvps')
-                    .select('*')
-                    .eq('wedding_id', event.id)
-                    .eq('guest_name', guestName)
-                    .single();
-                
-                if (rsvp) {
-                    populateForm(rsvp);
-                    // Save to localStorage for future use
-                    localStorage.setItem(`rsvp_${eventUrl}`, JSON.stringify(rsvp));
-                }
-            } catch (err) {
-                console.error('Erro ao carregar RSVP:', err);
-            }
-        }
-
-        function populateForm(rsvpData) {
-            // Fill basic fields
-            document.getElementById('guest-name').value = rsvpData.guest_name || '';
-            document.getElementById('attendance-status').value = rsvpData.attendance ? 'true' : 'false';
-            document.getElementById('guest-message').value = rsvpData.message || '';
-            
-            // Trigger attendance change to show/hide companion section
-            document.getElementById('attendance-status').dispatchEvent(new Event('change'));
-            
-            // Fill companion data if exists
-            if (rsvpData.companion_name && rsvpData.attendance) {
-                const companions = rsvpData.companion_name.split(', ').filter(name => name.trim());
-                const container = document.getElementById('companion-inputs');
-                
-                // Clear existing inputs
-                container.innerHTML = '';
-                
-                // Add the "Add Companion" button first
-                generateCompanionInputs();
-                
-                // Add companion inputs with data
-                companions.forEach((companionName, index) => {
-                    addCompanionInput();
-                    // Find the last added input and set its value
-                    const inputs = container.querySelectorAll('input');
-                    if (inputs[inputs.length - 1]) {
-                        inputs[inputs.length - 1].value = companionName;
-                    }
-                });
-            }
-        }
-
-        // Session persistence functions
-        function saveUserSession(user) {
-            localStorage.setItem('current_user', JSON.stringify(user));
-            localStorage.setItem('session_timestamp', Date.now().toString());
-        }
-
-        function loadUserSession() {
-            const userData = localStorage.getItem('current_user');
-            const timestamp = localStorage.getItem('session_timestamp');
-            
-            if (!userData || !timestamp) return null;
-            
-            // Check if session is still valid (24 hours)
-            const sessionAge = Date.now() - parseInt(timestamp);
-            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-            
-            if (sessionAge > maxAge) {
-                clearUserSession();
-                return null;
-            }
-            
-            return JSON.parse(userData);
-        }
-
-        function clearUserSession() {
-            localStorage.removeItem('current_user');
-            localStorage.removeItem('session_timestamp');
-        }
-
-        // Check for pending token session
-        function checkPendingTokenSession() {
-            const pendingUsername = localStorage.getItem('pending_username');
-            const pendingUserId = localStorage.getItem('pending_user_id');
-            
-            if (pendingUsername && pendingUserId) {
-                document.getElementById('pending-username').textContent = pendingUsername;
-                showTokenSection();
-                return true;
-            }
-            return false;
-        }
-
-        // Check for RSVP link on page load
-        window.addEventListener('load', async function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const eventUrl = urlParams.get('event');
-            
-            // Check for existing user session first
-            if (!eventUrl) {
-                const savedUser = loadUserSession();
-                if (savedUser && savedUser.is_active) {
-                    currentUser = savedUser;
-                    loadUserDashboard();
-                    return;
-                }
-                
-                // Check for pending token session
-                if (checkPendingTokenSession()) {
-                    return;
-                }
-            }
-            
-            if (eventUrl) {
-                // Hide all navigation and main site elements for guest pages
-                document.querySelector('nav').style.display = 'none';
-                document.querySelector('.mobile-nav').style.display = 'none';
-                document.querySelector('footer').style.display = 'none';
-                document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                
-                try {
-                    const { data: event, error } = await supabaseClient
-                        .from('events')
-                        .select('*')
-                        .eq('custom_url', eventUrl)
-                        .single();
-                    
-                    if (error || !event) {
-                        document.body.innerHTML = `
-                            <div class="min-h-screen flex items-center justify-center px-4">
-                                <div class="bg-white rounded-lg p-6 text-center max-w-md">
-                                    <div class="text-4xl mb-4">❌</div>
-                                    <h2 class="text-xl font-bold mb-2">Evento não encontrado</h2>
-                                    <p class="text-gray-600">O link que você acessou não é válido ou o evento não existe mais.</p>
-                                </div>
-                            </div>
-                        `;
-                        return;
-                    }
-                    
-                    document.getElementById('rsvp-event-title').textContent = event.title;
-                    document.getElementById('rsvp-event-date').textContent = new Date(event.event_date).toLocaleDateString('pt-BR');
-                    
-                    if (event.enable_description && event.description) {
-                        document.getElementById('rsvp-event-description').textContent = event.description;
-                    } else {
-                        document.getElementById('rsvp-event-description').style.display = 'none';
-                    }
-                    
-                    // Store event data globally for companion limit access
-                    window.currentEventData = event;
-                    
-                    // Start countdown if deadline is set
-                    if (event.enable_deadline && event.confirmation_deadline) {
-                        startCountdown(event.confirmation_deadline);
-                    }
-                    
-                    showSection('guest-rsvp');
-                    
-                    // Check if there's existing RSVP data and show appropriate view
-                    const savedData = localStorage.getItem(`rsvp_${eventUrl}`);
-                    if (savedData) {
-                        const rsvpData = JSON.parse(savedData);
-                        
-                        // Show success message with edit option
-                        document.getElementById('rsvp-form').parentElement.style.display = 'none';
-                        document.getElementById('countdown-timer').style.display = 'none';
-                        document.getElementById('success-message').classList.remove('hidden');
-                        
-                        // Update success message text
-                        const successMessage = document.getElementById('success-message');
-                        successMessage.querySelector('h3').textContent = 'Resposta Já Enviada!';
-                        successMessage.querySelector('p').textContent = `Olá ${rsvpData.guest_name}! Sua resposta já foi registrada. Você pode editá-la se necessário.`;
-                        
-                        addEditButton();
-                    }
-                    
-                } catch (err) {
-                    document.body.innerHTML = `
-                        <div class="min-h-screen flex items-center justify-center px-4">
-                            <div class="bg-white rounded-lg p-6 text-center max-w-md">
-                                <div class="text-4xl mb-4">⚠️</div>
-                                <h2 class="text-xl font-bold mb-2">Erro de Conexão</h2>
-                                <p class="text-gray-600">Não foi possível carregar o evento. Tente novamente mais tarde.</p>
-                            </div>
-                        </div>
-                    `;
-                }
-            } else {
-                loadSiteContent();
-            }
-        });
-
-        // Initialize
-        loadSiteContent();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972c08e2a50077e0',t:'MTc1NTc5OTI3Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972fa018e54177e0',t:'MTc1NTgzNjkyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
