@@ -263,13 +263,6 @@
     <!-- RSVP PAGE - Página para convidados -->
     <div id="rsvpPage" class="hidden min-h-screen p-4">
         <div class="max-w-md mx-auto">
-            <!-- Login Button -->
-            <div class="flex justify-end mb-4">
-                <button id="guestLoginBtn" onclick="showGuestLogin()" 
-                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
-                    Login
-                </button>
-            </div>
             <div class="bg-white rounded-2xl shadow-2xl p-6">
                 <div id="eventDetails" class="text-center mb-6">
                     <!-- Event details will be loaded here -->
@@ -1071,12 +1064,16 @@
                     
                     rsvpCard.innerHTML = `
                         <div class="flex justify-between items-start">
-                            <div>
+                            <div class="flex-1">
                                 <h4 class="font-semibold text-gray-800 text-sm">${rsvp.name}</h4>
                                 <p class="text-xs text-gray-600">${rsvp.phone}</p>
                                 <p class="text-sm mt-1">${status}${companions}</p>
                                 ${rsvp.companion_names ? `<p class="text-xs text-blue-600 mt-1">Acompanhantes: ${rsvp.companion_names}</p>` : ''}
                                 ${rsvp.notes ? `<p class="text-xs text-gray-500 mt-1">${rsvp.notes}</p>` : ''}
+                            </div>
+                            <div class="flex flex-col gap-1 ml-3">
+                                ${rsvp.companions > 0 ? `<button onclick="removeCompanions(${rsvp.id})" class="bg-orange-500 text-white px-2 py-1 rounded text-xs hover:bg-orange-600" title="Remover acompanhantes">👥❌</button>` : ''}
+                                <button onclick="deleteRSVP(${rsvp.id})" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600" title="Eliminar convidado">🗑️</button>
                             </div>
                         </div>
                     `;
@@ -1720,27 +1717,29 @@
         // Check for existing RSVP on page load
         async function checkExistingRSVP() {
             try {
-                // Check if there's an existing RSVP in the database
-                const { data: existingRSVP, error } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('event_id', currentEventId)
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-
-                if (error) {
-                    console.error('Check existing RSVP error:', error);
-                    loadGuestMessages();
-                    return;
-                }
-
-                if (existingRSVP && existingRSVP.length > 0) {
-                    // Store the existing RSVP data
-                    localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(existingRSVP[0]));
+                // Only check localStorage for existing RSVP (device-specific)
+                const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
+                
+                if (savedData) {
+                    const rsvpData = JSON.parse(savedData);
                     
-                    // Show success message instead of form
-                    document.getElementById('rsvpForm').parentElement.classList.add('hidden');
-                    document.getElementById('rsvpSuccess').classList.remove('hidden');
+                    // Verify this RSVP still exists in database
+                    const { data: existingRSVP, error } = await supabase
+                        .from('rsvps')
+                        .select('*')
+                        .eq('event_id', currentEventId)
+                        .eq('name', rsvpData.name)
+                        .eq('phone', rsvpData.phone)
+                        .single();
+
+                    if (!error && existingRSVP) {
+                        // Show success message instead of form
+                        document.getElementById('rsvpForm').parentElement.classList.add('hidden');
+                        document.getElementById('rsvpSuccess').classList.remove('hidden');
+                    } else {
+                        // RSVP no longer exists, clear localStorage
+                        localStorage.removeItem(`rsvp_${currentEventId}`);
+                    }
                 }
                 
                 loadGuestMessages();
@@ -1749,6 +1748,61 @@
                 loadGuestMessages();
             }
         }
+
+        // Delete RSVP function
+        async function deleteRSVP(rsvpId) {
+            if (!confirm('Tem certeza que deseja eliminar este convidado?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .delete()
+                    .eq('id', rsvpId);
+
+                if (error) {
+                    alert('Erro ao eliminar convidado: ' + error.message);
+                    return;
+                }
+
+                alert('Convidado eliminado com sucesso!');
+                refreshCurrentEventRSVPs();
+                loadEventStats(currentEventId);
+            } catch (error) {
+                console.error('Delete RSVP error:', error);
+                alert('Erro ao eliminar convidado');
+            }
+        }
+
+        // Remove companions function
+        async function removeCompanions(rsvpId) {
+            if (!confirm('Tem certeza que deseja remover os acompanhantes deste convidado?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('rsvps')
+                    .update({
+                        companions: 0,
+                        companion_names: null
+                    })
+                    .eq('id', rsvpId);
+
+                if (error) {
+                    alert('Erro ao remover acompanhantes: ' + error.message);
+                    return;
+                }
+
+                alert('Acompanhantes removidos com sucesso!');
+                refreshCurrentEventRSVPs();
+                loadEventStats(currentEventId);
+            } catch (error) {
+                console.error('Remove companions error:', error);
+                alert('Erro ao remover acompanhantes');
+            }
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9730e920c03477d7',t:'MTc1NTg1MDQwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973100d611b577d9',t:'MTc1NTg1MTM3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
