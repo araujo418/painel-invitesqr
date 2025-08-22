@@ -1,1716 +1,1754 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invites - Sistema de Confirmação de Presença</title>
+    <title>Sistema de Confirmação de Presença</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-shadow { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .animate-fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; z-index: 50; }
-        .mobile-container { padding-bottom: 80px; }
-        @media (min-width: 768px) { .mobile-nav { display: none; } .mobile-container { padding-bottom: 0; } }
-        .message-bubble { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-left: 4px solid #8b5cf6; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Mobile Navigation -->
-    <div class="mobile-nav md:hidden">
-        <div class="flex justify-around py-2">
-            <button onclick="showSection('home')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                <span class="text-xl">🏠</span><span class="text-xs">Início</span>
-            </button>
-            <div id="mobile-profile-nav" class="hidden">
-                <button onclick="showSection('profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                    <span class="text-xl">👤</span><span class="text-xs">Perfil</span>
-                </button>
+<body class="min-h-screen gradient-bg">
+    <!-- ADMIN PANEL - Criar contas de clientes -->
+    <div id="adminPanel" class="min-h-screen p-4">
+        <div class="max-w-md mx-auto">
+            <!-- Admin Login -->
+            <div id="adminLogin" class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">Painel Administrativo</h1>
+                    <p class="text-gray-600 text-sm">Gerencie contas de clientes</p>
+                </div>
+                
+                <form id="adminLoginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Usuário Admin</label>
+                        <input type="text" id="adminUsername" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                               placeholder="Digite seu usuário admin">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha Admin</label>
+                        <input type="password" id="adminPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                               placeholder="Digite sua senha admin">
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
+                        Entrar como Admin
+                    </button>
+                </form>
             </div>
-            <button onclick="showSection('about')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                <span class="text-xl">ℹ️</span><span class="text-xs">Sobre</span>
-            </button>
-            <div id="mobile-login-nav">
-                <button onclick="showSection('login')" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                    <span class="text-xl">🔑</span><span class="text-xs">Login</span>
-                </button>
-            </div>
-            <div id="mobile-user-nav" class="hidden">
-                <button onclick="loadUserDashboard()" class="flex flex-col items-center p-2 text-gray-600 hover:text-purple-600">
-                    <span class="text-xl">📊</span><span class="text-xs">Painel</span>
-                </button>
+
+            <!-- Admin Dashboard -->
+            <div id="adminDashboard" class="hidden">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Criar Conta de Cliente</h2>
+                    <form id="createClientForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Cliente</label>
+                            <input type="text" id="clientName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                            <input type="text" id="clientUsername" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                            <input type="password" id="clientPassword" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        
+                        <button type="submit" 
+                                class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-medium">
+                            Criar Cliente
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Clients List -->
+                <div class="bg-white rounded-2xl shadow-2xl p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Clientes Criados</h2>
+                    <div id="clientsList" class="space-y-3">
+                        <!-- Clients will be loaded here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Desktop Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-40 hidden md:block">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <h1 class="text-2xl font-bold text-purple-600">Invites</h1>
-                <div class="flex space-x-6">
-                    <a href="#" onclick="showSection('home')" class="text-gray-700 hover:text-purple-600">Menu</a>
-                    <div id="user-profile-nav" class="hidden">
-                        <a href="#" onclick="showSection('profile')" class="text-gray-700 hover:text-purple-600">Perfil</a>
-                    </div>
-                    <a href="#" onclick="showSection('about')" class="text-gray-700 hover:text-purple-600">Sobre Nós</a>
+    <!-- CLIENT PANEL - Painel do cliente específico -->
+    <div id="clientPanel" class="hidden min-h-screen p-4">
+        <div class="max-w-md mx-auto">
+            <!-- Client Login -->
+            <div id="clientLogin" class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">Painel do Cliente</h1>
+                    <p class="text-gray-600 text-sm">Gerencie seu evento</p>
                 </div>
-                <div class="flex space-x-3">
-                    <div id="user-info-nav" class="hidden flex items-center space-x-3">
-                        <span class="text-gray-700">Olá, <span id="nav-username"></span></span>
-                        <button onclick="loadUserDashboard()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Painel</button>
-                        <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Sair</button>
+                
+                <form id="clientLoginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                        <input type="text" id="clientLoginUsername" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    <div id="login-nav" class="flex space-x-3">
-                        <button onclick="showSection('login')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Login</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="mobile-container">
-        <!-- Home Section -->
-        <div id="home-section" class="section">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-xl font-bold text-purple-600">Invites</h1>
-                    <div id="mobile-user-info" class="hidden text-sm text-gray-600">
-                        Olá, <span id="mobile-username"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="gradient-bg text-white py-12 px-4">
-                <div class="max-w-lg mx-auto text-center">
-                    <h1 class="text-3xl md:text-5xl font-bold mb-4">Sistema de Confirmação</h1>
-                    <p class="text-lg md:text-xl mb-6">Crie páginas personalizadas para seus eventos</p>
-                    <button onclick="showSection('register')" class="w-full md:w-auto bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Criar Conta Gratuita</button>
-                </div>
-            </div>
-
-            <div class="max-w-4xl mx-auto py-8 px-4">
-                <div class="grid gap-6">
-                    <div class="bg-white p-6 rounded-lg card-shadow text-center">
-                        <div class="text-3xl mb-3">🎉</div>
-                        <h3 class="text-lg font-semibold mb-2">Eventos Personalizados</h3>
-                        <p class="text-gray-600 text-sm">Crie páginas únicas para casamentos, aniversários e outros eventos especiais</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg card-shadow text-center">
-                        <div class="text-3xl mb-3">📱</div>
-                        <h3 class="text-lg font-semibold mb-2">Links Personalizados</h3>
-                        <p class="text-gray-600 text-sm">Gere links específicos com e sem acompanhantes para diferentes convidados</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg card-shadow text-center">
-                        <div class="text-3xl mb-3">📊</div>
-                        <h3 class="text-lg font-semibold mb-2">Gestão Completa</h3>
-                        <p class="text-gray-600 text-sm">Acompanhe confirmações, mensagens e gerencie todos os aspectos do seu evento</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Section -->
-        <div id="profile-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Meu Perfil</h2>
-            </div>
-            <div class="max-w-2xl mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold mb-6 hidden md:block">Meu Perfil</h2>
                     
-                    <div class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Nome Completo</label>
-                                <input type="text" id="profile-full-name" class="w-full p-3 border rounded-lg" readonly>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
-                                <input type="text" id="profile-username" class="w-full p-3 border rounded-lg bg-gray-50" readonly>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Senha Atual</label>
-                            <div class="flex">
-                                <input type="password" id="profile-password" class="flex-1 p-3 border rounded-l-lg bg-gray-50" readonly>
-                                <button onclick="togglePasswordVisibility()" class="bg-gray-500 text-white px-4 py-3 rounded-r-lg hover:bg-gray-600" id="toggle-password-btn">👁️</button>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <button onclick="enableProfileEdit()" class="bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700">Editar Perfil</button>
-                            <button onclick="downloadUserReport()" class="bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">Baixar Relatório</button>
-                            <button onclick="deleteAccount()" class="bg-red-600 text-white py-3 rounded-lg hover:bg-red-700">Excluir Conta</button>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <button onclick="loadUserDashboard()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700">Ir para Painel</button>
-                        </div>
-                        
-                        <div id="profile-edit-form" class="hidden space-y-4 border-t pt-6">
-                            <h3 class="text-lg font-semibold">Editar Informações</h3>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Novo Nome Completo</label>
-                                <input type="text" id="edit-full-name" class="w-full p-3 border rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Nova Senha</label>
-                                <input type="password" id="edit-password" class="w-full p-3 border rounded-lg">
-                            </div>
-                            <div class="flex space-x-3">
-                                <button onclick="saveProfileChanges()" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Salvar</button>
-                                <button onclick="cancelProfileEdit()" class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">Cancelar</button>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                        <input type="password" id="clientLoginPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- About Section -->
-        <div id="about-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Sobre Nós</h2>
-            </div>
-            <div class="max-w-4xl mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold mb-4 hidden md:block">Sobre Nós</h2>
-                    <p class="text-gray-700 mb-4">
-                        O Invites é uma plataforma inovadora que simplifica a organização de eventos através de um sistema inteligente de confirmação de presença. Nossa missão é tornar a gestão de convidados mais eficiente e elegante.
-                    </p>
-                    <p class="text-gray-700">
-                        Com anos de experiência em tecnologia e eventos, desenvolvemos uma solução completa que atende desde pequenas celebrações até grandes eventos corporativos.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Register Section -->
-        <div id="register-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Criar Conta</h2>
-            </div>
-            <div class="max-w-md mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold text-center mb-6 hidden md:block">Criar Nova Conta</h2>
-                    <form id="register-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Nome Completo</label>
-                            <input type="text" id="full-name" class="w-full p-3 border rounded-lg" placeholder="Seu nome completo" required>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
-                                <input type="text" id="username" class="w-full p-3 border rounded-lg" placeholder="Seu usuário" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Senha</label>
-                                <input type="password" id="password" class="w-full p-3 border rounded-lg" placeholder="Sua senha" required>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Criar Conta</button>
-                    </form>
-
-                    <div id="account-created" class="hidden mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <h3 class="font-semibold text-green-800 mb-2">Conta Criada com Sucesso!</h3>
-                        <p class="text-green-700 mb-3 text-sm">Sua solicitação foi enviada para análise. Entre em contacto com a Invites para receber seu token de acesso.</p>
-                        <button onclick="showTokenSection()" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Inserir Token</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Token Section -->
-        <div id="token-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Token de Acesso</h2>
-            </div>
-            <div class="max-w-md mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold text-center mb-6 hidden md:block">Token de Acesso</h2>
                     
-                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h3 class="font-semibold text-blue-800 mb-2">Como obter seu token?</h3>
-                        <p class="text-blue-700 text-sm mb-2">1. Entre em contacto connosco via WhatsApp: <strong>+244 959 823 409</strong></p>
-                        <p class="text-blue-700 text-sm mb-2">2. Informe o nome de usuário: <strong id="pending-username"></strong></p>
-                        <p class="text-blue-700 text-sm mb-2">3. Receba seu token único (formato: INV-XXXXXXXXXX)</p>
-                        <p class="text-blue-700 text-sm">4. Insira o token abaixo para ativar sua conta</p>
-                    </div>
-
-                    <form id="token-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Token de Acesso</label>
-                            <input type="text" id="access-token" class="w-full p-3 border rounded-lg" placeholder="INV-XXXXXXXXXX" required>
-                        </div>
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Validar Token</button>
-                    </form>
-
-                    <div id="token-success" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <h3 class="font-semibold text-green-800 mb-2">Token Validado!</h3>
-                        <p class="text-green-700 text-sm mb-3">Sua conta foi ativada com sucesso. Agora pode criar seus eventos.</p>
-                        <button onclick="proceedToLogin()" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Continuar</button>
-                    </div>
-                </div>
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+                        Entrar
+                    </button>
+                </form>
             </div>
-        </div>
 
-        <!-- Login Section -->
-        <div id="login-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <h2 class="text-xl font-bold text-center">Login</h2>
-            </div>
-            <div class="max-w-md mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold text-center mb-6 hidden md:block">Login</h2>
-                    <form id="login-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Nome de Usuário</label>
-                            <input type="text" id="login-username" class="w-full p-3 border rounded-lg" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Senha</label>
-                            <input type="password" id="login-password" class="w-full p-3 border rounded-lg" required>
-                        </div>
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Entrar</button>
-                    </form>
-                    <div class="mt-4 text-center">
-                        <button onclick="showSection('register')" class="text-purple-600 text-sm hover:underline">Não tem conta? Criar agora</button>
+            <!-- Client Dashboard -->
+            <div id="clientDashboard" class="hidden">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Meus Eventos</h2>
+                        <button id="clientLogoutBtn" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                            Sair
+                        </button>
+                    </div>
+                    
+                    <!-- Events Container -->
+                    <div id="eventsContainer">
+                        <!-- Events will be loaded here -->
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Create Event Section -->
-        <div id="create-event-section" class="section hidden">
-            <div class="md:hidden bg-white shadow-sm p-4 sticky top-0 z-30">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">Criar Evento</h2>
-                    <button onclick="logout()" class="text-sm bg-red-100 px-3 py-1 rounded-full">Sair</button>
-                </div>
-            </div>
-            <div class="max-w-2xl mx-auto py-8 px-4">
-                <div class="bg-white rounded-lg p-6 card-shadow">
-                    <h2 class="text-2xl font-bold text-center mb-6 hidden md:block">Criar Novo Evento</h2>
-                    <form id="create-event-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Nome do Evento</label>
-                            <input type="text" id="event-title" class="w-full p-3 border rounded-lg" placeholder="Ex: Casamento João & Maria" required>
-                        </div>
+                <!-- Create/Edit Event Form -->
+                <div id="eventFormContainer" class="hidden bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800" id="formTitle">Criar Novo Evento</h3>
+                        <button onclick="hideEventForm()" class="text-gray-500 hover:text-gray-700">
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <form id="eventForm" class="space-y-4">
+                        <input type="hidden" id="editingEventId" value="">
                         
                         <div>
-                            <label class="block text-sm font-medium mb-2">Descrição do Evento (Opcional)</label>
-                            <textarea id="event-description" rows="3" class="w-full p-3 border rounded-lg" placeholder="Descreva seu evento..."></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Evento</label>
+                            <input type="text" id="eventName" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-sm font-medium mb-2">Data do Evento</label>
-                                <input type="date" id="event-date" class="w-full p-3 border rounded-lg" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Prazo para Confirmação</label>
-                                <input type="date" id="confirmation-deadline" class="w-full p-3 border rounded-lg">
-                                <p class="text-xs text-gray-500 mt-1">Deixe vazio para não definir prazo</p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Sistema de Presentes</label>
-                            <div class="space-y-2">
-                                <label class="flex items-center">
-                                    <input type="radio" name="gift-type" value="none" class="mr-2" checked>
-                                    <span class="text-sm">Não usar sistema de presentes</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="gift-type" value="bank" class="mr-2">
-                                    <span class="text-sm">Transferência bancária</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="gift-type" value="list" class="mr-2">
-                                    <span class="text-sm">Lista de presentes</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Criar Evento</button>
-                    </form>
-
-                    <div id="event-created" class="hidden mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <h3 class="font-semibold text-green-800 mb-2">Evento Criado!</h3>
-                        <p class="text-green-700 mb-3 text-sm">Seu evento foi criado com sucesso. Acesse o painel para gerenciar.</p>
-                        <button onclick="loadUserDashboard()" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Ir para Painel</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- User Dashboard -->
-        <div id="user-dashboard" class="section hidden">
-            <div class="bg-white shadow-sm p-4 sticky top-0 z-30">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold">Meus Eventos</h2>
-                    <div class="flex space-x-2">
-                        <button onclick="showSection('create-event')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ Evento</button>
-                        <button onclick="logout()" class="bg-red-600 text-white px-3 py-1 rounded text-sm">Sair</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="max-w-6xl mx-auto py-6 px-4">
-                <div id="user-events-list" class="mb-6"></div>
-
-                <div id="event-details" class="hidden">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                            <h3 class="text-sm font-semibold mb-1">Confirmados</h3>
-                            <p class="text-2xl font-bold text-green-600" id="confirmed-count">0</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                            <h3 class="text-sm font-semibold mb-1">Recusados</h3>
-                            <p class="text-2xl font-bold text-red-600" id="declined-count">0</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                            <h3 class="text-sm font-semibold mb-1">Total</h3>
-                            <p class="text-2xl font-bold text-blue-600" id="total-rsvps">0</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg card-shadow text-center">
-                            <h3 class="text-sm font-semibold mb-1">Acompanhantes</h3>
-                            <p class="text-2xl font-bold text-purple-600" id="total-companions">0</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-6">
-                        <div class="bg-white rounded-lg p-4 card-shadow">
-                            <h3 class="text-lg font-semibold mb-4">Links do Evento</h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Link COM Acompanhante</label>
-                                    <div class="flex">
-                                        <input type="text" id="link-with-companion" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-xs" readonly>
-                                        <button onclick="copyLink('link-with-companion')" class="bg-purple-600 text-white px-3 py-2 rounded-r-lg hover:bg-purple-700 text-xs">Copiar</button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Link SEM Acompanhante</label>
-                                    <div class="flex">
-                                        <input type="text" id="link-without-companion" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-xs" readonly>
-                                        <button onclick="copyLink('link-without-companion')" class="bg-purple-600 text-white px-3 py-2 rounded-r-lg hover:bg-purple-700 text-xs">Copiar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-lg p-4 card-shadow">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold">Configurações do Evento</h3>
-                                <button onclick="deleteEvent()" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">Excluir Evento</button>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="enable-gifts" class="mr-2" onchange="toggleGiftSystem()">
-                                    <span class="text-sm font-semibold">Ativar Sistema de Presentes</span>
-                                </label>
-                            </div>
-                            
-                            <div id="gift-system-config" class="hidden space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Tipo de Sistema</label>
-                                    <select id="gift-system-type" class="w-full p-2 border rounded-lg" onchange="toggleGiftType()">
-                                        <option value="none">Desativado</option>
-                                        <option value="bank">Transferência Bancária</option>
-                                        <option value="list">Lista de Presentes</option>
-                                    </select>
-                                </div>
-
-                                <div id="bank-config" class="hidden space-y-3">
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Mensagem Personalizada</label>
-                                        <textarea id="bank-message" rows="6" class="w-full p-2 border rounded-lg text-sm" placeholder="Digite sua mensagem...">Querido(a) convidado(a)!
-Caso queira nos presentear, agradecemos
-desde já o seu lindo gesto e gostaríamos
-que o fizesse por transferência bancária.
-para o IBAN indicado abaixo:
-
-AO. 7210158
-Titular Diogo dos santos Inglês
-
-Muito obrigado(a)!
-Deus lhe abençoe sempre!</textarea>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-sm font-medium mb-2">IBAN</label>
-                                            <input type="text" id="bank-iban" class="w-full p-2 border rounded-lg text-sm" value="AO. 7210158">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium mb-2">Nome do Titular</label>
-                                            <input type="text" id="bank-holder" class="w-full p-2 border rounded-lg text-sm" value="Diogo dos santos Inglês">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div id="list-config" class="hidden space-y-3">
-                                    <div class="flex justify-between items-center">
-                                        <label class="block text-sm font-medium">Lista de Presentes</label>
-                                        <button onclick="addGiftItem()" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ Adicionar</button>
-                                    </div>
-                                    <div id="gift-items-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
-                                </div>
-
-                                <button onclick="saveGiftSettings()" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Salvar Configurações</button>
-                            </div>
-                        </div>
-
-                        <div id="message-wall" class="bg-white rounded-lg p-4 card-shadow">
-                            <h3 class="text-lg font-semibold mb-4">Mural de Mensagens</h3>
-                            <div id="messages-list" class="space-y-3 max-h-60 overflow-y-auto mb-4"></div>
-                            <div class="text-center text-gray-500 text-sm" id="no-messages">
-                                Nenhuma mensagem ainda. As mensagens dos convidados aparecerão aqui.
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-lg p-4 card-shadow">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold">Confirmações Recentes</h3>
-                                <button onclick="downloadEventReport()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">📄 Relatório PDF</button>
-                            </div>
-                            <div id="recent-rsvps-list" class="space-y-3"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Guest RSVP Page -->
-        <div id="guest-rsvp" class="section hidden">
-            <div class="min-h-screen gradient-bg flex items-center justify-center px-4">
-                <div class="max-w-lg w-full">
-                    <div id="deadline-notice" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-center hidden">
-                        <p class="text-yellow-800 font-semibold">⏰ Por favor confirme sua presença até:</p>
-                        <p class="text-yellow-700 text-lg font-bold" id="deadline-date"></p>
-                    </div>
-
-                    <div class="bg-white rounded-lg p-6 card-shadow">
-                        <div class="text-center mb-6">
-                            <h1 class="text-2xl md:text-3xl font-bold mb-2" id="rsvp-event-title">Evento</h1>
-                            <p class="text-lg text-gray-600 mb-2" id="rsvp-event-date">Data</p>
-                            <p class="text-sm text-gray-500" id="rsvp-event-description">Descrição</p>
-                        </div>
-                        
-                        <form id="rsvp-form" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Seu Nome Completo</label>
-                                <input type="text" id="guest-name" class="w-full p-3 border rounded-lg" required>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
+                                <input type="date" id="eventDate" required 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium mb-2">Confirmação de Presença</label>
-                                <select id="attendance-status" class="w-full p-3 border rounded-lg" required>
-                                    <option value="">Selecione uma opção</option>
-                                    <option value="true">Confirmo minha presença</option>
-                                    <option value="false">Não poderei comparecer</option>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Horário (opcional)</label>
+                                <input type="time" id="eventTime" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Local</label>
+                            <input type="text" id="eventLocation" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Descrição (opcional)</label>
+                            <textarea id="eventDescription" rows="3" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Data Limite para Confirmação</label>
+                            <input type="date" id="rsvpDeadline" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Máx. Acompanhantes</label>
+                                <select id="maxCompanions" required 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="0">Sem acompanhantes</option>
+                                    <option value="1">Até 1 acompanhante</option>
+                                    <option value="2">Até 2 acompanhantes</option>
+                                    <option value="3">Até 3 acompanhantes</option>
+                                    <option value="4">Até 4 acompanhantes</option>
+                                    <option value="5">Até 5 acompanhantes</option>
                                 </select>
                             </div>
-
-                            <div id="companion-section" class="hidden">
-                                <label class="block text-sm font-medium mb-2">Acompanhantes</label>
-                                <div id="companion-inputs"></div>
-                            </div>
-
+                            
                             <div>
-                                <label class="block text-sm font-medium mb-2">Mensagem (Opcional)</label>
-                                <textarea id="guest-message" rows="3" class="w-full p-3 border rounded-lg" placeholder="Deixe uma mensagem carinhosa..."></textarea>
-                            </div>
-
-                            <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">Confirmar Presença</button>
-                        </form>
-                    </div>
-
-                    <div id="gift-section" class="hidden bg-white rounded-lg p-6 card-shadow mt-4">
-                        <div class="text-center mb-6">
-                            <div class="text-3xl mb-3">🎁</div>
-                            <h3 class="text-xl font-bold mb-2">Presentes</h3>
-                            <p class="text-gray-600 text-sm">Se desejar nos presentear, escolha uma das opções abaixo</p>
-                        </div>
-
-                        <div id="bank-gift-option" class="hidden">
-                            <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                                <pre id="bank-gift-message" class="text-sm text-gray-700 whitespace-pre-wrap font-sans"></pre>
-                            </div>
-                            <div class="flex mb-4">
-                                <input type="text" id="display-iban" class="flex-1 p-2 border rounded-l-lg bg-gray-50 text-sm" readonly>
-                                <button onclick="copyIban()" class="bg-purple-600 text-white px-4 py-2 rounded-r-lg hover:bg-purple-700 text-sm">Copiar IBAN</button>
-                            </div>
-                            <div class="flex space-x-3">
-                                <button onclick="skipGifts()" class="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">Ignorar</button>
-                                <button onclick="confirmGiftChoice()" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Obrigado!</button>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Convidados</label>
+                                <input type="number" id="guestLimit" min="1" max="500" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                       placeholder="Ex: 50">
                             </div>
                         </div>
+                        
+                        <div class="flex gap-3">
+                            <button type="submit" 
+                                    class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+                                <span id="submitButtonText">Criar Evento</span>
+                            </button>
+                            <button type="button" onclick="hideEventForm()" 
+                                    class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
-                        <div id="list-gift-option" class="hidden">
-                            <div class="space-y-3 mb-4 max-h-60 overflow-y-auto" id="available-gifts"></div>
-                            <button onclick="skipGifts()" class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600">Ignorar Presentes</button>
+                <!-- Event RSVPs View -->
+                <div id="eventRSVPsContainer" class="hidden bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800" id="rsvpEventTitle">Confirmações do Evento</h3>
+                        <button onclick="hideEventRSVPs()" class="text-gray-500 hover:text-gray-700">
+                            ✕ Voltar
+                        </button>
+                    </div>
+                    
+                    <!-- Event Stats -->
+                    <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600" id="rsvpConfirmedCount">0</div>
+                            <div class="text-sm text-gray-600">Confirmados</div>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-red-600" id="rsvpDeclinedCount">0</div>
+                            <div class="text-sm text-gray-600">Não vão</div>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600" id="rsvpCompanionsCount">0</div>
+                            <div class="text-sm text-gray-600">Acompanhantes</div>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-600" id="rsvpTotalAttendees">0</div>
+                            <div class="text-sm text-gray-600">Total Pessoas</div>
                         </div>
                     </div>
-
-                    <div id="guest-message-wall" class="hidden bg-white rounded-lg p-6 card-shadow mt-4">
-                        <div class="text-center mb-4">
-                            <div class="text-2xl mb-2">💬</div>
-                            <h3 class="text-lg font-bold mb-2">Mural de Mensagens</h3>
-                            <p class="text-gray-600 text-sm">Veja as mensagens carinhosas dos outros convidados</p>
-                        </div>
-                        <div id="guest-messages-list" class="space-y-3 max-h-60 overflow-y-auto"></div>
+                    
+                    <div id="rsvpsList" class="space-y-3">
+                        <p class="text-gray-500 text-sm text-center">Carregando confirmações...</p>
                     </div>
-
-                    <div id="success-message" class="hidden bg-white rounded-lg p-6 card-shadow mt-4 text-center">
-                        <div class="text-4xl mb-3">🎉</div>
-                        <h3 class="text-xl font-bold mb-2">Confirmação Enviada!</h3>
-                        <p class="text-gray-600 mb-4">Obrigado por confirmar sua presença. Aguardamos você no evento!</p>
-                        <button onclick="editResponse()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Editar Resposta</button>
-                    </div>
+                    
+                    <button onclick="refreshCurrentEventRSVPs()" 
+                            class="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition text-sm">
+                        Atualizar Lista
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer class="bg-gray-800 text-white py-6 text-center">
-        <p class="text-sm">© 2025 Invites - Sistema de Confirmação de Presença</p>
-    </footer>
-
-    <script>
-        // Global variables
-        let currentUser = null;
-        let currentEvent = null;
-        let users = JSON.parse(localStorage.getItem('invites_users') || '[]');
-        let events = JSON.parse(localStorage.getItem('invites_events') || '[]');
-        let rsvps = JSON.parse(localStorage.getItem('invites_rsvps') || '[]');
-        let gifts = JSON.parse(localStorage.getItem('invites_gifts') || '[]');
-
-        // Utility functions
-        function saveData() {
-            localStorage.setItem('invites_users', JSON.stringify(users));
-            localStorage.setItem('invites_events', JSON.stringify(events));
-            localStorage.setItem('invites_rsvps', JSON.stringify(rsvps));
-            localStorage.setItem('invites_gifts', JSON.stringify(gifts));
-        }
-
-        function generateId() {
-            return Date.now().toString() + Math.random().toString(36).substr(2, 9);
-        }
-
-        function generateToken() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let token = 'INV-';
-            for (let i = 0; i < 12; i++) {
-                token += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return token;
-        }
-
-        function generateCustomUrl(title) {
-            return title.toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-z0-9\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '')
-                + '-' + Date.now().toString().slice(-6);
-        }
-
-        // Navigation functions
-        function showSection(sectionName) {
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            
-            const targetSection = document.getElementById(sectionName + '-section') || 
-                                 document.getElementById(sectionName + '-dashboard') ||
-                                 document.getElementById(sectionName);
-            if (targetSection) {
-                targetSection.classList.remove('hidden');
-                targetSection.classList.add('animate-fade-in');
-            }
-            
-            if (sectionName === 'profile' && currentUser) {
-                loadUserProfile();
-            }
-        }
-
-        // User session management
-        function saveUserSession(user) {
-            localStorage.setItem('current_user', JSON.stringify(user));
-        }
-
-        function loadUserSession() {
-            const saved = localStorage.getItem('current_user');
-            if (saved) {
-                currentUser = JSON.parse(saved);
-                updateUserInterface();
-            }
-        }
-
-        function updateUserInterface() {
-            const isGuestMode = window.location.search.includes('event=');
-            
-            if (currentUser && !isGuestMode) {
-                document.getElementById('user-info-nav').classList.remove('hidden');
-                document.getElementById('user-profile-nav').classList.remove('hidden');
-                document.getElementById('mobile-profile-nav').classList.remove('hidden');
-                document.getElementById('mobile-user-nav').classList.remove('hidden');
-                document.getElementById('mobile-user-info').classList.remove('hidden');
+    <!-- RSVP PAGE - Página para convidados -->
+    <div id="rsvpPage" class="hidden min-h-screen p-4">
+        <div class="max-w-md mx-auto">
+            <!-- Login Button -->
+            <div class="flex justify-end mb-4">
+                <button id="guestLoginBtn" onclick="showGuestLogin()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
+                    Login
+                </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-2xl p-6">
+                <div id="eventDetails" class="text-center mb-6">
+                    <!-- Event details will be loaded here -->
+                </div>
                 
-                document.getElementById('login-nav').classList.add('hidden');
-                document.getElementById('mobile-login-nav').classList.add('hidden');
+                <div id="rsvpExpired" class="hidden text-center p-6">
+                    <div class="text-6xl mb-4">⏰</div>
+                    <h2 class="text-xl font-bold text-red-600 mb-2">Prazo Expirado</h2>
+                    <p class="text-gray-600">O prazo para confirmação de presença já passou.</p>
+                </div>
                 
-                document.getElementById('nav-username').textContent = currentUser.username;
-                document.getElementById('mobile-username').textContent = currentUser.username;
-            } else {
-                document.getElementById('user-info-nav').classList.add('hidden');
-                document.getElementById('user-profile-nav').classList.add('hidden');
-                document.getElementById('mobile-profile-nav').classList.add('hidden');
-                document.getElementById('mobile-user-nav').classList.add('hidden');
-                document.getElementById('mobile-user-info').classList.add('hidden');
+                <div id="eventFull" class="hidden text-center p-6">
+                    <div class="text-6xl mb-4">🎫</div>
+                    <h2 class="text-xl font-bold text-orange-600 mb-2">Evento Lotado</h2>
+                    <p class="text-gray-600">Infelizmente o evento já atingiu o limite máximo de convidados.</p>
+                </div>
                 
-                if (!isGuestMode) {
-                    document.getElementById('login-nav').classList.remove('hidden');
-                    document.getElementById('mobile-login-nav').classList.remove('hidden');
-                } else {
-                    document.getElementById('login-nav').classList.add('hidden');
-                    document.getElementById('mobile-login-nav').classList.add('hidden');
-                }
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            currentEvent = null;
-            localStorage.removeItem('current_user');
-            updateUserInterface();
-            showSection('home');
-        }
-
-        // Profile functions
-        function loadUserProfile() {
-            if (!currentUser) return;
-            
-            document.getElementById('profile-full-name').value = currentUser.full_name || '';
-            document.getElementById('profile-username').value = currentUser.username || '';
-            document.getElementById('profile-password').value = currentUser.password || '';
-        }
-
-        function togglePasswordVisibility() {
-            const passwordField = document.getElementById('profile-password');
-            const toggleBtn = document.getElementById('toggle-password-btn');
-            
-            if (passwordField.type === 'password') {
-                passwordField.type = 'text';
-                toggleBtn.textContent = '🙈';
-            } else {
-                passwordField.type = 'password';
-                toggleBtn.textContent = '👁️';
-            }
-        }
-
-        function enableProfileEdit() {
-            document.getElementById('profile-edit-form').classList.remove('hidden');
-            document.getElementById('edit-full-name').value = currentUser.full_name || '';
-            document.getElementById('edit-password').value = '';
-        }
-
-        function cancelProfileEdit() {
-            document.getElementById('profile-edit-form').classList.add('hidden');
-        }
-
-        function saveProfileChanges() {
-            const newFullName = document.getElementById('edit-full-name').value.trim();
-            const newPassword = document.getElementById('edit-password').value.trim();
-            
-            if (!newFullName) {
-                alert('Nome completo é obrigatório');
-                return;
-            }
-            
-            currentUser.full_name = newFullName;
-            if (newPassword) {
-                currentUser.password = newPassword;
-            }
-            
-            // Update in users array
-            const userIndex = users.findIndex(u => u.id === currentUser.id);
-            if (userIndex !== -1) {
-                users[userIndex] = currentUser;
-                saveData();
-            }
-            
-            saveUserSession(currentUser);
-            updateUserInterface();
-            loadUserProfile();
-            cancelProfileEdit();
-            
-            alert('Perfil atualizado com sucesso!');
-        }
-
-        function deleteAccount() {
-            if (!confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita e todos os seus eventos serão removidos.')) {
-                return;
-            }
-            
-            // Get user event IDs first
-            const userEventIds = events.filter(e => e.user_id === currentUser.id).map(e => e.id);
-            
-            // Remove RSVPs for user events
-            rsvps = rsvps.filter(r => !userEventIds.includes(r.wedding_id));
-            
-            // Remove gifts for user events
-            gifts = gifts.filter(g => !userEventIds.includes(g.event_id));
-            
-            // Remove user events
-            events = events.filter(e => e.user_id !== currentUser.id);
-            
-            // Remove user
-            users = users.filter(u => u.id !== currentUser.id);
-            
-            saveData();
-            logout();
-            alert('Conta excluída com sucesso!');
-        }
-
-        function deleteEvent() {
-            if (!currentEvent) return;
-            
-            if (!confirm(`Tem certeza que deseja excluir o evento "${currentEvent.title}"? Esta ação não pode ser desfeita.`)) {
-                return;
-            }
-            
-            // Remove event
-            events = events.filter(e => e.id !== currentEvent.id);
-            
-            // Remove RSVPs for this event
-            rsvps = rsvps.filter(r => r.wedding_id !== currentEvent.id);
-            
-            // Remove gifts for this event
-            gifts = gifts.filter(g => g.event_id !== currentEvent.id);
-            
-            saveData();
-            
-            alert('Evento excluído com sucesso!');
-            loadUserDashboard();
-        }
-
-        // Token functions
-        function showTokenSection() {
-            showSection('token');
-            const pendingUsername = localStorage.getItem('pending_username');
-            if (pendingUsername) {
-                document.getElementById('pending-username').textContent = pendingUsername;
-            }
-        }
-
-        function proceedToLogin() {
-            if (currentUser) {
-                updateUserInterface();
-                loadUserDashboard();
-            } else {
-                showSection('login');
-            }
-        }
-
-        // Form handlers
-        document.getElementById('register-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const fullName = document.getElementById('full-name').value;
-            const password = document.getElementById('password').value;
-            
-            // Check if username exists
-            if (users.find(u => u.username === username)) {
-                alert('Nome de usuário já existe');
-                return;
-            }
-            
-            const token = generateToken();
-            const newUser = {
-                id: generateId(),
-                username: username,
-                full_name: fullName,
-                password: password,
-                token: token,
-                is_active: false,
-                created_at: new Date().toISOString()
-            };
-            
-            users.push(newUser);
-            saveData();
-            
-            localStorage.setItem('pending_username', username);
-            localStorage.setItem('pending_user_id', newUser.id);
-            
-            document.getElementById('pending-username').textContent = username;
-            document.getElementById('account-created').classList.remove('hidden');
-            this.reset();
-        });
-
-        document.getElementById('token-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const enteredToken = document.getElementById('access-token').value.trim();
-            const pendingUserId = localStorage.getItem('pending_user_id');
-            
-            const user = users.find(u => u.id === pendingUserId);
-            if (!user || user.token !== enteredToken) {
-                alert('Token inválido');
-                return;
-            }
-            
-            user.is_active = true;
-            user.last_login = new Date().toISOString();
-            saveData();
-            
-            currentUser = user;
-            saveUserSession(user);
-            updateUserInterface();
-            
-            document.getElementById('token-success').classList.remove('hidden');
-            
-            localStorage.removeItem('pending_username');
-            localStorage.removeItem('pending_user_id');
-        });
-
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-            
-            const user = users.find(u => u.username === username && u.password === password);
-            if (!user) {
-                alert('Credenciais inválidas');
-                return;
-            }
-            
-            if (!user.is_active) {
-                localStorage.setItem('pending_username', username);
-                localStorage.setItem('pending_user_id', user.id);
-                document.getElementById('pending-username').textContent = username;
-                showTokenSection();
-                return;
-            }
-            
-            user.last_login = new Date().toISOString();
-            saveData();
-            
-            currentUser = user;
-            saveUserSession(user);
-            updateUserInterface();
-            loadUserDashboard();
-        });
-
-        document.getElementById('create-event-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const eventTitle = document.getElementById('event-title').value;
-            const customUrl = generateCustomUrl(eventTitle);
-            const giftType = document.querySelector('input[name="gift-type"]:checked').value;
-            
-            let giftConfig = null;
-            let enableGifts = false;
-
-            if (giftType === 'bank') {
-                enableGifts = true;
-                giftConfig = {
-                    type: 'bank',
-                    message: 'Querido(a) convidado(a)!\nCaso queira nos presentear, agradecemos\ndesde já o seu lindo gesto e gostaríamos\nque o fizesse por transferência bancária.\npara o IBAN indicado abaixo:\n\nAO. 7210158\nTitular Diogo dos santos Inglês\n\nMuito obrigado(a)!\nDeus lhe abençoe sempre!',
-                    iban: 'AO. 7210158',
-                    holder: 'Diogo dos santos Inglês'
-                };
-            } else if (giftType === 'list') {
-                enableGifts = true;
-                giftConfig = { type: 'list', items: [] };
-            }
-
-            const newEvent = {
-                id: generateId(),
-                user_id: currentUser.id,
-                title: eventTitle,
-                description: document.getElementById('event-description').value || null,
-                event_date: document.getElementById('event-date').value,
-                confirmation_deadline: document.getElementById('confirmation-deadline').value || null,
-                custom_url: customUrl,
-                enable_gifts: enableGifts,
-                gift_config: giftConfig,
-                created_at: new Date().toISOString()
-            };
-            
-            events.push(newEvent);
-            saveData();
-            
-            currentEvent = newEvent;
-            document.getElementById('event-created').classList.remove('hidden');
-            this.reset();
-        });
-
-        // Dashboard functions
-        function loadUserDashboard() {
-            showSection('user-dashboard');
-            
-            const userEvents = events.filter(e => e.user_id === currentUser.id);
-            const container = document.getElementById('user-events-list');
-            container.innerHTML = '';
-            
-            if (userEvents.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-white rounded-lg p-6 card-shadow text-center">
-                        <div class="text-4xl mb-3">🎉</div>
-                        <h3 class="text-lg font-semibold mb-2">Nenhum evento criado</h3>
-                        <p class="text-gray-600 mb-4">Crie seu primeiro evento para começar a receber confirmações!</p>
-                        <button onclick="showSection('create-event')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Criar Primeiro Evento</button>
+                <form id="rsvpForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Seu Nome</label>
+                        <input type="text" id="guestName" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                `;
-                return;
-            }
-            
-            userEvents.forEach(event => {
-                const eventRsvps = rsvps.filter(r => r.wedding_id === event.id);
-                const confirmed = eventRsvps.filter(r => r.attendance === true).length;
-                const total = eventRsvps.length;
-                
-                const div = document.createElement('div');
-                div.className = 'bg-white rounded-lg p-4 card-shadow mb-4 cursor-pointer hover:shadow-lg transition-shadow';
-                div.onclick = () => selectEvent(event);
-                
-                const eventDate = new Date(event.event_date);
-                const isUpcoming = eventDate > new Date();
-                
-                div.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold mb-1">${event.title}</h3>
-                            <p class="text-sm text-gray-600 mb-2">${eventDate.toLocaleDateString('pt-BR')}</p>
-                            ${event.description ? `<p class="text-xs text-gray-500 mb-2">${event.description}</p>` : ''}
-                            <div class="flex items-center space-x-4 text-xs">
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">ID: ${event.custom_url}</span>
-                                <span class="${isUpcoming ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} px-2 py-1 rounded">
-                                    ${isUpcoming ? 'Ativo' : 'Finalizado'}
-                                </span>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Seu Telefone</label>
+                        <input type="tel" id="guestPhone" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ex: +244 912 345 678">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirmação de Presença</label>
+                        <select id="attendance" required 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <option value="">Selecione uma opção</option>
+                            <option value="yes">✅ Sim, estarei presente</option>
+                            <option value="no">❌ Não poderei comparecer</option>
+                        </select>
+                    </div>
+                    
+                    <div id="companionSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantos acompanhantes?</label>
+                        <select id="companions" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                        
+                        <div id="companionNamesSection" class="hidden mt-4 space-y-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomes dos Acompanhantes:</label>
+                            <div id="companionNamesList">
+                                <!-- Companion name inputs will be added here -->
                             </div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-semibold text-purple-600">${confirmed}/${total}</p>
-                            <p class="text-xs text-gray-500">confirmações</p>
-                        </div>
                     </div>
-                `;
-                container.appendChild(div);
-            });
-        }
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Observações (opcional)</label>
+                        <textarea id="notes" rows="3" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                  placeholder="Restrições alimentares, necessidades especiais, etc."></textarea>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
+                        Confirmar Presença
+                    </button>
+                </form>
+            </div>
 
-        function selectEvent(event) {
-            currentEvent = event;
-            
-            document.getElementById('user-events-list').style.display = 'none';
-            document.getElementById('event-details').classList.remove('hidden');
-            
-            const baseUrl = window.location.origin + window.location.pathname;
-            document.getElementById('link-with-companion').value = `${baseUrl}?event=${currentEvent.custom_url}&companion=true`;
-            document.getElementById('link-without-companion').value = `${baseUrl}?event=${currentEvent.custom_url}&companion=false`;
-            
-            document.getElementById('enable-gifts').checked = currentEvent.enable_gifts || false;
-            
-            loadGiftConfiguration();
-            updateUserStats();
-            loadRecentRSVPs();
-            loadMessageWall();
-            
-            const backButton = document.createElement('button');
-            backButton.className = 'mb-4 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600';
-            backButton.textContent = '← Voltar aos Eventos';
-            backButton.onclick = () => {
-                document.getElementById('user-events-list').style.display = 'block';
-                document.getElementById('event-details').classList.add('hidden');
-                currentEvent = null;
-            };
-            
-            const eventDetails = document.getElementById('event-details');
-            if (!eventDetails.querySelector('button')) {
-                eventDetails.insertBefore(backButton, eventDetails.firstChild);
-            }
-        }
-
-        function updateUserStats() {
-            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id);
-            const confirmed = eventRsvps.filter(r => r.attendance === true).length;
-            const declined = eventRsvps.filter(r => r.attendance === false).length;
-            const companions = eventRsvps.filter(r => r.companion_name).length;
-            
-            document.getElementById('confirmed-count').textContent = confirmed;
-            document.getElementById('declined-count').textContent = declined;
-            document.getElementById('total-rsvps').textContent = eventRsvps.length;
-            document.getElementById('total-companions').textContent = companions;
-        }
-
-        function loadRecentRSVPs() {
-            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id)
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                .slice(0, 5);
-            
-            const container = document.getElementById('recent-rsvps-list');
-            container.innerHTML = '';
-            
-            eventRsvps.forEach(rsvp => {
-                const div = document.createElement('div');
-                div.className = 'p-3 border rounded-lg';
-                div.innerHTML = `
-                    <div class="flex justify-between items-start">
+            <!-- Guest Login Modal -->
+            <div id="guestLoginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Login do Cliente</h3>
+                        <button onclick="hideGuestLogin()" class="text-gray-500 hover:text-gray-700">
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <form id="guestLoginForm" class="space-y-4">
                         <div>
-                            <p class="font-semibold text-sm">${rsvp.guest_name}</p>
-                            ${rsvp.companion_name ? `<p class="text-xs text-gray-600">+ ${rsvp.companion_name}</p>` : ''}
-                            ${rsvp.message ? `<p class="text-xs text-gray-500 mt-1">"${rsvp.message}"</p>` : ''}
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                            <input type="text" id="guestLoginUsername" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
-                        <span class="text-xs px-2 py-1 rounded ${rsvp.attendance ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                            ${rsvp.attendance ? 'Confirmado' : 'Recusado'}
-                        </span>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                            <input type="password" id="guestLoginPassword" required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button type="submit" 
+                                    class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+                                Entrar
+                            </button>
+                            <button type="button" onclick="hideGuestLogin()" 
+                                    class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- RSVP Success Message -->
+            <div id="rsvpSuccess" class="hidden bg-white rounded-2xl shadow-2xl p-6">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-4">✅</div>
+                    <h2 class="text-xl font-bold text-green-600 mb-2">Sua resposta foi enviada, grato!</h2>
+                </div>
+                
+                <div class="space-y-3">
+                    <button onclick="editResponse()" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+                        Editar Resposta
+                    </button>
+                    
+                    <button onclick="editMessage()" 
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
+                        Editar Mensagem
+                    </button>
+                </div>
+            </div>
+
+            <!-- Edit Message Modal -->
+            <div id="editMessageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Editar Mensagem</h3>
+                        <button onclick="hideEditMessage()" class="text-gray-500 hover:text-gray-700">
+                            ✕
+                        </button>
                     </div>
-                `;
-                container.appendChild(div);
-            });
+                    
+                    <form id="editMessageForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Sua Mensagem</label>
+                            <textarea id="editMessageText" rows="4" 
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                      placeholder="Restrições alimentares, necessidades especiais, etc."></textarea>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button type="submit" 
+                                    class="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
+                                Salvar Mensagem
+                            </button>
+                            <button type="button" onclick="hideEditMessage()" 
+                                    class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Guest Messages Section -->
+            <div id="guestMessages" class="hidden bg-white rounded-2xl shadow-2xl p-6 mt-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Mensagens dos Convidados</h3>
+                <div id="messagesList" class="space-y-3 max-h-60 overflow-y-auto">
+                    <!-- Messages will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration - SECURE: No sensitive data exposed
+        const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzY3MDIsImV4cCI6MjA3MTI1MjcwMn0.LPMGW_OPKiwTEKhyzl_v2Snb9nVeZg0wP4Ot6zKrCn0';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentUser = null;
+        let currentEventId = null;
+        let allowCompanions = false;
+        let maxCompanionsAllowed = 0;
+        let currentEvent = null;
+
+        // Check URL parameters to determine which panel to show
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        const clientId = urlParams.get('client');
+        const eventId = urlParams.get('event');
+        const companions = urlParams.get('companions');
+
+        // Initialize the correct panel based on URL
+        if (eventId) {
+            // RSVP page for guests
+            showRSVPPage(eventId, companions === 'true');
+        } else if (mode === 'client' && clientId) {
+            // Client panel
+            showClientPanel();
+        } else {
+            // Admin panel (default)
+            showAdminPanel();
         }
 
-        function loadMessageWall() {
-            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id && r.message && r.message.trim())
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // ADMIN FUNCTIONS
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
             
-            const container = document.getElementById('messages-list');
-            const noMessages = document.getElementById('no-messages');
-            
-            // Clear existing content
-            container.innerHTML = '';
-            
-            if (eventRsvps.length === 0) {
-                noMessages.style.display = 'block';
-                return;
-            }
-            
-            noMessages.style.display = 'none';
-            
-            // Remove duplicates based on guest name and message
-            const uniqueRsvps = [];
-            const seen = new Set();
-            
-            eventRsvps.forEach(rsvp => {
-                const key = `${rsvp.guest_name}-${rsvp.message}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    uniqueRsvps.push(rsvp);
+            try {
+                const { data, error } = await supabase
+                    .from('admin_users')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+
+                if (error || !data) {
+                    alert('Credenciais de admin incorretas');
+                    return;
                 }
-            });
-            
-            uniqueRsvps.forEach(rsvp => {
-                const div = document.createElement('div');
-                div.className = 'message-bubble p-3 rounded-lg';
-                
-                const hasCompanions = rsvp.companion_name && rsvp.companion_name.trim();
-                const isPlural = hasCompanions;
-                
-                let guestInfo = rsvp.guest_name;
-                if (hasCompanions) {
-                    const companions = rsvp.companion_name.split(',').map(c => c.trim());
-                    guestInfo += ` e ${companions.join(', ')}`;
-                }
-                
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="font-semibold text-sm text-purple-700">${guestInfo}</span>
-                        <span class="text-xs text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <p class="text-sm text-gray-700">${rsvp.message}</p>
-                    <div class="mt-2 text-xs text-gray-500">
-                        ${rsvp.attendance ? 
-                            (isPlural ? 'Confirmaram presença' : 'Confirmou presença') : 
-                            (isPlural ? 'Não comparecerão' : 'Não comparecerá')
-                        }
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
 
-        function copyLink(inputId) {
-            const input = document.getElementById(inputId);
-            input.select();
-            input.setSelectionRange(0, 99999);
-            document.execCommand('copy');
-            
-            const button = input.nextElementSibling;
-            const originalText = button.textContent;
-            button.textContent = 'Copiado!';
-            button.classList.add('bg-green-600');
-            button.classList.remove('bg-purple-600');
-            
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.classList.remove('bg-green-600');
-                button.classList.add('bg-purple-600');
-            }, 2000);
-        }
-
-        // Gift system functions
-        function toggleGiftSystem() {
-            const enabled = document.getElementById('enable-gifts').checked;
-            const configSection = document.getElementById('gift-system-config');
-            
-            if (enabled) {
-                configSection.classList.remove('hidden');
-            } else {
-                configSection.classList.add('hidden');
+                document.getElementById('adminLogin').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                loadClients();
+            } catch (error) {
+                console.error('Admin login error:', error);
+                alert('Erro ao fazer login como admin');
             }
-        }
+        });
 
-        function toggleGiftType() {
-            const type = document.getElementById('gift-system-type').value;
-            document.getElementById('bank-config').classList.add('hidden');
-            document.getElementById('list-config').classList.add('hidden');
-            
-            if (type === 'bank') {
-                document.getElementById('bank-config').classList.remove('hidden');
-            } else if (type === 'list') {
-                document.getElementById('list-config').classList.remove('hidden');
-                loadGiftItems();
-            }
-        }
-
-        function loadGiftConfiguration() {
-            const giftConfig = currentEvent.gift_config;
-            if (!giftConfig) {
-                document.getElementById('gift-system-type').value = 'none';
-                return;
-            }
-
-            document.getElementById('gift-system-type').value = giftConfig.type;
-            
-            if (giftConfig.type === 'bank') {
-                document.getElementById('bank-config').classList.remove('hidden');
-                document.getElementById('bank-message').value = giftConfig.message || '';
-                document.getElementById('bank-iban').value = giftConfig.iban || '';
-                document.getElementById('bank-holder').value = giftConfig.holder || '';
-            } else if (giftConfig.type === 'list') {
-                document.getElementById('list-config').classList.remove('hidden');
-                loadGiftItems();
-            }
-        }
-
-        function loadGiftItems() {
-            const container = document.getElementById('gift-items-list');
-            container.innerHTML = '';
-            
-            const giftConfig = currentEvent.gift_config;
-            if (!giftConfig || !giftConfig.items) return;
-            
-            giftConfig.items.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'flex items-center space-x-2 p-2 border rounded-lg';
-                div.innerHTML = `
-                    <input type="text" value="${item.name}" class="flex-1 p-1 border rounded text-sm" onchange="updateGiftItem(${index}, 'name', this.value)">
-                    <input type="number" value="${item.quantity}" class="w-16 p-1 border rounded text-sm" min="1" onchange="updateGiftItem(${index}, 'quantity', this.value)">
-                    <button onclick="removeGiftItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded text-xs">×</button>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function addGiftItem() {
-            if (!currentEvent.gift_config) {
-                currentEvent.gift_config = { type: 'list', items: [] };
-            }
-            if (!currentEvent.gift_config.items) {
-                currentEvent.gift_config.items = [];
-            }
-            
-            currentEvent.gift_config.items.push({ name: 'Novo presente', quantity: 1 });
-            loadGiftItems();
-        }
-
-        function updateGiftItem(index, field, value) {
-            if (field === 'quantity') {
-                value = parseInt(value) || 1;
-            }
-            currentEvent.gift_config.items[index][field] = value;
-        }
-
-        function removeGiftItem(index) {
-            currentEvent.gift_config.items.splice(index, 1);
-            loadGiftItems();
-        }
-
-        function saveGiftSettings() {
-            const type = document.getElementById('gift-system-type').value;
-            let giftConfig = null;
-            
-            if (type === 'bank') {
-                giftConfig = {
-                    type: 'bank',
-                    message: document.getElementById('bank-message').value,
-                    iban: document.getElementById('bank-iban').value,
-                    holder: document.getElementById('bank-holder').value
-                };
-            } else if (type === 'list') {
-                giftConfig = currentEvent.gift_config;
-            }
-            
-            currentEvent.enable_gifts = type !== 'none';
-            currentEvent.gift_config = giftConfig;
-            
-            // Update in events array
-            const eventIndex = events.findIndex(e => e.id === currentEvent.id);
-            if (eventIndex !== -1) {
-                events[eventIndex] = currentEvent;
-                saveData();
-            }
-            
-            alert('Configurações de presentes salvas com sucesso!');
-        }
-
-        // Report functions
-        function downloadUserReport() {
-            if (!currentUser) return;
-            
-            const userEvents = events.filter(e => e.user_id === currentUser.id);
-            const allRsvps = rsvps.filter(r => userEvents.some(e => e.id === r.wedding_id));
-            
-            generateUserPDFReport(currentUser, userEvents, allRsvps);
-        }
-
-        function downloadEventReport() {
-            if (!currentEvent) return;
-            
-            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id);
-            const eventGifts = gifts.filter(g => g.event_id === currentEvent.id);
-            
-            generateEventPDFReport(currentEvent, eventRsvps, eventGifts);
-        }
-
-        function generateUserPDFReport(user, events, rsvps) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(20);
-            doc.text('Relatório do Usuário - Invites', 20, 20);
-            
-            doc.setFontSize(12);
-            doc.text(`Nome: ${user.full_name}`, 20, 35);
-            doc.text(`Usuário: ${user.username}`, 20, 45);
-            doc.text(`Membro desde: ${new Date(user.created_at).toLocaleDateString('pt-BR')}`, 20, 55);
-            doc.text(`Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 65);
-            
-            let yPos = 80;
-            
-            doc.setFontSize(16);
-            doc.text('Resumo dos Eventos', 20, yPos);
-            yPos += 15;
-            
-            doc.setFontSize(12);
-            doc.text(`Total de eventos criados: ${events.length}`, 20, yPos);
-            yPos += 10;
-            
-            const totalRsvps = rsvps.length;
-            const confirmedRsvps = rsvps.filter(r => r.attendance === true).length;
-            
-            doc.text(`Total de confirmações recebidas: ${totalRsvps}`, 20, yPos);
-            yPos += 10;
-            doc.text(`Confirmações positivas: ${confirmedRsvps}`, 20, yPos);
-            yPos += 20;
-            
-            if (events.length > 0) {
-                doc.setFontSize(16);
-                doc.text('Detalhes dos Eventos', 20, yPos);
-                yPos += 15;
-                
-                events.forEach((event, index) => {
-                    if (yPos > 250) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-                    
-                    doc.setFontSize(14);
-                    doc.text(`${index + 1}. ${event.title}`, 20, yPos);
-                    yPos += 10;
-                    
-                    doc.setFontSize(10);
-                    doc.text(`Data: ${new Date(event.event_date).toLocaleDateString('pt-BR')}`, 25, yPos);
-                    yPos += 8;
-                    
-                    const eventRsvps = rsvps.filter(r => r.wedding_id === event.id);
-                    const eventConfirmed = eventRsvps.filter(r => r.attendance === true).length;
-                    
-                    doc.text(`Confirmações: ${eventConfirmed} (${eventRsvps.length} total)`, 25, yPos);
-                    yPos += 15;
-                });
-            }
-            
-            doc.save(`relatorio-usuario-${user.username}-${new Date().toISOString().split('T')[0]}.pdf`);
-        }
-
-        function generateEventPDFReport(event, rsvps, gifts) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(20);
-            doc.text('Relatório do Evento - Invites', 20, 20);
-            
-            doc.setFontSize(16);
-            doc.text(event.title, 20, 35);
-            
-            doc.setFontSize(12);
-            doc.text(`Data do evento: ${new Date(event.event_date).toLocaleDateString('pt-BR')}`, 20, 50);
-            doc.text(`Relatório gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 60);
-            
-            let yPos = 75;
-            
-            const confirmed = rsvps.filter(r => r.attendance === true);
-            const declined = rsvps.filter(r => r.attendance === false);
-            
-            doc.setFontSize(16);
-            doc.text('Estatísticas', 20, yPos);
-            yPos += 15;
-            
-            doc.setFontSize(12);
-            doc.text(`Total de confirmações: ${rsvps.length}`, 20, yPos);
-            yPos += 10;
-            doc.text(`Confirmaram presença: ${confirmed.length}`, 20, yPos);
-            yPos += 10;
-            doc.text(`Não comparecerão: ${declined.length}`, 20, yPos);
-            yPos += 20;
-            
-            if (confirmed.length > 0) {
-                doc.setFontSize(16);
-                doc.text('Lista de Confirmados', 20, yPos);
-                yPos += 15;
-                
-                confirmed.forEach((rsvp, index) => {
-                    if (yPos > 250) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-                    
-                    doc.setFontSize(12);
-                    let guestText = `${index + 1}. ${rsvp.guest_name}`;
-                    
-                    if (rsvp.companion_name) {
-                        guestText += ` + ${rsvp.companion_name}`;
-                    }
-                    
-                    doc.text(guestText, 20, yPos);
-                    yPos += 10;
-                });
-            }
-            
-            const eventName = event.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-            doc.save(`relatorio-evento-${eventName}-${new Date().toISOString().split('T')[0]}.pdf`);
-        }
-
-        // Guest RSVP functions
-        function loadGuestRSVP() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const eventUrl = urlParams.get('event');
-            const allowCompanion = urlParams.get('companion') === 'true';
-            
-            if (!eventUrl) return;
-            
-            const event = events.find(e => e.custom_url === eventUrl);
-            if (!event) {
-                alert('Evento não encontrado');
-                return;
-            }
-            
-            window.currentEventData = event;
-            window.allowCompanion = allowCompanion;
-            
-            showSection('guest-rsvp');
-            
-            document.getElementById('rsvp-event-title').textContent = event.title;
-            document.getElementById('rsvp-event-date').textContent = new Date(event.event_date).toLocaleDateString('pt-BR');
-            
-            if (event.description) {
-                document.getElementById('rsvp-event-description').textContent = event.description;
-            } else {
-                document.getElementById('rsvp-event-description').style.display = 'none';
-            }
-            
-            // Show deadline if set
-            if (event.confirmation_deadline) {
-                const deadlineDate = new Date(event.confirmation_deadline);
-                document.getElementById('deadline-date').textContent = deadlineDate.toLocaleDateString('pt-BR');
-                document.getElementById('deadline-notice').classList.remove('hidden');
-            }
-            
-            // Setup companion section
-            if (allowCompanion) {
-                document.getElementById('companion-section').classList.remove('hidden');
-                setupCompanionInputs();
-            }
-            
-            // Check for existing RSVP
-            checkExistingRSVP();
-        }
-
-        function checkExistingRSVP() {
-            const guestKey = `guest_rsvp_${window.currentEventData.id}`;
-            const existingRsvp = localStorage.getItem(guestKey);
-            
-            if (existingRsvp) {
-                const rsvpData = JSON.parse(existingRsvp);
-                
-                // Fill form with existing data
-                document.getElementById('guest-name').value = rsvpData.guest_name;
-                document.getElementById('attendance-status').value = rsvpData.attendance.toString();
-                document.getElementById('guest-message').value = rsvpData.message || '';
-                
-                if (rsvpData.companion_name && window.allowCompanion) {
-                    document.getElementById('companion-1').value = rsvpData.companion_name;
-                }
-                
-                // Show success message
-                document.getElementById('success-message').classList.remove('hidden');
-                document.getElementById('rsvp-form').style.display = 'none';
-            }
-        }
-
-        function editResponse() {
-            document.getElementById('success-message').classList.add('hidden');
-            document.getElementById('rsvp-form').style.display = 'block';
-            document.getElementById('gift-section').classList.add('hidden');
-            document.getElementById('guest-message-wall').classList.add('hidden');
-        }
-
-        function setupCompanionInputs() {
-            const container = document.getElementById('companion-inputs');
-            container.innerHTML = `
-                <input type="text" id="companion-1" class="w-full p-3 border rounded-lg mb-2" placeholder="Nome do acompanhante">
-            `;
-        }
-
-        document.getElementById('rsvp-form').addEventListener('submit', function(e) {
+        document.getElementById('createClientForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const guestName = document.getElementById('guest-name').value;
-            const attendance = document.getElementById('attendance-status').value === 'true';
-            const message = document.getElementById('guest-message').value;
-            
-            let companionName = '';
-            if (window.allowCompanion) {
-                const companion1 = document.getElementById('companion-1').value.trim();
-                if (companion1) {
-                    companionName = companion1;
+            const clientData = {
+                name: document.getElementById('clientName').value,
+                username: document.getElementById('clientUsername').value,
+                password: document.getElementById('clientPassword').value,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .insert([clientData])
+                    .select()
+                    .single();
+
+                if (error) {
+                    alert('Erro ao criar cliente: ' + error.message);
+                    return;
                 }
-            }
-            
-            const guestKey = `guest_rsvp_${window.currentEventData.id}`;
-            const existingRsvp = localStorage.getItem(guestKey);
-            
-            if (existingRsvp) {
-                // Update existing RSVP
-                const rsvpData = JSON.parse(existingRsvp);
-                const rsvpIndex = rsvps.findIndex(r => r.id === rsvpData.id);
-                
-                if (rsvpIndex !== -1) {
-                    rsvps[rsvpIndex].guest_name = guestName;
-                    rsvps[rsvpIndex].companion_name = companionName;
-                    rsvps[rsvpIndex].attendance = attendance;
-                    rsvps[rsvpIndex].message = message;
-                    rsvps[rsvpIndex].updated_at = new Date().toISOString();
-                }
-                
-                // Update localStorage
-                const updatedRsvp = {
-                    id: rsvpData.id,
-                    guest_name: guestName,
-                    companion_name: companionName,
-                    attendance: attendance,
-                    message: message
-                };
-                localStorage.setItem(guestKey, JSON.stringify(updatedRsvp));
-            } else {
-                // Create new RSVP
-                const newRsvp = {
-                    id: generateId(),
-                    wedding_id: window.currentEventData.id,
-                    guest_name: guestName,
-                    companion_name: companionName,
-                    attendance: attendance,
-                    message: message,
-                    created_at: new Date().toISOString()
-                };
-                
-                rsvps.push(newRsvp);
-                
-                // Save to localStorage for guest
-                const guestRsvp = {
-                    id: newRsvp.id,
-                    guest_name: guestName,
-                    companion_name: companionName,
-                    attendance: attendance,
-                    message: message
-                };
-                localStorage.setItem(guestKey, JSON.stringify(guestRsvp));
-            }
-            
-            saveData();
-            
-            // Show gift section if enabled
-            if (window.currentEventData.enable_gifts && attendance) {
-                showGiftSection();
-            } else {
-                showSuccessMessage();
+
+                alert('Cliente criado com sucesso!');
+                document.getElementById('createClientForm').reset();
+                loadClients();
+            } catch (error) {
+                console.error('Create client error:', error);
+                alert('Erro ao criar cliente');
             }
         });
 
-        function showGiftSection() {
-            document.getElementById('gift-section').classList.remove('hidden');
-            
-            const giftConfig = window.currentEventData.gift_config;
-            if (giftConfig.type === 'bank') {
-                document.getElementById('bank-gift-option').classList.remove('hidden');
-                document.getElementById('bank-gift-message').textContent = giftConfig.message;
-                document.getElementById('display-iban').value = giftConfig.iban;
-            } else if (giftConfig.type === 'list') {
-                document.getElementById('list-gift-option').classList.remove('hidden');
-                loadAvailableGifts();
-            }
-        }
+        async function loadClients() {
+            try {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-        function loadAvailableGifts() {
-            const container = document.getElementById('available-gifts');
-            const giftConfig = window.currentEventData.gift_config;
-            
-            if (!giftConfig.items) return;
-            
-            container.innerHTML = '';
-            giftConfig.items.forEach((item, index) => {
-                const selectedCount = gifts.filter(g => g.event_id === window.currentEventData.id && g.gift_name === item.name).length;
-                const available = item.quantity - selectedCount;
-                
-                if (available > 0) {
-                    const div = document.createElement('div');
-                    div.className = 'flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50';
-                    div.onclick = () => selectGift(item.name);
-                    div.innerHTML = `
-                        <span class="font-medium">${item.name}</span>
-                        <span class="text-sm text-gray-500">${available} disponível(is)</span>
+                if (error) {
+                    console.error('Load clients error:', error);
+                    return;
+                }
+
+                const clientsList = document.getElementById('clientsList');
+                clientsList.innerHTML = '';
+
+                if (data.length === 0) {
+                    clientsList.innerHTML = '<p class="text-gray-500 text-center text-sm">Nenhum cliente criado ainda.</p>';
+                    return;
+                }
+
+                data.forEach(client => {
+                    const clientCard = document.createElement('div');
+                    clientCard.className = 'border border-gray-200 rounded-lg p-3';
+                    
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    const clientUrl = `${baseUrl}?mode=client&client=${client.id}`;
+                    
+                    clientCard.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 class="font-semibold text-gray-800">${client.name}</h4>
+                                <p class="text-sm text-gray-600">@${client.username}</p>
+                            </div>
+                            <button onclick="deleteClient(${client.id})" class="text-red-500 hover:text-red-700 text-sm">
+                                🗑️
+                            </button>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Link do Cliente:</label>
+                            <div class="flex gap-2">
+                                <input type="text" value="${clientUrl}" readonly 
+                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
+                                <button onclick="copyLink('${clientUrl}')" 
+                                        class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
                     `;
-                    container.appendChild(div);
-                }
-            });
-        }
-
-        function selectGift(giftName) {
-            const newGift = {
-                id: generateId(),
-                event_id: window.currentEventData.id,
-                guest_name: document.getElementById('guest-name').value,
-                gift_name: giftName,
-                selection_type: 'list',
-                created_at: new Date().toISOString()
-            };
-            
-            gifts.push(newGift);
-            saveData();
-            
-            showSuccessMessage();
-        }
-
-        function copyIban() {
-            const input = document.getElementById('display-iban');
-            input.select();
-            document.execCommand('copy');
-            
-            const button = event.target;
-            button.textContent = 'Copiado!';
-            button.classList.add('bg-green-600');
-            setTimeout(() => {
-                button.textContent = 'Copiar IBAN';
-                button.classList.remove('bg-green-600');
-                button.classList.add('bg-purple-600');
-            }, 2000);
-        }
-
-        function skipGifts() {
-            showSuccessMessage();
-        }
-
-        function confirmGiftChoice() {
-            const newGift = {
-                id: generateId(),
-                event_id: window.currentEventData.id,
-                guest_name: document.getElementById('guest-name').value,
-                gift_name: 'Transferência Bancária',
-                selection_type: 'bank',
-                created_at: new Date().toISOString()
-            };
-            
-            gifts.push(newGift);
-            saveData();
-            
-            showSuccessMessage();
-        }
-
-        function showSuccessMessage() {
-            document.getElementById('gift-section').style.display = 'none';
-            document.getElementById('success-message').classList.remove('hidden');
-            
-            // Show message wall if enabled
-            if (window.currentEventData.enable_public_wall) {
-                loadGuestMessageWall();
-                document.getElementById('guest-message-wall').classList.remove('hidden');
+                    
+                    clientsList.appendChild(clientCard);
+                });
+            } catch (error) {
+                console.error('Load clients error:', error);
             }
         }
 
-        function loadGuestMessageWall() {
-            const eventRsvps = rsvps.filter(r => r.wedding_id === window.currentEventData.id && r.message)
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        async function deleteClient(clientId) {
+            if (!confirm('Tem certeza que deseja excluir este cliente? Todos os eventos e confirmações serão perdidos permanentemente.')) return;
             
-            const container = document.getElementById('guest-messages-list');
-            container.innerHTML = '';
-            
-            eventRsvps.forEach(rsvp => {
-                const div = document.createElement('div');
-                div.className = 'message-bubble p-3 rounded-lg';
+            try {
+                console.log('Iniciando exclusão do cliente:', clientId);
                 
-                let guestInfo = rsvp.guest_name;
-                if (rsvp.companion_name) {
-                    guestInfo += ` e ${rsvp.companion_name}`;
+                // First delete all RSVPs for all events of this client
+                const { data: clientEvents, error: eventsError } = await supabase
+                    .from('events')
+                    .select('id')
+                    .eq('client_id', clientId);
+
+                if (eventsError) {
+                    console.error('Erro ao buscar eventos:', eventsError);
+                    alert('Erro ao buscar eventos do cliente: ' + eventsError.message);
+                    return;
                 }
-                
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="font-semibold text-sm text-purple-700">${guestInfo}</span>
-                        <span class="text-xs text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <p class="text-sm text-gray-700">${rsvp.message}</p>
-                `;
-                container.appendChild(div);
-            });
+
+                console.log('Eventos encontrados:', clientEvents);
+
+                if (clientEvents && clientEvents.length > 0) {
+                    const eventIds = clientEvents.map(event => event.id);
+                    console.log('IDs dos eventos:', eventIds);
+                    
+                    // Delete all RSVPs for these events
+                    const { error: rsvpDeleteError } = await supabase
+                        .from('rsvps')
+                        .delete()
+                        .in('event_id', eventIds);
+
+                    if (rsvpDeleteError) {
+                        console.error('Erro ao excluir RSVPs:', rsvpDeleteError);
+                        alert('Erro ao excluir confirmações: ' + rsvpDeleteError.message);
+                        return;
+                    }
+                    
+                    console.log('RSVPs excluídos com sucesso');
+                    
+                    // Delete all events for this client
+                    const { error: eventsDeleteError } = await supabase
+                        .from('events')
+                        .delete()
+                        .eq('client_id', clientId);
+
+                    if (eventsDeleteError) {
+                        console.error('Erro ao excluir eventos:', eventsDeleteError);
+                        alert('Erro ao excluir eventos: ' + eventsDeleteError.message);
+                        return;
+                    }
+                    
+                    console.log('Eventos excluídos com sucesso');
+                }
+
+                // Finally delete the client
+                const { error: clientDeleteError } = await supabase
+                    .from('clients')
+                    .delete()
+                    .eq('id', clientId);
+
+                if (clientDeleteError) {
+                    console.error('Erro ao excluir cliente:', clientDeleteError);
+                    alert('Erro ao excluir cliente: ' + clientDeleteError.message);
+                    return;
+                }
+
+                console.log('Cliente excluído com sucesso');
+                alert('Cliente excluído com sucesso!');
+                loadClients();
+            } catch (error) {
+                console.error('Delete client error:', error);
+                alert('Erro inesperado ao excluir cliente: ' + error.message);
+            }
         }
 
-        // Initialize app
-        window.addEventListener('load', function() {
-            loadUserSession();
-            
-            // Check if this is a guest RSVP page
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('event')) {
-                loadGuestRSVP();
-            } else {
-                showSection('home');
+        // CLIENT FUNCTIONS
+        document.getElementById('clientLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('clientLoginUsername').value;
+            const password = document.getElementById('clientLoginPassword').value;
+
+            try {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .single();
+
+                if (error || !data) {
+                    alert('Usuário ou senha incorretos');
+                    return;
+                }
+
+                currentUser = data;
+                document.getElementById('clientLogin').classList.add('hidden');
+                document.getElementById('clientDashboard').classList.remove('hidden');
+                loadClientEvents();
+            } catch (error) {
+                console.error('Client login error:', error);
+                alert('Erro ao fazer login');
             }
         });
+
+        document.getElementById('clientLogoutBtn').addEventListener('click', () => {
+            currentUser = null;
+            currentEventId = null;
+            document.getElementById('clientLogin').classList.remove('hidden');
+            document.getElementById('clientDashboard').classList.add('hidden');
+            document.getElementById('eventFormContainer').classList.add('hidden');
+            document.getElementById('eventRSVPsContainer').classList.add('hidden');
+        });
+
+        document.getElementById('eventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const editingEventId = document.getElementById('editingEventId').value;
+            const eventData = {
+                name: document.getElementById('eventName').value,
+                date: document.getElementById('eventDate').value,
+                time: document.getElementById('eventTime').value,
+                location: document.getElementById('eventLocation').value,
+                description: document.getElementById('eventDescription').value,
+                rsvp_deadline: document.getElementById('rsvpDeadline').value,
+                max_companions: parseInt(document.getElementById('maxCompanions').value),
+                guest_limit: parseInt(document.getElementById('guestLimit').value) || null,
+                client_id: currentUser.id
+            };
+
+            try {
+                let result;
+                if (editingEventId) {
+                    // Update existing event
+                    result = await supabase
+                        .from('events')
+                        .update(eventData)
+                        .eq('id', editingEventId)
+                        .eq('client_id', currentUser.id) // Security: ensure user owns the event
+                        .select()
+                        .single();
+                } else {
+                    // Create new event
+                    eventData.created_at = new Date().toISOString();
+                    result = await supabase
+                        .from('events')
+                        .insert([eventData])
+                        .select()
+                        .single();
+                }
+
+                if (result.error) {
+                    alert('Erro ao salvar evento: ' + result.error.message);
+                    return;
+                }
+
+                alert(editingEventId ? 'Evento atualizado com sucesso!' : 'Evento criado com sucesso!');
+                hideEventForm();
+                loadClientEvents();
+            } catch (error) {
+                console.error('Save event error:', error);
+                alert('Erro ao salvar evento');
+            }
+        });
+
+        async function loadClientEvents() {
+            try {
+                const { data, error } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('client_id', currentUser.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Load client events error:', error);
+                    return;
+                }
+
+                displayEventsList(data || []);
+            } catch (error) {
+                console.error('Load client events error:', error);
+            }
+        }
+
+        function displayEventsList(events) {
+            const eventsContainer = document.getElementById('eventsContainer');
+            eventsContainer.innerHTML = '';
+
+            if (events.length === 0) {
+                eventsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Nenhum evento criado</h3>
+                        <p class="text-gray-500 text-sm mb-4">Crie seu primeiro evento para começar!</p>
+                        <button onclick="showCreateEventForm()" 
+                                class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+                            Criar Primeiro Evento
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Add "Create New Event" button
+            const createButton = document.createElement('div');
+            createButton.className = 'mb-6';
+            createButton.innerHTML = `
+                <button onclick="showCreateEventForm()" 
+                        class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-medium">
+                    + Criar Novo Evento
+                </button>
+            `;
+            eventsContainer.appendChild(createButton);
+
+            // Display events
+            events.forEach(event => {
+                const eventCard = document.createElement('div');
+                eventCard.className = 'bg-white rounded-2xl shadow-lg p-6 mb-4 border border-gray-200';
+                
+                const eventDate = new Date(event.date).toLocaleDateString('pt-BR');
+                const deadlineDate = event.rsvp_deadline ? new Date(event.rsvp_deadline).toLocaleDateString('pt-BR') : 'Sem prazo';
+                
+                eventCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">${event.name}</h3>
+                            <p class="text-sm text-gray-600">📅 ${eventDate}${event.time ? ` às ${event.time}` : ''}</p>
+                            <p class="text-sm text-gray-600">📍 ${event.location}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editEvent(${event.id})" 
+                                    class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 text-sm">
+                                ✏️ Editar
+                            </button>
+                            <button onclick="deleteEvent(${event.id})" 
+                                    class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 text-sm">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-center">
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <div class="text-xl font-bold text-green-600" id="confirmed-${event.id}">-</div>
+                            <div class="text-xs text-gray-600">Confirmados</div>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <div class="text-xl font-bold text-blue-600" id="total-${event.id}">-</div>
+                            <div class="text-xs text-gray-600">Total Pessoas</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">🎉 Link com Acompanhantes:</label>
+                            <div class="flex gap-2">
+                                <input type="text" value="${generateEventLink(event.id, true)}" readonly 
+                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
+                                <button onclick="copyLink('${generateEventLink(event.id, true)}')" 
+                                        class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">👤 Link sem Acompanhantes:</label>
+                            <div class="flex gap-2">
+                                <input type="text" value="${generateEventLink(event.id, false)}" readonly 
+                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
+                                <button onclick="copyLink('${generateEventLink(event.id, false)}')" 
+                                        class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="viewEventRSVPs(${event.id})" 
+                                    class="bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition text-sm">
+                                Ver Confirmações
+                            </button>
+                            <button onclick="downloadEventReport(${event.id})" 
+                                    class="bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition text-sm">
+                                📄 Baixar PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+                        <p>Prazo: ${deadlineDate} | Limite: ${event.guest_limit || 'Sem limite'} pessoas</p>
+                    </div>
+                `;
+                
+                eventsContainer.appendChild(eventCard);
+                
+                // Load stats for this event
+                loadEventStats(event.id);
+            });
+        }
+
+        function generateEventLink(eventId, withCompanions) {
+            const baseUrl = window.location.origin + window.location.pathname;
+            return `${baseUrl}?event=${eventId}&companions=${withCompanions}`;
+        }
+
+        async function loadEventStats(eventId) {
+            try {
+                const { data, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .eq('attendance', 'yes');
+
+                if (error) return;
+
+                const confirmed = data ? data.length : 0;
+                const companions = data ? data.reduce((sum, rsvp) => sum + (rsvp.companions || 0), 0) : 0;
+                const total = confirmed + companions;
+
+                document.getElementById(`confirmed-${eventId}`).textContent = confirmed;
+                document.getElementById(`total-${eventId}`).textContent = total;
+            } catch (error) {
+                console.error('Load event stats error:', error);
+            }
+        }
+
+        // Event management functions
+        function showCreateEventForm() {
+            document.getElementById('formTitle').textContent = 'Criar Novo Evento';
+            document.getElementById('submitButtonText').textContent = 'Criar Evento';
+            document.getElementById('editingEventId').value = '';
+            document.getElementById('eventForm').reset();
+            document.getElementById('eventFormContainer').classList.remove('hidden');
+        }
+
+        function hideEventForm() {
+            document.getElementById('eventFormContainer').classList.add('hidden');
+            document.getElementById('eventForm').reset();
+            document.getElementById('editingEventId').value = '';
+        }
+
+        async function editEvent(eventId) {
+            try {
+                const { data, error } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .eq('client_id', currentUser.id) // Security: ensure user owns the event
+                    .single();
+
+                if (error || !data) {
+                    alert('Evento não encontrado');
+                    return;
+                }
+
+                // Populate form with event data
+                document.getElementById('formTitle').textContent = 'Editar Evento';
+                document.getElementById('submitButtonText').textContent = 'Atualizar Evento';
+                document.getElementById('editingEventId').value = data.id;
+                document.getElementById('eventName').value = data.name;
+                document.getElementById('eventDate').value = data.date;
+                document.getElementById('eventTime').value = data.time;
+                document.getElementById('eventLocation').value = data.location;
+                document.getElementById('eventDescription').value = data.description || '';
+                document.getElementById('rsvpDeadline').value = data.rsvp_deadline;
+                document.getElementById('maxCompanions').value = data.max_companions || 0;
+                document.getElementById('guestLimit').value = data.guest_limit || '';
+
+                document.getElementById('eventFormContainer').classList.remove('hidden');
+            } catch (error) {
+                console.error('Edit event error:', error);
+                alert('Erro ao carregar evento');
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            if (!confirm('Tem certeza que deseja excluir este evento? Todas as confirmações serão perdidas.')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('events')
+                    .delete()
+                    .eq('id', eventId)
+                    .eq('client_id', currentUser.id); // Security: ensure user owns the event
+
+                if (error) {
+                    alert('Erro ao excluir evento: ' + error.message);
+                    return;
+                }
+
+                alert('Evento excluído com sucesso!');
+                loadClientEvents();
+            } catch (error) {
+                console.error('Delete event error:', error);
+                alert('Erro ao excluir evento');
+            }
+        }
+
+        async function viewEventRSVPs(eventId) {
+            currentEventId = eventId;
+            
+            try {
+                const { data: eventData, error: eventError } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .eq('client_id', currentUser.id) // Security: ensure user owns the event
+                    .single();
+
+                if (eventError || !eventData) {
+                    alert('Evento não encontrado');
+                    return;
+                }
+
+                document.getElementById('rsvpEventTitle').textContent = `Confirmações: ${eventData.name}`;
+                document.getElementById('eventRSVPsContainer').classList.remove('hidden');
+                
+                refreshCurrentEventRSVPs();
+            } catch (error) {
+                console.error('View event RSVPs error:', error);
+                alert('Erro ao carregar confirmações');
+            }
+        }
+
+        function hideEventRSVPs() {
+            document.getElementById('eventRSVPsContainer').classList.add('hidden');
+            currentEventId = null;
+        }
+
+        async function refreshCurrentEventRSVPs() {
+            if (!currentEventId) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', currentEventId)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Load RSVPs error:', error);
+                    return;
+                }
+
+                // Update statistics
+                let confirmedCount = 0;
+                let declinedCount = 0;
+                let companionsCount = 0;
+
+                data.forEach(rsvp => {
+                    if (rsvp.attendance === 'yes') {
+                        confirmedCount++;
+                        companionsCount += rsvp.companions || 0;
+                    } else {
+                        declinedCount++;
+                    }
+                });
+
+                const totalAttendees = confirmedCount + companionsCount;
+
+                document.getElementById('rsvpConfirmedCount').textContent = confirmedCount;
+                document.getElementById('rsvpDeclinedCount').textContent = declinedCount;
+                document.getElementById('rsvpCompanionsCount').textContent = companionsCount;
+                document.getElementById('rsvpTotalAttendees').textContent = totalAttendees;
+
+                // Update RSVPs list
+                const rsvpsList = document.getElementById('rsvpsList');
+                rsvpsList.innerHTML = '';
+
+                if (data.length === 0) {
+                    rsvpsList.innerHTML = '<p class="text-gray-500 text-sm text-center">Nenhuma confirmação ainda</p>';
+                    return;
+                }
+
+                data.forEach(rsvp => {
+                    const rsvpCard = document.createElement('div');
+                    rsvpCard.className = 'border border-gray-200 rounded-lg p-3';
+                    
+                    const status = rsvp.attendance === 'yes' ? '✅ Confirmado' : '❌ Não vai';
+                    const companions = rsvp.companions > 0 ? ` (+${rsvp.companions})` : '';
+                    
+                    rsvpCard.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-semibold text-gray-800 text-sm">${rsvp.name}</h4>
+                                <p class="text-xs text-gray-600">${rsvp.phone}</p>
+                                <p class="text-sm mt-1">${status}${companions}</p>
+                                ${rsvp.companion_names ? `<p class="text-xs text-blue-600 mt-1">Acompanhantes: ${rsvp.companion_names}</p>` : ''}
+                                ${rsvp.notes ? `<p class="text-xs text-gray-500 mt-1">${rsvp.notes}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    rsvpsList.appendChild(rsvpCard);
+                });
+            } catch (error) {
+                console.error('Refresh RSVPs error:', error);
+            }
+        }
+
+        // RSVP FUNCTIONS
+        document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Collect companion names
+            const companionCount = parseInt(document.getElementById('companions').value) || 0;
+            const companionNames = [];
+            
+            for (let i = 1; i <= companionCount; i++) {
+                const nameInput = document.getElementById(`companion${i}Name`);
+                if (nameInput && nameInput.value.trim()) {
+                    companionNames.push(nameInput.value.trim());
+                }
+            }
+            
+            const guestName = document.getElementById('guestName').value;
+            const guestPhone = document.getElementById('guestPhone').value;
+            
+            const rsvpData = {
+                event_id: currentEventId,
+                name: guestName,
+                phone: guestPhone,
+                attendance: document.getElementById('attendance').value,
+                companions: companionCount,
+                companion_names: companionNames.length > 0 ? companionNames.join(', ') : null,
+                notes: document.getElementById('notes').value,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                // Check if RSVP already exists for this person and event
+                const { data: existingRSVP, error: checkError } = await supabase
+                    .from('rsvps')
+                    .select('id')
+                    .eq('event_id', currentEventId)
+                    .eq('name', guestName)
+                    .eq('phone', guestPhone)
+                    .single();
+
+                let result;
+                if (existingRSVP) {
+                    // Update existing RSVP
+                    result = await supabase
+                        .from('rsvps')
+                        .update({
+                            attendance: rsvpData.attendance,
+                            companions: rsvpData.companions,
+                            companion_names: rsvpData.companion_names,
+                            notes: rsvpData.notes
+                        })
+                        .eq('id', existingRSVP.id);
+                } else {
+                    // Insert new RSVP
+                    result = await supabase
+                        .from('rsvps')
+                        .insert([rsvpData]);
+                }
+
+                if (result.error) {
+                    alert('Erro ao confirmar presença: ' + result.error.message);
+                    return;
+                }
+
+                // Store RSVP data in localStorage for editing
+                localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(rsvpData));
+                
+                // Show success message
+                document.getElementById('rsvpForm').parentElement.classList.add('hidden');
+                document.getElementById('rsvpSuccess').classList.remove('hidden');
+                
+                // Load guest messages
+                loadGuestMessages();
+            } catch (error) {
+                console.error('RSVP error:', error);
+                alert('Erro ao confirmar presença');
+            }
+        });
+
+        document.getElementById('attendance').addEventListener('change', (e) => {
+            const companionSection = document.getElementById('companionSection');
+            if (e.target.value === 'yes' && allowCompanions && maxCompanionsAllowed > 0) {
+                companionSection.classList.remove('hidden');
+            } else {
+                companionSection.classList.add('hidden');
+                document.getElementById('companionNamesSection').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('companions').addEventListener('change', (e) => {
+            const companionCount = parseInt(e.target.value);
+            const companionNamesSection = document.getElementById('companionNamesSection');
+            const companionNamesList = document.getElementById('companionNamesList');
+            
+            if (companionCount > 0) {
+                companionNamesSection.classList.remove('hidden');
+                companionNamesList.innerHTML = '';
+                
+                for (let i = 1; i <= companionCount; i++) {
+                    const nameInput = document.createElement('div');
+                    nameInput.innerHTML = `
+                        <input type="text" id="companion${i}Name" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                               placeholder="Nome do ${i}º acompanhante">
+                    `;
+                    companionNamesList.appendChild(nameInput);
+                }
+            } else {
+                companionNamesSection.classList.add('hidden');
+                companionNamesList.innerHTML = '';
+            }
+        });
+
+        async function showRSVPPage(eventId, companions) {
+            currentEventId = eventId;
+            allowCompanions = companions;
+            
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('clientPanel').classList.add('hidden');
+            document.getElementById('rsvpPage').classList.remove('hidden');
+
+            try {
+                const { data, error } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .single();
+
+                if (error || !data) {
+                    alert('Evento não encontrado');
+                    return;
+                }
+
+                currentEvent = data;
+                maxCompanionsAllowed = data.max_companions || 0;
+
+                // Check if RSVP deadline has passed
+                const today = new Date();
+                const deadline = new Date(data.rsvp_deadline);
+                
+                if (data.rsvp_deadline && today > deadline) {
+                    document.getElementById('rsvpForm').classList.add('hidden');
+                    document.getElementById('rsvpExpired').classList.remove('hidden');
+                    document.getElementById('eventFull').classList.add('hidden');
+                } else {
+                    // Check if event is full
+                    const { data: rsvps } = await supabase
+                        .from('rsvps')
+                        .select('*')
+                        .eq('event_id', eventId)
+                        .eq('attendance', 'yes');
+
+                    let totalAttendees = 0;
+                    if (rsvps) {
+                        totalAttendees = rsvps.length + rsvps.reduce((sum, rsvp) => sum + (rsvp.companions || 0), 0);
+                    }
+
+                    if (data.guest_limit && totalAttendees >= data.guest_limit) {
+                        document.getElementById('rsvpForm').classList.add('hidden');
+                        document.getElementById('rsvpExpired').classList.add('hidden');
+                        document.getElementById('eventFull').classList.remove('hidden');
+                    } else {
+                        document.getElementById('rsvpForm').classList.remove('hidden');
+                        document.getElementById('rsvpExpired').classList.add('hidden');
+                        document.getElementById('eventFull').classList.add('hidden');
+                    }
+                }
+
+                // Populate companions dropdown
+                const companionsSelect = document.getElementById('companions');
+                companionsSelect.innerHTML = '<option value="0">Nenhum acompanhante</option>';
+                
+                for (let i = 1; i <= maxCompanionsAllowed; i++) {
+                    companionsSelect.innerHTML += `<option value="${i}">${i} acompanhante${i > 1 ? 's' : ''}</option>`;
+                }
+
+                const eventDetails = document.getElementById('eventDetails');
+                eventDetails.innerHTML = `
+                    <h1 class="text-2xl font-bold text-gray-800 mb-3">${data.name}</h1>
+                    <div class="text-gray-600 space-y-1 text-sm">
+                        <p><strong>📅 Data:</strong> ${new Date(data.date).toLocaleDateString('pt-BR')}</p>
+                        ${data.rsvp_deadline ? `<p class="mt-2"><strong>⏰ Confirme até:</strong> ${new Date(data.rsvp_deadline).toLocaleDateString('pt-BR')}</p>` : ''}
+                        ${companions && maxCompanionsAllowed > 0 ? `<p class="text-green-600 font-medium mt-3">🎉 Você pode trazer até ${maxCompanionsAllowed} acompanhante${maxCompanionsAllowed > 1 ? 's' : ''}!</p>` : '<p class="text-blue-600 font-medium mt-3">👤 Convite individual</p>'}
+                    </div>
+                `;
+                
+                // Check for existing RSVP
+                checkExistingRSVP();
+            } catch (error) {
+                console.error('Load event error:', error);
+                alert('Erro ao carregar evento');
+            }
+        }
+
+        // PDF REPORT FUNCTION
+        async function downloadEventReport(eventId) {
+            try {
+                // Get event details
+                const { data: eventData, error: eventError } = await supabase
+                    .from('events')
+                    .select('*')
+                    .eq('id', eventId)
+                    .eq('client_id', currentUser.id)
+                    .single();
+
+                if (eventError || !eventData) {
+                    alert('Evento não encontrado');
+                    return;
+                }
+
+                // Get RSVPs
+                const { data: rsvps, error: rsvpError } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', eventId)
+                    .order('created_at', { ascending: false });
+
+                if (rsvpError) {
+                    alert('Erro ao carregar confirmações');
+                    return;
+                }
+
+                // Calculate statistics
+                let confirmedCount = 0;
+                let declinedCount = 0;
+                let companionsCount = 0;
+                const confirmedGuests = [];
+                const declinedGuests = [];
+
+                (rsvps || []).forEach(rsvp => {
+                    if (rsvp.attendance === 'yes') {
+                        confirmedCount++;
+                        companionsCount += rsvp.companions || 0;
+                        confirmedGuests.push(rsvp);
+                    } else {
+                        declinedCount++;
+                        declinedGuests.push(rsvp);
+                    }
+                });
+
+                const totalAttendees = confirmedCount + companionsCount;
+
+                // Generate PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Header
+                doc.setFontSize(20);
+                doc.setFont(undefined, 'bold');
+                doc.text('RELATÓRIO DO EVENTO', 105, 20, { align: 'center' });
+
+                // Event details
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.text(eventData.name, 105, 35, { align: 'center' });
+
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                const eventDate = new Date(eventData.date).toLocaleDateString('pt-BR');
+                doc.text(`Data: ${eventDate} às ${eventData.time}`, 20, 50);
+                doc.text(`Local: ${eventData.location}`, 20, 60);
+                
+                if (eventData.description) {
+                    doc.text(`Descrição: ${eventData.description}`, 20, 70);
+                }
+
+                // Statistics box
+                doc.setFillColor(240, 240, 240);
+                doc.rect(20, 80, 170, 40, 'F');
+                
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('ESTATÍSTICAS', 105, 90, { align: 'center' });
+                
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Confirmados: ${confirmedCount}`, 30, 100);
+                doc.text(`Não vão: ${declinedCount}`, 30, 110);
+                doc.text(`Acompanhantes: ${companionsCount}`, 120, 100);
+                doc.text(`Total de Pessoas: ${totalAttendees}`, 120, 110);
+
+                let yPosition = 140;
+
+                // Confirmed guests
+                if (confirmedGuests.length > 0) {
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('CONFIRMADOS', 20, yPosition);
+                    yPosition += 10;
+
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+
+                    confirmedGuests.forEach((guest, index) => {
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        const companions = guest.companions > 0 ? ` (+${guest.companions})` : '';
+                        doc.text(`${index + 1}. ${guest.name}${companions}`, 25, yPosition);
+                        yPosition += 5;
+                        doc.text(`   ${guest.phone}`, 25, yPosition);
+                        yPosition += 5;
+                        
+                        if (guest.companion_names) {
+                            doc.text(`   Acompanhantes: ${guest.companion_names}`, 25, yPosition);
+                            yPosition += 5;
+                        }
+                        
+                        if (guest.notes) {
+                            doc.text(`   Obs: ${guest.notes}`, 25, yPosition);
+                            yPosition += 5;
+                        }
+                        yPosition += 3;
+                    });
+                }
+
+                // Declined guests
+                if (declinedGuests.length > 0) {
+                    yPosition += 10;
+                    
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('NÃO CONFIRMADOS', 20, yPosition);
+                    yPosition += 10;
+
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+
+                    declinedGuests.forEach((guest, index) => {
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        doc.text(`${index + 1}. ${guest.name}`, 25, yPosition);
+                        yPosition += 5;
+                        doc.text(`   ${guest.phone}`, 25, yPosition);
+                        yPosition += 5;
+                        
+                        if (guest.notes) {
+                            doc.text(`   Obs: ${guest.notes}`, 25, yPosition);
+                            yPosition += 5;
+                        }
+                        yPosition += 3;
+                    });
+                }
+
+                // Footer
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 105, 290, { align: 'center' });
+                    doc.text(`Página ${i} de ${pageCount}`, 190, 290, { align: 'right' });
+                }
+
+                // Save PDF
+                const fileName = `Relatorio_${eventData.name.replace(/[^a-zA-Z0-9]/g, '_')}_${eventDate.replace(/\//g, '-')}.pdf`;
+                doc.save(fileName);
+
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('Erro ao gerar relatório PDF');
+            }
+        }
+
+        // UTILITY FUNCTIONS
+        function showAdminPanel() {
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('clientPanel').classList.add('hidden');
+            document.getElementById('rsvpPage').classList.add('hidden');
+        }
+
+        function showClientPanel() {
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('clientPanel').classList.remove('hidden');
+            document.getElementById('rsvpPage').classList.add('hidden');
+        }
+
+        function copyLink(linkId) {
+            const linkElement = typeof linkId === 'string' && linkId.startsWith('http') 
+                ? { value: linkId } 
+                : document.getElementById(linkId);
+            
+            navigator.clipboard.writeText(linkElement.value).then(() => {
+                alert('Link copiado!');
+            });
+        }
+
+        // Guest login functions
+        function showGuestLogin() {
+            document.getElementById('guestLoginModal').classList.remove('hidden');
+        }
+
+        function hideGuestLogin() {
+            document.getElementById('guestLoginModal').classList.add('hidden');
+            document.getElementById('guestLoginForm').reset();
+        }
+
+        // Guest login form handler
+        document.getElementById('guestLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('guestLoginUsername').value;
+            const password = document.getElementById('guestLoginPassword').value;
+
+            try {
+                // Get the client who owns this event
+                const { data: eventData, error: eventError } = await supabase
+                    .from('events')
+                    .select('client_id')
+                    .eq('id', currentEventId)
+                    .single();
+
+                if (eventError || !eventData) {
+                    alert('Erro ao verificar evento');
+                    return;
+                }
+
+                // Check if login matches the event owner
+                const { data: clientData, error: clientError } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .eq('id', eventData.client_id)
+                    .single();
+
+                if (clientError || !clientData) {
+                    alert('Credenciais incorretas ou você não tem acesso a este evento');
+                    return;
+                }
+
+                // Set current user and show client panel directly
+                currentUser = clientData;
+                
+                // Hide guest login modal
+                hideGuestLogin();
+                
+                // Hide RSVP page and show client panel
+                document.getElementById('rsvpPage').classList.add('hidden');
+                document.getElementById('clientPanel').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
+                
+                // Show client dashboard directly (skip login form)
+                document.getElementById('clientLogin').classList.add('hidden');
+                document.getElementById('clientDashboard').classList.remove('hidden');
+                
+                // Load client events
+                loadClientEvents();
+                
+            } catch (error) {
+                console.error('Guest login error:', error);
+                alert('Erro ao fazer login');
+            }
+        });
+
+        // Edit response function
+        function editResponse() {
+            document.getElementById('rsvpSuccess').classList.add('hidden');
+            document.getElementById('rsvpForm').parentElement.classList.remove('hidden');
+            
+            // Load saved data
+            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
+            if (savedData) {
+                const rsvpData = JSON.parse(savedData);
+                document.getElementById('guestName').value = rsvpData.name;
+                document.getElementById('guestPhone').value = rsvpData.phone;
+                document.getElementById('attendance').value = rsvpData.attendance;
+                document.getElementById('companions').value = rsvpData.companions || 0;
+                document.getElementById('notes').value = rsvpData.notes || '';
+                
+                // Trigger companion section visibility
+                const companionSection = document.getElementById('companionSection');
+                if (rsvpData.attendance === 'yes' && allowCompanions && maxCompanionsAllowed > 0) {
+                    companionSection.classList.remove('hidden');
+                    
+                    // Trigger companion names section
+                    const companionCount = rsvpData.companions || 0;
+                    if (companionCount > 0) {
+                        const companionNamesSection = document.getElementById('companionNamesSection');
+                        const companionNamesList = document.getElementById('companionNamesList');
+                        
+                        companionNamesSection.classList.remove('hidden');
+                        companionNamesList.innerHTML = '';
+                        
+                        const companionNames = rsvpData.companion_names ? rsvpData.companion_names.split(', ') : [];
+                        
+                        for (let i = 1; i <= companionCount; i++) {
+                            const nameInput = document.createElement('div');
+                            nameInput.innerHTML = `
+                                <input type="text" id="companion${i}Name" 
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                                       placeholder="Nome do ${i}º acompanhante"
+                                       value="${companionNames[i-1] || ''}">
+                            `;
+                            companionNamesList.appendChild(nameInput);
+                        }
+                    }
+                } else {
+                    companionSection.classList.add('hidden');
+                }
+            }
+        }
+
+        // Edit message functions
+        function editMessage() {
+            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
+            if (savedData) {
+                const rsvpData = JSON.parse(savedData);
+                document.getElementById('editMessageText').value = rsvpData.notes || '';
+            }
+            document.getElementById('editMessageModal').classList.remove('hidden');
+        }
+
+        function hideEditMessage() {
+            document.getElementById('editMessageModal').classList.add('hidden');
+            document.getElementById('editMessageForm').reset();
+        }
+
+        // Edit message form handler
+        document.getElementById('editMessageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
+            if (!savedData) {
+                alert('Erro: dados da confirmação não encontrados');
+                return;
+            }
+
+            const rsvpData = JSON.parse(savedData);
+            const newMessage = document.getElementById('editMessageText').value;
+
+            try {
+                // Update the message in the database
+                const { error } = await supabase
+                    .from('rsvps')
+                    .update({ notes: newMessage })
+                    .eq('event_id', currentEventId)
+                    .eq('name', rsvpData.name)
+                    .eq('phone', rsvpData.phone);
+
+                if (error) {
+                    alert('Erro ao atualizar mensagem: ' + error.message);
+                    return;
+                }
+
+                // Update localStorage
+                rsvpData.notes = newMessage;
+                localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(rsvpData));
+
+                alert('Mensagem atualizada com sucesso!');
+                hideEditMessage();
+                
+                // Refresh guest messages
+                loadGuestMessages();
+            } catch (error) {
+                console.error('Edit message error:', error);
+                alert('Erro ao atualizar mensagem');
+            }
+        });
+
+        // Load guest messages function
+        async function loadGuestMessages() {
+            try {
+                // Get the client who owns this event
+                const { data: eventData, error: eventError } = await supabase
+                    .from('events')
+                    .select('client_id')
+                    .eq('id', currentEventId)
+                    .single();
+
+                if (eventError || !eventData) return;
+
+                // Get all events from this client
+                const { data: clientEvents, error: clientEventsError } = await supabase
+                    .from('events')
+                    .select('id')
+                    .eq('client_id', eventData.client_id);
+
+                if (clientEventsError || !clientEvents) return;
+
+                const eventIds = clientEvents.map(event => event.id);
+
+                // Get all RSVPs with notes from this client's events
+                const { data: rsvps, error: rsvpError } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .in('event_id', eventIds)
+                    .not('notes', 'is', null)
+                    .neq('notes', '')
+                    .order('created_at', { ascending: false });
+
+                if (rsvpError) return;
+
+                const messagesList = document.getElementById('messagesList');
+                messagesList.innerHTML = '';
+
+                if (!rsvps || rsvps.length === 0) {
+                    messagesList.innerHTML = '<p class="text-gray-500 text-sm text-center">Nenhuma mensagem ainda</p>';
+                } else {
+                    rsvps.forEach(rsvp => {
+                        const messageCard = document.createElement('div');
+                        messageCard.className = 'bg-gray-50 rounded-lg p-3 border border-gray-200';
+                        
+                        messageCard.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <h5 class="font-semibold text-gray-800 text-sm">${rsvp.name}</h5>
+                                <span class="text-xs text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            <p class="text-sm text-gray-700">${rsvp.notes}</p>
+                        `;
+                        
+                        messagesList.appendChild(messageCard);
+                    });
+                }
+
+                document.getElementById('guestMessages').classList.remove('hidden');
+            } catch (error) {
+                console.error('Load guest messages error:', error);
+            }
+        }
+
+        // Check for existing RSVP on page load
+        async function checkExistingRSVP() {
+            try {
+                // Check if there's an existing RSVP in the database
+                const { data: existingRSVP, error } = await supabase
+                    .from('rsvps')
+                    .select('*')
+                    .eq('event_id', currentEventId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error) {
+                    console.error('Check existing RSVP error:', error);
+                    loadGuestMessages();
+                    return;
+                }
+
+                if (existingRSVP && existingRSVP.length > 0) {
+                    // Store the existing RSVP data
+                    localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(existingRSVP[0]));
+                    
+                    // Show success message instead of form
+                    document.getElementById('rsvpForm').parentElement.classList.add('hidden');
+                    document.getElementById('rsvpSuccess').classList.remove('hidden');
+                }
+                
+                loadGuestMessages();
+            } catch (error) {
+                console.error('Check existing RSVP error:', error);
+                loadGuestMessages();
+            }
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972fd6cc00b277e3',t:'MTc1NTgzOTE2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9730e920c03477d7',t:'MTc1NTg1MDQwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
