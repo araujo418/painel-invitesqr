@@ -141,9 +141,14 @@
                             </div>
                         </div>
                         
-                        <div class="flex space-x-3">
-                            <button onclick="enableProfileEdit()" class="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700">Editar Perfil</button>
-                            <button onclick="downloadUserReport()" class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">Baixar Relatório</button>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <button onclick="enableProfileEdit()" class="bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700">Editar Perfil</button>
+                            <button onclick="downloadUserReport()" class="bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">Baixar Relatório</button>
+                            <button onclick="deleteAccount()" class="bg-red-600 text-white py-3 rounded-lg hover:bg-red-700">Excluir Conta</button>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button onclick="loadUserDashboard()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700">Ir para Painel</button>
                         </div>
                         
                         <div id="profile-edit-form" class="hidden space-y-4 border-t pt-6">
@@ -403,10 +408,14 @@
 
                         <div class="bg-white rounded-lg p-4 card-shadow">
                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold">Sistema de Presentes</h3>
+                                <h3 class="text-lg font-semibold">Configurações do Evento</h3>
+                                <button onclick="deleteEvent()" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">Excluir Evento</button>
+                            </div>
+                            
+                            <div class="mb-4">
                                 <label class="flex items-center">
                                     <input type="checkbox" id="enable-gifts" class="mr-2" onchange="toggleGiftSystem()">
-                                    <span class="text-sm">Ativar Presentes</span>
+                                    <span class="text-sm font-semibold">Ativar Sistema de Presentes</span>
                                 </label>
                             </div>
                             
@@ -563,7 +572,8 @@ Deus lhe abençoe sempre!</textarea>
                     <div id="success-message" class="hidden bg-white rounded-lg p-6 card-shadow mt-4 text-center">
                         <div class="text-4xl mb-3">🎉</div>
                         <h3 class="text-xl font-bold mb-2">Confirmação Enviada!</h3>
-                        <p class="text-gray-600">Obrigado por confirmar sua presença. Aguardamos você no evento!</p>
+                        <p class="text-gray-600 mb-4">Obrigado por confirmar sua presença. Aguardamos você no evento!</p>
+                        <button onclick="editResponse()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Editar Resposta</button>
                     </div>
                 </div>
             </div>
@@ -648,7 +658,9 @@ Deus lhe abençoe sempre!</textarea>
         }
 
         function updateUserInterface() {
-            if (currentUser) {
+            const isGuestMode = window.location.search.includes('event=');
+            
+            if (currentUser && !isGuestMode) {
                 document.getElementById('user-info-nav').classList.remove('hidden');
                 document.getElementById('user-profile-nav').classList.remove('hidden');
                 document.getElementById('mobile-profile-nav').classList.remove('hidden');
@@ -667,8 +679,13 @@ Deus lhe abençoe sempre!</textarea>
                 document.getElementById('mobile-user-nav').classList.add('hidden');
                 document.getElementById('mobile-user-info').classList.add('hidden');
                 
-                document.getElementById('login-nav').classList.remove('hidden');
-                document.getElementById('mobile-login-nav').classList.remove('hidden');
+                if (!isGuestMode) {
+                    document.getElementById('login-nav').classList.remove('hidden');
+                    document.getElementById('mobile-login-nav').classList.remove('hidden');
+                } else {
+                    document.getElementById('login-nav').classList.add('hidden');
+                    document.getElementById('mobile-login-nav').classList.add('hidden');
+                }
             }
         }
 
@@ -739,6 +756,53 @@ Deus lhe abençoe sempre!</textarea>
             cancelProfileEdit();
             
             alert('Perfil atualizado com sucesso!');
+        }
+
+        function deleteAccount() {
+            if (!confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita e todos os seus eventos serão removidos.')) {
+                return;
+            }
+            
+            // Get user event IDs first
+            const userEventIds = events.filter(e => e.user_id === currentUser.id).map(e => e.id);
+            
+            // Remove RSVPs for user events
+            rsvps = rsvps.filter(r => !userEventIds.includes(r.wedding_id));
+            
+            // Remove gifts for user events
+            gifts = gifts.filter(g => !userEventIds.includes(g.event_id));
+            
+            // Remove user events
+            events = events.filter(e => e.user_id !== currentUser.id);
+            
+            // Remove user
+            users = users.filter(u => u.id !== currentUser.id);
+            
+            saveData();
+            logout();
+            alert('Conta excluída com sucesso!');
+        }
+
+        function deleteEvent() {
+            if (!currentEvent) return;
+            
+            if (!confirm(`Tem certeza que deseja excluir o evento "${currentEvent.title}"? Esta ação não pode ser desfeita.`)) {
+                return;
+            }
+            
+            // Remove event
+            events = events.filter(e => e.id !== currentEvent.id);
+            
+            // Remove RSVPs for this event
+            rsvps = rsvps.filter(r => r.wedding_id !== currentEvent.id);
+            
+            // Remove gifts for this event
+            gifts = gifts.filter(g => g.event_id !== currentEvent.id);
+            
+            saveData();
+            
+            alert('Evento excluído com sucesso!');
+            loadUserDashboard();
         }
 
         // Token functions
@@ -1021,22 +1085,35 @@ Deus lhe abençoe sempre!</textarea>
         }
 
         function loadMessageWall() {
-            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id && r.message)
+            const eventRsvps = rsvps.filter(r => r.wedding_id === currentEvent.id && r.message && r.message.trim())
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             
             const container = document.getElementById('messages-list');
             const noMessages = document.getElementById('no-messages');
             
+            // Clear existing content
+            container.innerHTML = '';
+            
             if (eventRsvps.length === 0) {
-                container.innerHTML = '';
                 noMessages.style.display = 'block';
                 return;
             }
             
             noMessages.style.display = 'none';
-            container.innerHTML = '';
+            
+            // Remove duplicates based on guest name and message
+            const uniqueRsvps = [];
+            const seen = new Set();
             
             eventRsvps.forEach(rsvp => {
+                const key = `${rsvp.guest_name}-${rsvp.message}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueRsvps.push(rsvp);
+                }
+            });
+            
+            uniqueRsvps.forEach(rsvp => {
                 const div = document.createElement('div');
                 div.className = 'message-bubble p-3 rounded-lg';
                 
@@ -1379,6 +1456,38 @@ Deus lhe abençoe sempre!</textarea>
                 document.getElementById('companion-section').classList.remove('hidden');
                 setupCompanionInputs();
             }
+            
+            // Check for existing RSVP
+            checkExistingRSVP();
+        }
+
+        function checkExistingRSVP() {
+            const guestKey = `guest_rsvp_${window.currentEventData.id}`;
+            const existingRsvp = localStorage.getItem(guestKey);
+            
+            if (existingRsvp) {
+                const rsvpData = JSON.parse(existingRsvp);
+                
+                // Fill form with existing data
+                document.getElementById('guest-name').value = rsvpData.guest_name;
+                document.getElementById('attendance-status').value = rsvpData.attendance.toString();
+                document.getElementById('guest-message').value = rsvpData.message || '';
+                
+                if (rsvpData.companion_name && window.allowCompanion) {
+                    document.getElementById('companion-1').value = rsvpData.companion_name;
+                }
+                
+                // Show success message
+                document.getElementById('success-message').classList.remove('hidden');
+                document.getElementById('rsvp-form').style.display = 'none';
+            }
+        }
+
+        function editResponse() {
+            document.getElementById('success-message').classList.add('hidden');
+            document.getElementById('rsvp-form').style.display = 'block';
+            document.getElementById('gift-section').classList.add('hidden');
+            document.getElementById('guest-message-wall').classList.add('hidden');
         }
 
         function setupCompanionInputs() {
@@ -1403,17 +1512,56 @@ Deus lhe abençoe sempre!</textarea>
                 }
             }
             
-            const newRsvp = {
-                id: generateId(),
-                wedding_id: window.currentEventData.id,
-                guest_name: guestName,
-                companion_name: companionName,
-                attendance: attendance,
-                message: message,
-                created_at: new Date().toISOString()
-            };
+            const guestKey = `guest_rsvp_${window.currentEventData.id}`;
+            const existingRsvp = localStorage.getItem(guestKey);
             
-            rsvps.push(newRsvp);
+            if (existingRsvp) {
+                // Update existing RSVP
+                const rsvpData = JSON.parse(existingRsvp);
+                const rsvpIndex = rsvps.findIndex(r => r.id === rsvpData.id);
+                
+                if (rsvpIndex !== -1) {
+                    rsvps[rsvpIndex].guest_name = guestName;
+                    rsvps[rsvpIndex].companion_name = companionName;
+                    rsvps[rsvpIndex].attendance = attendance;
+                    rsvps[rsvpIndex].message = message;
+                    rsvps[rsvpIndex].updated_at = new Date().toISOString();
+                }
+                
+                // Update localStorage
+                const updatedRsvp = {
+                    id: rsvpData.id,
+                    guest_name: guestName,
+                    companion_name: companionName,
+                    attendance: attendance,
+                    message: message
+                };
+                localStorage.setItem(guestKey, JSON.stringify(updatedRsvp));
+            } else {
+                // Create new RSVP
+                const newRsvp = {
+                    id: generateId(),
+                    wedding_id: window.currentEventData.id,
+                    guest_name: guestName,
+                    companion_name: companionName,
+                    attendance: attendance,
+                    message: message,
+                    created_at: new Date().toISOString()
+                };
+                
+                rsvps.push(newRsvp);
+                
+                // Save to localStorage for guest
+                const guestRsvp = {
+                    id: newRsvp.id,
+                    guest_name: guestName,
+                    companion_name: companionName,
+                    attendance: attendance,
+                    message: message
+                };
+                localStorage.setItem(guestKey, JSON.stringify(guestRsvp));
+            }
+            
             saveData();
             
             // Show gift section if enabled
@@ -1564,5 +1712,5 @@ Deus lhe abençoe sempre!</textarea>
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972fa018e54177e0',t:'MTc1NTgzNjkyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972fd6cc00b277e3',t:'MTc1NTgzOTE2OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
