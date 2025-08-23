@@ -6,267 +6,247 @@
     <title>Sistema de Confirmação de Presença</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .tab-active { background-color: #3b82f6; color: white; }
+        .tab-inactive { background-color: #e5e7eb; color: #374151; }
     </style>
 </head>
 <body class="min-h-screen gradient-bg">
-    <!-- ADMIN PANEL - Criar contas de clientes -->
+    <!-- ADMIN PANEL -->
     <div id="adminPanel" class="min-h-screen p-4">
-        <div class="max-w-md mx-auto">
+        <div class="max-w-4xl mx-auto">
             <!-- Admin Login -->
-            <div id="adminLogin" class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+            <div id="adminLogin" class="bg-white rounded-2xl shadow-2xl p-6 mb-6 max-w-md mx-auto">
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-800 mb-2">Painel Administrativo</h1>
                     <p class="text-gray-600 text-sm">Gerencie contas de clientes</p>
                 </div>
-                
                 <form id="adminLoginForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Usuário Admin</label>
-                        <input type="text" id="adminUsername" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                               placeholder="Digite seu usuário admin">
+                        <input type="text" id="adminUsername" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Senha Admin</label>
-                        <input type="password" id="adminPassword" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                               placeholder="Digite sua senha admin">
+                        <input type="password" id="adminPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
-                        Entrar como Admin
-                    </button>
+                    <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">Entrar como Admin</button>
                 </form>
             </div>
 
-            <!-- Admin Dashboard -->
+            <!-- Admin Dashboard with Tabs -->
             <div id="adminDashboard" class="hidden">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Criar Conta de Cliente</h2>
-                    <form id="createClientForm" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Cliente</label>
-                            <input type="text" id="clientName" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
-                            <input type="text" id="clientUsername" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-                            <input type="password" id="clientPassword" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        
-                        <button type="submit" 
-                                class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-medium">
-                            Criar Cliente
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Clients List -->
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Clientes Criados</h2>
-                    <div id="clientsList" class="space-y-3">
-                        <!-- Clients will be loaded here -->
+                    <!-- Tab Navigation -->
+                    <div class="flex border-b border-gray-200 mb-6">
+                        <button onclick="showAdminTab('create')" id="adminTabCreate" class="px-4 py-2 rounded-t-lg tab-active">Criar Cliente</button>
+                        <button onclick="showAdminTab('manage')" id="adminTabManage" class="px-4 py-2 rounded-t-lg tab-inactive ml-2">Gerenciar Clientes</button>
+                    </div>
+
+                    <!-- Create Client Tab -->
+                    <div id="adminCreateTab">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Criar Conta de Cliente</h2>
+                        <form id="createClientForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Cliente</label>
+                                <input type="text" id="clientName" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                                <input type="text" id="clientUsername" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                                <input type="password" id="clientPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-medium">Criar Cliente</button>
+                        </form>
+                    </div>
+
+                    <!-- Manage Clients Tab -->
+                    <div id="adminManageTab" class="hidden">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Clientes Criados</h2>
+                        <div id="clientsList" class="space-y-3"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- CLIENT PANEL - Painel do cliente específico -->
+    <!-- CLIENT PANEL -->
     <div id="clientPanel" class="hidden min-h-screen p-4">
-        <div class="max-w-md mx-auto">
+        <div class="max-w-4xl mx-auto">
             <!-- Client Login -->
-            <div id="clientLogin" class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+            <div id="clientLogin" class="bg-white rounded-2xl shadow-2xl p-6 mb-6 max-w-md mx-auto">
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-800 mb-2">Painel do Cliente</h1>
                     <p class="text-gray-600 text-sm">Gerencie seu evento</p>
                 </div>
-                
                 <form id="clientLoginForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
-                        <input type="text" id="clientLoginUsername" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <input type="text" id="clientLoginUsername" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-                        <input type="password" id="clientLoginPassword" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <input type="password" id="clientLoginPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                        Entrar
-                    </button>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">Entrar</button>
                 </form>
             </div>
 
-            <!-- Client Dashboard -->
+            <!-- Client Dashboard with Tabs -->
             <div id="clientDashboard" class="hidden">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-gray-800">Meus Eventos</h2>
-                        <button id="clientLogoutBtn" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition text-sm">
-                            Sair
-                        </button>
+                <div class="bg-white rounded-2xl shadow-2xl p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex border-b border-gray-200">
+                            <button onclick="showClientTab('events')" id="clientTabEvents" class="px-4 py-2 rounded-t-lg tab-active">Meus Eventos</button>
+                            <button onclick="showClientTab('gifts')" id="clientTabGifts" class="px-4 py-2 rounded-t-lg tab-inactive ml-2">Presentes</button>
+                            <button onclick="showClientTab('rsvps')" id="clientTabRsvps" class="px-4 py-2 rounded-t-lg tab-inactive ml-2">Confirmações</button>
+                        </div>
+                        <button id="clientLogoutBtn" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition text-sm">Sair</button>
                     </div>
-                    
-                    <!-- Events Container -->
-                    <div id="eventsContainer">
-                        <!-- Events will be loaded here -->
-                    </div>
-                </div>
 
-                <!-- Create/Edit Event Form -->
-                <div id="eventFormContainer" class="hidden bg-white rounded-2xl shadow-2xl p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-800" id="formTitle">Criar Novo Evento</h3>
-                        <button onclick="hideEventForm()" class="text-gray-500 hover:text-gray-700">
-                            ✕
-                        </button>
+                    <!-- Events Tab -->
+                    <div id="clientEventsTab">
+                        <div id="eventsContainer"></div>
+                        <div id="eventFormContainer" class="hidden mt-6 p-6 border border-gray-200 rounded-lg">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-gray-800" id="formTitle">Criar Novo Evento</h3>
+                                <button onclick="hideEventForm()" class="text-gray-500 hover:text-gray-700">✕</button>
+                            </div>
+                            <form id="eventForm" class="space-y-4">
+                                <input type="hidden" id="editingEventId" value="">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Evento</label>
+                                        <input type="text" id="eventName" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Local</label>
+                                        <input type="text" id="eventLocation" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
+                                        <input type="date" id="eventDate" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Horário</label>
+                                        <input type="time" id="eventTime" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Prazo Confirmação</label>
+                                        <input type="date" id="rsvpDeadline" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Máx. Acompanhantes</label>
+                                        <select id="maxCompanions" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="0">Sem acompanhantes</option>
+                                            <option value="1">Até 1 acompanhante</option>
+                                            <option value="2">Até 2 acompanhantes</option>
+                                            <option value="3">Até 3 acompanhantes</option>
+                                            <option value="4">Até 4 acompanhantes</option>
+                                            <option value="5">Até 5 acompanhantes</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Convidados</label>
+                                        <input type="number" id="guestLimit" min="1" max="500" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                                    <textarea id="eventDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+                                        <span id="submitButtonText">Criar Evento</span>
+                                    </button>
+                                    <button type="button" onclick="hideEventForm()" class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    
-                    <form id="eventForm" class="space-y-4">
-                        <input type="hidden" id="editingEventId" value="">
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Evento</label>
-                            <input type="text" id="eventName" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
-                                <input type="date" id="eventDate" required 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+
+                    <!-- Gifts Tab -->
+                    <div id="clientGiftsTab" class="hidden">
+                        <div class="space-y-6">
+                            <!-- IBAN Section -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4">💳 Transferência Bancária</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+                                        <input type="text" id="eventIban" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: AO06 0000 0000 0000 0000 0000 0">
+                                    </div>
+                                    <button onclick="saveIban()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Salvar IBAN</button>
+                                </div>
                             </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Horário (opcional)</label>
-                                <input type="time" id="eventTime" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+
+                            <!-- Gift List Section -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4">🎁 Lista de Presentes</h3>
+                                <div class="space-y-3 mb-4">
+                                    <div class="flex gap-3">
+                                        <input type="text" id="newGiftItem" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Nome do presente">
+                                        <input type="number" id="giftQuantity" min="1" max="10" value="1" class="w-20 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <button onclick="addGiftItem()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Adicionar</button>
+                                    </div>
+                                </div>
+                                <div id="giftsList" class="space-y-2"></div>
                             </div>
                         </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Local</label>
-                            <input type="text" id="eventLocation" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Descrição (opcional)</label>
-                            <textarea id="eventDescription" rows="3" 
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Data Limite para Confirmação</label>
-                            <input type="date" id="rsvpDeadline" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Máx. Acompanhantes</label>
-                                <select id="maxCompanions" required 
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <option value="0">Sem acompanhantes</option>
-                                    <option value="1">Até 1 acompanhante</option>
-                                    <option value="2">Até 2 acompanhantes</option>
-                                    <option value="3">Até 3 acompanhantes</option>
-                                    <option value="4">Até 4 acompanhantes</option>
-                                    <option value="5">Até 5 acompanhantes</option>
+                    </div>
+
+                    <!-- RSVPs Tab -->
+                    <div id="clientRsvpsTab" class="hidden">
+                        <div id="eventRSVPsContainer">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Selecione um evento para ver as confirmações</h3>
+                            <div id="eventSelector" class="mb-6">
+                                <select id="rsvpEventSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Selecione um evento</option>
                                 </select>
                             </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Convidados</label>
-                                <input type="number" id="guestLimit" min="1" max="500" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                       placeholder="Ex: 50">
+                            <div id="rsvpStats" class="hidden grid grid-cols-4 gap-4 mb-6 text-center">
+                                <div class="bg-green-50 p-3 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600" id="rsvpConfirmedCount">0</div>
+                                    <div class="text-sm text-gray-600">Confirmados</div>
+                                </div>
+                                <div class="bg-red-50 p-3 rounded-lg">
+                                    <div class="text-2xl font-bold text-red-600" id="rsvpDeclinedCount">0</div>
+                                    <div class="text-sm text-gray-600">Não vão</div>
+                                </div>
+                                <div class="bg-blue-50 p-3 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600" id="rsvpCompanionsCount">0</div>
+                                    <div class="text-sm text-gray-600">Acompanhantes</div>
+                                </div>
+                                <div class="bg-purple-50 p-3 rounded-lg">
+                                    <div class="text-2xl font-bold text-purple-600" id="rsvpTotalAttendees">0</div>
+                                    <div class="text-sm text-gray-600">Total Pessoas</div>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="flex gap-3">
-                            <button type="submit" 
-                                    class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                                <span id="submitButtonText">Criar Evento</span>
-                            </button>
-                            <button type="button" onclick="hideEventForm()" 
-                                    class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">
-                                Cancelar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Event RSVPs View -->
-                <div id="eventRSVPsContainer" class="hidden bg-white rounded-2xl shadow-2xl p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-800" id="rsvpEventTitle">Confirmações do Evento</h3>
-                        <button onclick="hideEventRSVPs()" class="text-gray-500 hover:text-gray-700">
-                            ✕ Voltar
-                        </button>
-                    </div>
-                    
-                    <!-- Event Stats -->
-                    <div class="grid grid-cols-2 gap-4 mb-6 text-center">
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-2xl font-bold text-green-600" id="rsvpConfirmedCount">0</div>
-                            <div class="text-sm text-gray-600">Confirmados</div>
-                        </div>
-                        <div class="bg-red-50 p-3 rounded-lg">
-                            <div class="text-2xl font-bold text-red-600" id="rsvpDeclinedCount">0</div>
-                            <div class="text-sm text-gray-600">Não vão</div>
-                        </div>
-                        <div class="bg-blue-50 p-3 rounded-lg">
-                            <div class="text-2xl font-bold text-blue-600" id="rsvpCompanionsCount">0</div>
-                            <div class="text-sm text-gray-600">Acompanhantes</div>
-                        </div>
-                        <div class="bg-purple-50 p-3 rounded-lg">
-                            <div class="text-2xl font-bold text-purple-600" id="rsvpTotalAttendees">0</div>
-                            <div class="text-sm text-gray-600">Total Pessoas</div>
+                            <div id="rsvpsList" class="space-y-3"></div>
                         </div>
                     </div>
-                    
-                    <div id="rsvpsList" class="space-y-3">
-                        <p class="text-gray-500 text-sm text-center">Carregando confirmações...</p>
-                    </div>
-                    
-                    <button onclick="refreshCurrentEventRSVPs()" 
-                            class="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition text-sm">
-                        Atualizar Lista
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- RSVP PAGE - Página para convidados -->
+    <!-- RSVP PAGE -->
     <div id="rsvpPage" class="hidden min-h-screen p-4 relative">
+        <div class="absolute top-4 right-4">
+            <button onclick="showGuestLogin()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">Login</button>
+        </div>
+        
         <div class="max-w-md mx-auto">
             <div class="bg-white rounded-2xl shadow-2xl p-6">
-                <div id="eventDetails" class="text-center mb-6">
-                    <!-- Event details will be loaded here -->
-                </div>
+                <div id="eventDetails" class="text-center mb-6"></div>
                 
                 <div id="rsvpExpired" class="hidden text-center p-6">
                     <div class="text-6xl mb-4">⏰</div>
@@ -280,168 +260,90 @@
                     <p class="text-gray-600">Infelizmente o evento já atingiu o limite máximo de convidados.</p>
                 </div>
                 
-                <!-- Login button in top right corner -->
-                <div class="absolute top-4 right-4">
-                    <button onclick="showGuestLogin()" 
-                            class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">
-                        Login
-                    </button>
-                </div>
-                
                 <form id="rsvpForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Seu Nome</label>
-                        <input type="text" id="guestName" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <input type="text" id="guestName" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Seu Telefone</label>
-                        <input type="tel" id="guestPhone" required 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                               placeholder="Ex: +244 912 345 678">
+                        <input type="tel" id="guestPhone" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Confirmação de Presença</label>
-                        <select id="attendance" required 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <select id="attendance" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                             <option value="">Selecione uma opção</option>
                             <option value="yes">✅ Sim, estarei presente</option>
                             <option value="no">❌ Não poderei comparecer</option>
                         </select>
                     </div>
-                    
                     <div id="companionSection" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Quantos acompanhantes?</label>
-                        <select id="companions" 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                        
+                        <select id="companions" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></select>
                         <div id="companionNamesSection" class="hidden mt-4 space-y-3">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Nomes dos Acompanhantes:</label>
-                            <div id="companionNamesList">
-                                <!-- Companion name inputs will be added here -->
-                            </div>
+                            <div id="companionNamesList"></div>
                         </div>
                     </div>
-                    
+                    <div id="giftSection" class="hidden space-y-4">
+                        <div id="ibanSection" class="hidden bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-blue-800 mb-2">💳 Presente via Transferência</h4>
+                            <p class="text-sm text-blue-700 mb-3">Querido(a) convidado(a)! Caso queira nos presentear, agradecemos desde já o seu lindo gesto e gostaríamos que o fizesse por transferência bancária para o IBAN indicado abaixo. Muito obrigado(a)! Deus lhe abençoe sempre!</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="displayIban" readonly class="flex-1 px-3 py-2 bg-white border border-blue-300 rounded text-sm">
+                                <button type="button" onclick="copyIban()" class="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">Copiar</button>
+                            </div>
+                        </div>
+                        <div id="giftListSection" class="hidden">
+                            <h4 class="font-bold text-purple-800 mb-3">🎁 Lista de Presentes</h4>
+                            <div id="availableGifts" class="space-y-2"></div>
+                        </div>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Observações (opcional)</label>
-                        <textarea id="notes" rows="3" 
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                  placeholder="Restrições alimentares, necessidades especiais, etc."></textarea>
+                        <textarea id="notes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
                     </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
-                        Confirmar Presença
-                    </button>
+                    <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">Confirmar Presença</button>
                 </form>
             </div>
 
-            <!-- Guest Login Modal -->
-            <div id="guestLoginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-800">Login do Cliente</h3>
-                        <button onclick="hideGuestLogin()" class="text-gray-500 hover:text-gray-700">
-                            ✕
-                        </button>
-                    </div>
-                    
-                    <form id="guestLoginForm" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
-                            <input type="text" id="guestLoginUsername" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-                            <input type="password" id="guestLoginPassword" required 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <div class="flex gap-3">
-                            <button type="submit" 
-                                    class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                                Entrar
-                            </button>
-                            <button type="button" onclick="hideGuestLogin()" 
-                                    class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">
-                                Cancelar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- RSVP Success Message -->
             <div id="rsvpSuccess" class="hidden bg-white rounded-2xl shadow-2xl p-6">
                 <div class="text-center mb-6">
                     <div class="text-6xl mb-4">✅</div>
                     <h2 class="text-xl font-bold text-green-600 mb-2">Sua resposta foi enviada, grato!</h2>
                 </div>
-                
                 <div class="space-y-3">
-                    <button onclick="editResponse()" 
-                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                        Editar Resposta
-                    </button>
-                    
-                    <button onclick="editMessage()" 
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
-                        Editar Mensagem
-                    </button>
+                    <button onclick="editResponse()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">Editar Resposta</button>
                 </div>
             </div>
+        </div>
 
-            <!-- Edit Message Modal -->
-            <div id="editMessageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-800">Editar Mensagem</h3>
-                        <button onclick="hideEditMessage()" class="text-gray-500 hover:text-gray-700">
-                            ✕
-                        </button>
+        <!-- Guest Login Modal -->
+        <div id="guestLoginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">Login do Cliente</h3>
+                    <button onclick="hideGuestLogin()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <form id="guestLoginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+                        <input type="text" id="guestLoginUsername" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
-                    
-                    <form id="editMessageForm" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Sua Mensagem</label>
-                            <textarea id="editMessageText" rows="4" 
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                      placeholder="Restrições alimentares, necessidades especiais, etc."></textarea>
-                        </div>
-                        
-                        <div class="flex gap-3">
-                            <button type="submit" 
-                                    class="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-medium">
-                                Salvar Mensagem
-                            </button>
-                            <button type="button" onclick="hideEditMessage()" 
-                                    class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">
-                                Cancelar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Guest Messages Section -->
-            <div id="guestMessages" class="hidden bg-white rounded-2xl shadow-2xl p-6 mt-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Mensagens dos Convidados</h3>
-                <div id="messagesList" class="space-y-3 max-h-60 overflow-y-auto">
-                    <!-- Messages will be loaded here -->
-                </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                        <input type="password" id="guestLoginPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-medium">Entrar</button>
+                        <button type="button" onclick="hideGuestLogin()" class="px-6 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition font-medium">Cancelar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <script>
-        // Supabase configuration - SECURE: No sensitive data exposed
         const supabaseUrl = 'https://ybbhynfttwogkdsnqmvu.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliYmh5bmZ0dHdvZ2tkc25xbXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NzY3MDIsImV4cCI6MjA3MTI1MjcwMn0.LPMGW_OPKiwTEKhyzl_v2Snb9nVeZg0wP4Ot6zKrCn0';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -451,96 +353,137 @@
         let allowCompanions = false;
         let maxCompanionsAllowed = 0;
         let currentEvent = null;
+        let selectedEventForRSVP = null;
 
-        // Check URL parameters to determine which panel to show
+        // Initialize
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode');
         const clientId = urlParams.get('client');
         const eventId = urlParams.get('event');
         const companions = urlParams.get('companions');
 
-        // Initialize the correct panel based on URL
         if (eventId) {
-            // RSVP page for guests
             showRSVPPage(eventId, companions === 'true');
         } else if (mode === 'client' && clientId) {
-            // Client panel
             showClientPanel();
         } else {
-            // Admin panel (default)
             showAdminPanel();
         }
 
-        // ADMIN FUNCTIONS
+        // Tab Functions
+        function showAdminTab(tab) {
+            document.getElementById('adminTabCreate').className = tab === 'create' ? 'px-4 py-2 rounded-t-lg tab-active' : 'px-4 py-2 rounded-t-lg tab-inactive';
+            document.getElementById('adminTabManage').className = tab === 'manage' ? 'px-4 py-2 rounded-t-lg tab-active' : 'px-4 py-2 rounded-t-lg tab-inactive';
+            document.getElementById('adminCreateTab').classList.toggle('hidden', tab !== 'create');
+            document.getElementById('adminManageTab').classList.toggle('hidden', tab !== 'manage');
+            if (tab === 'manage') loadClients();
+        }
+
+        function showClientTab(tab) {
+            ['events', 'gifts', 'rsvps'].forEach(t => {
+                document.getElementById(`clientTab${t.charAt(0).toUpperCase() + t.slice(1)}`).className = 
+                    tab === t ? 'px-4 py-2 rounded-t-lg tab-active' : 'px-4 py-2 rounded-t-lg tab-inactive ml-2';
+                document.getElementById(`client${t.charAt(0).toUpperCase() + t.slice(1)}Tab`).classList.toggle('hidden', tab !== t);
+            });
+            if (tab === 'rsvps') loadEventSelector();
+            if (tab === 'gifts') loadGiftSettings();
+        }
+
+        // Admin Functions
         document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
             
+            console.log('Tentativa de login admin:', { username, password }); // Debug
+            
             try {
-                const { data, error } = await supabase
+                // Primeiro tenta buscar na tabela admin_users
+                const { data: adminUser, error: adminError } = await supabase
                     .from('admin_users')
                     .select('*')
                     .eq('username', username)
                     .eq('password', password)
                     .single();
-
-                if (error || !data) {
-                    alert('Credenciais de admin incorretas');
+                
+                if (adminUser && !adminError) {
+                    console.log('Login admin bem-sucedido via admin_users'); // Debug
+                    document.getElementById('adminLogin').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    showAdminTab('create');
                     return;
                 }
-
-                document.getElementById('adminLogin').classList.add('hidden');
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                loadClients();
+                
+                // Se não encontrou, tenta buscar na tabela admin_config
+                const { data: configData, error: configError } = await supabase
+                    .from('admin_config')
+                    .select('*')
+                    .in('key', ['admin_username', 'admin_password']);
+                
+                if (configData && configData.length >= 2) {
+                    const configUsername = configData.find(item => item.key === 'admin_username')?.value;
+                    const configPassword = configData.find(item => item.key === 'admin_password')?.value;
+                    
+                    console.log('Credenciais do config:', { configUsername, configPassword }); // Debug
+                    
+                    if (username === configUsername && password === configPassword) {
+                        console.log('Login admin bem-sucedido via admin_config'); // Debug
+                        document.getElementById('adminLogin').classList.add('hidden');
+                        document.getElementById('adminDashboard').classList.remove('hidden');
+                        showAdminTab('create');
+                        return;
+                    }
+                }
+                
+                // Fallback para credenciais fixas (caso as tabelas estejam vazias)
+                if (username === 'Invites' && password === 'Cataca2025') {
+                    console.log('Login admin bem-sucedido via fallback'); // Debug
+                    document.getElementById('adminLogin').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    showAdminTab('create');
+                    return;
+                }
+                
+                // Se chegou aqui, as credenciais estão incorretas
+                console.log('Credenciais incorretas em todas as verificações'); // Debug
+                alert('Usuário ou senha incorretos');
+                
             } catch (error) {
-                console.error('Admin login error:', error);
-                alert('Erro ao fazer login como admin');
+                console.error('Erro no login admin:', error);
+                alert('Erro ao verificar credenciais: ' + error.message);
             }
         });
 
         document.getElementById('createClientForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const clientData = {
                 name: document.getElementById('clientName').value,
                 username: document.getElementById('clientUsername').value,
                 password: document.getElementById('clientPassword').value,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                active: true
             };
 
             try {
-                const { data, error } = await supabase
-                    .from('clients')
-                    .insert([clientData])
-                    .select()
-                    .single();
-
+                const { data, error } = await supabase.from('clients').insert([clientData]).select().single();
                 if (error) {
                     alert('Erro ao criar cliente: ' + error.message);
                     return;
                 }
-
                 alert('Cliente criado com sucesso!');
                 document.getElementById('createClientForm').reset();
-                loadClients();
+                if (document.getElementById('adminManageTab').classList.contains('hidden') === false) {
+                    loadClients();
+                }
             } catch (error) {
-                console.error('Create client error:', error);
                 alert('Erro ao criar cliente');
             }
         });
 
         async function loadClients() {
             try {
-                const { data, error } = await supabase
-                    .from('clients')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('Load clients error:', error);
-                    return;
-                }
+                const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
+                if (error) return;
 
                 const clientsList = document.getElementById('clientsList');
                 clientsList.innerHTML = '';
@@ -552,35 +495,30 @@
 
                 data.forEach(client => {
                     const clientCard = document.createElement('div');
-                    clientCard.className = 'border border-gray-200 rounded-lg p-3';
-                    
+                    clientCard.className = 'border border-gray-200 rounded-lg p-4';
                     const baseUrl = window.location.origin + window.location.pathname;
                     const clientUrl = `${baseUrl}?mode=client&client=${client.id}`;
                     
                     clientCard.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
+                        <div class="flex justify-between items-start mb-3">
                             <div>
                                 <h4 class="font-semibold text-gray-800">${client.name}</h4>
                                 <p class="text-sm text-gray-600">@${client.username}</p>
+                                <span class="text-xs px-2 py-1 rounded ${client.active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${client.active !== false ? 'Ativo' : 'Inativo'}</span>
                             </div>
-                            <button onclick="deleteClient(${client.id})" class="text-red-500 hover:text-red-700 text-sm">
-                                🗑️
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="toggleClientStatus(${client.id}, ${client.active !== false})" class="text-sm px-2 py-1 rounded ${client.active !== false ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-green-500 text-white hover:bg-green-600'}">${client.active !== false ? 'Desativar' : 'Ativar'}</button>
+                                <button onclick="showClientOptions(${client.id}, '${client.name}', '${client.username}', '${client.password}')" class="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600">Opções</button>
+                            </div>
                         </div>
-                        
                         <div class="mt-3">
                             <label class="block text-xs font-medium text-gray-700 mb-1">Link do Cliente:</label>
                             <div class="flex gap-2">
-                                <input type="text" value="${clientUrl}" readonly 
-                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
-                                <button onclick="copyLink('${clientUrl}')" 
-                                        class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">
-                                    Copiar
-                                </button>
+                                <input type="text" value="${clientUrl}" readonly class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
+                                <button onclick="copyLink('${clientUrl}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">Copiar</button>
                             </div>
                         </div>
                     `;
-                    
                     clientsList.appendChild(clientCard);
                 });
             } catch (error) {
@@ -588,121 +526,126 @@
             }
         }
 
+        async function toggleClientStatus(clientId, currentStatus) {
+            try {
+                const { error } = await supabase.from('clients').update({ active: !currentStatus }).eq('id', clientId);
+                if (error) {
+                    alert('Erro ao alterar status: ' + error.message);
+                    return;
+                }
+                alert(`Cliente ${!currentStatus ? 'ativado' : 'desativado'} com sucesso!`);
+                loadClients();
+            } catch (error) {
+                alert('Erro ao alterar status do cliente');
+            }
+        }
+
+        function showClientOptions(clientId, name, username, password) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Opções: ${name}</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gray-50 rounded">
+                            <p class="text-sm"><strong>Usuário:</strong> ${username}</p>
+                            <p class="text-sm"><strong>Senha:</strong> ${password}</p>
+                        </div>
+                        <button onclick="changeClientPassword(${clientId})" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Trocar Senha</button>
+                        <button onclick="deleteClient(${clientId}); this.closest('.fixed').remove()" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">Excluir Cliente</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function changeClientPassword(clientId) {
+            const newPassword = prompt('Digite a nova senha:');
+            if (!newPassword) return;
+            
+            try {
+                const { error } = await supabase.from('clients').update({ password: newPassword }).eq('id', clientId);
+                if (error) {
+                    alert('Erro ao alterar senha: ' + error.message);
+                    return;
+                }
+                alert('Senha alterada com sucesso!');
+                loadClients();
+            } catch (error) {
+                alert('Erro ao alterar senha');
+            }
+        }
+
         async function deleteClient(clientId) {
             if (!confirm('Tem certeza que deseja excluir este cliente? Todos os eventos e confirmações serão perdidos permanentemente.')) return;
             
             try {
-                console.log('Iniciando exclusão do cliente:', clientId);
-                
-                // First delete all RSVPs for all events of this client
-                const { data: clientEvents, error: eventsError } = await supabase
-                    .from('events')
-                    .select('id')
-                    .eq('client_id', clientId);
-
-                if (eventsError) {
-                    console.error('Erro ao buscar eventos:', eventsError);
-                    alert('Erro ao buscar eventos do cliente: ' + eventsError.message);
-                    return;
-                }
-
-                console.log('Eventos encontrados:', clientEvents);
-
+                const { data: clientEvents } = await supabase.from('events').select('id').eq('client_id', clientId);
                 if (clientEvents && clientEvents.length > 0) {
                     const eventIds = clientEvents.map(event => event.id);
-                    console.log('IDs dos eventos:', eventIds);
-                    
-                    // Delete all RSVPs for these events
-                    const { error: rsvpDeleteError } = await supabase
-                        .from('rsvps')
-                        .delete()
-                        .in('event_id', eventIds);
-
-                    if (rsvpDeleteError) {
-                        console.error('Erro ao excluir RSVPs:', rsvpDeleteError);
-                        alert('Erro ao excluir confirmações: ' + rsvpDeleteError.message);
-                        return;
-                    }
-                    
-                    console.log('RSVPs excluídos com sucesso');
-                    
-                    // Delete all events for this client
-                    const { error: eventsDeleteError } = await supabase
-                        .from('events')
-                        .delete()
-                        .eq('client_id', clientId);
-
-                    if (eventsDeleteError) {
-                        console.error('Erro ao excluir eventos:', eventsDeleteError);
-                        alert('Erro ao excluir eventos: ' + eventsDeleteError.message);
-                        return;
-                    }
-                    
-                    console.log('Eventos excluídos com sucesso');
+                    await supabase.from('rsvps').delete().in('event_id', eventIds);
+                    await supabase.from('events').delete().eq('client_id', clientId);
                 }
-
-                // Finally delete the client
-                const { error: clientDeleteError } = await supabase
-                    .from('clients')
-                    .delete()
-                    .eq('id', clientId);
-
-                if (clientDeleteError) {
-                    console.error('Erro ao excluir cliente:', clientDeleteError);
-                    alert('Erro ao excluir cliente: ' + clientDeleteError.message);
+                const { error } = await supabase.from('clients').delete().eq('id', clientId);
+                if (error) {
+                    alert('Erro ao excluir cliente: ' + error.message);
                     return;
                 }
-
-                console.log('Cliente excluído com sucesso');
                 alert('Cliente excluído com sucesso!');
                 loadClients();
             } catch (error) {
-                console.error('Delete client error:', error);
-                alert('Erro inesperado ao excluir cliente: ' + error.message);
+                alert('Erro ao excluir cliente');
             }
         }
 
-        // CLIENT FUNCTIONS
+        // Client Functions
         document.getElementById('clientLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('clientLoginUsername').value;
             const password = document.getElementById('clientLoginPassword').value;
 
             try {
-                const { data, error } = await supabase
-                    .from('clients')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single();
-
+                // Check if client exists and is active
+                const { data, error } = await supabase.from('clients').select('*').eq('username', username).eq('password', password).single();
                 if (error || !data) {
                     alert('Usuário ou senha incorretos');
                     return;
                 }
-
+                if (data.active === false) {
+                    showErrorPage();
+                    return;
+                }
                 currentUser = data;
                 document.getElementById('clientLogin').classList.add('hidden');
                 document.getElementById('clientDashboard').classList.remove('hidden');
+                showClientTab('events');
                 loadClientEvents();
             } catch (error) {
-                console.error('Client login error:', error);
                 alert('Erro ao fazer login');
             }
         });
 
         document.getElementById('clientLogoutBtn').addEventListener('click', () => {
-            currentUser = null;
-            currentEventId = null;
-            document.getElementById('clientLogin').classList.remove('hidden');
-            document.getElementById('clientDashboard').classList.add('hidden');
-            document.getElementById('eventFormContainer').classList.add('hidden');
-            document.getElementById('eventRSVPsContainer').classList.add('hidden');
+            if (document.getElementById('rsvpPage').classList.contains('hidden')) {
+                // Normal logout
+                currentUser = null;
+                currentEventId = null;
+                document.getElementById('clientLogin').classList.remove('hidden');
+                document.getElementById('clientDashboard').classList.add('hidden');
+            } else {
+                // Logout from guest page - return to RSVP page
+                document.getElementById('rsvpPage').classList.remove('hidden');
+                document.getElementById('clientPanel').classList.add('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
+                currentUser = null;
+            }
         });
 
         document.getElementById('eventForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const editingEventId = document.getElementById('editingEventId').value;
             const eventData = {
                 name: document.getElementById('eventName').value,
@@ -719,51 +662,28 @@
             try {
                 let result;
                 if (editingEventId) {
-                    // Update existing event
-                    result = await supabase
-                        .from('events')
-                        .update(eventData)
-                        .eq('id', editingEventId)
-                        .eq('client_id', currentUser.id) // Security: ensure user owns the event
-                        .select()
-                        .single();
+                    result = await supabase.from('events').update(eventData).eq('id', editingEventId).eq('client_id', currentUser.id).select().single();
                 } else {
-                    // Create new event
                     eventData.created_at = new Date().toISOString();
-                    result = await supabase
-                        .from('events')
-                        .insert([eventData])
-                        .select()
-                        .single();
+                    result = await supabase.from('events').insert([eventData]).select().single();
                 }
 
                 if (result.error) {
                     alert('Erro ao salvar evento: ' + result.error.message);
                     return;
                 }
-
                 alert(editingEventId ? 'Evento atualizado com sucesso!' : 'Evento criado com sucesso!');
                 hideEventForm();
                 loadClientEvents();
             } catch (error) {
-                console.error('Save event error:', error);
                 alert('Erro ao salvar evento');
             }
         });
 
         async function loadClientEvents() {
             try {
-                const { data, error } = await supabase
-                    .from('events')
-                    .select('*')
-                    .eq('client_id', currentUser.id)
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('Load client events error:', error);
-                    return;
-                }
-
+                const { data, error } = await supabase.from('events').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: false });
+                if (error) return;
                 displayEventsList(data || []);
             } catch (error) {
                 console.error('Load client events error:', error);
@@ -780,109 +700,62 @@
                         <div class="text-6xl mb-4">🎉</div>
                         <h3 class="text-lg font-semibold text-gray-700 mb-2">Nenhum evento criado</h3>
                         <p class="text-gray-500 text-sm mb-4">Crie seu primeiro evento para começar!</p>
-                        <button onclick="showCreateEventForm()" 
-                                class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                            Criar Primeiro Evento
-                        </button>
+                        <button onclick="showCreateEventForm()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium">Criar Primeiro Evento</button>
                     </div>
                 `;
                 return;
             }
 
-            // Add "Create New Event" button
             const createButton = document.createElement('div');
             createButton.className = 'mb-6';
-            createButton.innerHTML = `
-                <button onclick="showCreateEventForm()" 
-                        class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-medium">
-                    + Criar Novo Evento
-                </button>
-            `;
+            createButton.innerHTML = `<button onclick="showCreateEventForm()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-medium">+ Criar Novo Evento</button>`;
             eventsContainer.appendChild(createButton);
 
-            // Display events
             events.forEach(event => {
                 const eventCard = document.createElement('div');
-                eventCard.className = 'bg-white rounded-2xl shadow-lg p-6 mb-4 border border-gray-200';
-                
+                eventCard.className = 'bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200';
                 const eventDate = new Date(event.date).toLocaleDateString('pt-BR');
-                const deadlineDate = event.rsvp_deadline ? new Date(event.rsvp_deadline).toLocaleDateString('pt-BR') : 'Sem prazo';
                 
                 eventCard.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
+                    <div class="flex justify-between items-start mb-3">
                         <div>
                             <h3 class="text-lg font-bold text-gray-800">${event.name}</h3>
                             <p class="text-sm text-gray-600">📅 ${eventDate}${event.time ? ` às ${event.time}` : ''}</p>
                             <p class="text-sm text-gray-600">📍 ${event.location}</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="editEvent(${event.id})" 
-                                    class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 text-sm">
-                                ✏️ Editar
-                            </button>
-                            <button onclick="deleteEvent(${event.id})" 
-                                    class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 text-sm">
-                                🗑️ Excluir
-                            </button>
+                            <button onclick="editEvent(${event.id})" class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 text-sm">✏️</button>
+                            <button onclick="deleteEvent(${event.id})" class="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 text-sm">🗑️</button>
                         </div>
                     </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 mb-4 text-center">
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-xl font-bold text-green-600" id="confirmed-${event.id}">-</div>
+                    <div class="grid grid-cols-2 gap-4 mb-3 text-center">
+                        <div class="bg-green-100 p-2 rounded">
+                            <div class="text-lg font-bold text-green-600" id="confirmed-${event.id}">-</div>
                             <div class="text-xs text-gray-600">Confirmados</div>
                         </div>
-                        <div class="bg-blue-50 p-3 rounded-lg">
-                            <div class="text-xl font-bold text-blue-600" id="total-${event.id}">-</div>
+                        <div class="bg-blue-100 p-2 rounded">
+                            <div class="text-lg font-bold text-blue-600" id="total-${event.id}">-</div>
                             <div class="text-xs text-gray-600">Total Pessoas</div>
                         </div>
                     </div>
-                    
-                    <div class="space-y-3">
+                    <div class="space-y-2">
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">🎉 Link com Acompanhantes:</label>
                             <div class="flex gap-2">
-                                <input type="text" value="${generateEventLink(event.id, true)}" readonly 
-                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
-                                <button onclick="copyLink('${generateEventLink(event.id, true)}')" 
-                                        class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">
-                                    Copiar
-                                </button>
+                                <input type="text" value="${generateEventLink(event.id, true)}" readonly class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+                                <button onclick="copyLink('${generateEventLink(event.id, true)}')" class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">Copiar</button>
                             </div>
                         </div>
-                        
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">👤 Link sem Acompanhantes:</label>
                             <div class="flex gap-2">
-                                <input type="text" value="${generateEventLink(event.id, false)}" readonly 
-                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50">
-                                <button onclick="copyLink('${generateEventLink(event.id, false)}')" 
-                                        class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">
-                                    Copiar
-                                </button>
+                                <input type="text" value="${generateEventLink(event.id, false)}" readonly class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+                                <button onclick="copyLink('${generateEventLink(event.id, false)}')" class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">Copiar</button>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="viewEventRSVPs(${event.id})" 
-                                    class="bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition text-sm">
-                                Ver Confirmações
-                            </button>
-                            <button onclick="downloadEventReport(${event.id})" 
-                                    class="bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition text-sm">
-                                📄 Baixar PDF
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
-                        <p>Prazo: ${deadlineDate} | Limite: ${event.guest_limit || 'Sem limite'} pessoas</p>
                     </div>
                 `;
-                
                 eventsContainer.appendChild(eventCard);
-                
-                // Load stats for this event
                 loadEventStats(event.id);
             });
         }
@@ -894,18 +767,11 @@
 
         async function loadEventStats(eventId) {
             try {
-                const { data, error } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('event_id', eventId)
-                    .eq('attendance', 'yes');
-
+                const { data, error } = await supabase.from('rsvps').select('*').eq('event_id', eventId).eq('attendance', 'yes');
                 if (error) return;
-
                 const confirmed = data ? data.length : 0;
                 const companions = data ? data.reduce((sum, rsvp) => sum + (rsvp.companions || 0), 0) : 0;
                 const total = confirmed + companions;
-
                 document.getElementById(`confirmed-${eventId}`).textContent = confirmed;
                 document.getElementById(`total-${eventId}`).textContent = total;
             } catch (error) {
@@ -913,7 +779,6 @@
             }
         }
 
-        // Event management functions
         function showCreateEventForm() {
             document.getElementById('formTitle').textContent = 'Criar Novo Evento';
             document.getElementById('submitButtonText').textContent = 'Criar Evento';
@@ -930,19 +795,11 @@
 
         async function editEvent(eventId) {
             try {
-                const { data, error } = await supabase
-                    .from('events')
-                    .select('*')
-                    .eq('id', eventId)
-                    .eq('client_id', currentUser.id) // Security: ensure user owns the event
-                    .single();
-
+                const { data, error } = await supabase.from('events').select('*').eq('id', eventId).eq('client_id', currentUser.id).single();
                 if (error || !data) {
                     alert('Evento não encontrado');
                     return;
                 }
-
-                // Populate form with event data
                 document.getElementById('formTitle').textContent = 'Editar Evento';
                 document.getElementById('submitButtonText').textContent = 'Atualizar Evento';
                 document.getElementById('editingEventId').value = data.id;
@@ -954,91 +811,163 @@
                 document.getElementById('rsvpDeadline').value = data.rsvp_deadline;
                 document.getElementById('maxCompanions').value = data.max_companions || 0;
                 document.getElementById('guestLimit').value = data.guest_limit || '';
-
                 document.getElementById('eventFormContainer').classList.remove('hidden');
             } catch (error) {
-                console.error('Edit event error:', error);
                 alert('Erro ao carregar evento');
             }
         }
 
         async function deleteEvent(eventId) {
-            if (!confirm('Tem certeza que deseja excluir este evento? Todas as confirmações serão perdidas.')) {
-                return;
-            }
-
+            if (!confirm('Tem certeza que deseja excluir este evento? Todas as confirmações serão perdidas.')) return;
             try {
-                const { error } = await supabase
-                    .from('events')
-                    .delete()
-                    .eq('id', eventId)
-                    .eq('client_id', currentUser.id); // Security: ensure user owns the event
-
+                const { error } = await supabase.from('events').delete().eq('id', eventId).eq('client_id', currentUser.id);
                 if (error) {
                     alert('Erro ao excluir evento: ' + error.message);
                     return;
                 }
-
                 alert('Evento excluído com sucesso!');
                 loadClientEvents();
             } catch (error) {
-                console.error('Delete event error:', error);
                 alert('Erro ao excluir evento');
             }
         }
 
-        async function viewEventRSVPs(eventId) {
-            currentEventId = eventId;
-            
+        // Gift Functions
+        async function loadGiftSettings() {
+            if (!currentUser) return;
             try {
-                const { data: eventData, error: eventError } = await supabase
-                    .from('events')
-                    .select('*')
-                    .eq('id', eventId)
-                    .eq('client_id', currentUser.id) // Security: ensure user owns the event
-                    .single();
-
-                if (eventError || !eventData) {
-                    alert('Evento não encontrado');
-                    return;
+                const { data, error } = await supabase.from('events').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: false }).limit(1).single();
+                if (data) {
+                    document.getElementById('eventIban').value = data.iban || '';
                 }
-
-                document.getElementById('rsvpEventTitle').textContent = `Confirmações: ${eventData.name}`;
-                document.getElementById('eventRSVPsContainer').classList.remove('hidden');
-                
-                refreshCurrentEventRSVPs();
+                loadGiftItems();
             } catch (error) {
-                console.error('View event RSVPs error:', error);
-                alert('Erro ao carregar confirmações');
+                console.error('Load gift settings error:', error);
             }
         }
 
-        function hideEventRSVPs() {
-            document.getElementById('eventRSVPsContainer').classList.add('hidden');
-            currentEventId = null;
-        }
-
-        async function refreshCurrentEventRSVPs() {
-            if (!currentEventId) return;
-            
+        async function saveIban() {
+            const iban = document.getElementById('eventIban').value;
+            if (!iban.trim()) {
+                alert('Por favor, digite um IBAN válido');
+                return;
+            }
             try {
-                const { data, error } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('event_id', currentEventId)
-                    .order('created_at', { ascending: false });
-
+                const { error } = await supabase.from('events').update({ iban: iban }).eq('client_id', currentUser.id);
                 if (error) {
-                    console.error('Load RSVPs error:', error);
+                    alert('Erro ao salvar IBAN: ' + error.message);
                     return;
                 }
+                alert('IBAN salvo com sucesso!');
+            } catch (error) {
+                alert('Erro ao salvar IBAN');
+            }
+        }
 
-                // Update statistics
-                let confirmedCount = 0;
-                let declinedCount = 0;
-                let companionsCount = 0;
+        async function addGiftItem() {
+            const item = document.getElementById('newGiftItem').value.trim();
+            const quantity = parseInt(document.getElementById('giftQuantity').value) || 1;
+            if (!item) {
+                alert('Digite o nome do presente');
+                return;
+            }
+            try {
+                const { error } = await supabase.from('gift_items').insert([{
+                    client_id: currentUser.id,
+                    item_name: item,
+                    max_quantity: quantity,
+                    available_quantity: quantity,
+                    created_at: new Date().toISOString()
+                }]);
+                if (error) {
+                    alert('Erro ao adicionar presente: ' + error.message);
+                    return;
+                }
+                document.getElementById('newGiftItem').value = '';
+                document.getElementById('giftQuantity').value = '1';
+                loadGiftItems();
+            } catch (error) {
+                alert('Erro ao adicionar presente');
+            }
+        }
 
-                data.forEach(rsvp => {
+        async function loadGiftItems() {
+            if (!currentUser) return;
+            try {
+                const { data, error } = await supabase.from('gift_items').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: false });
+                if (error) return;
+                const giftsList = document.getElementById('giftsList');
+                giftsList.innerHTML = '';
+                if (!data || data.length === 0) {
+                    giftsList.innerHTML = '<p class="text-gray-500 text-sm text-center">Nenhum presente adicionado ainda</p>';
+                    return;
+                }
+                data.forEach(gift => {
+                    const giftCard = document.createElement('div');
+                    giftCard.className = 'flex justify-between items-center p-3 bg-gray-50 rounded border';
+                    giftCard.innerHTML = `
+                        <div>
+                            <span class="font-medium">${gift.item_name}</span>
+                            <span class="text-sm text-gray-600 ml-2">(${gift.available_quantity}/${gift.max_quantity} disponível)</span>
+                        </div>
+                        <button onclick="deleteGiftItem(${gift.id})" class="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600">Remover</button>
+                    `;
+                    giftsList.appendChild(giftCard);
+                });
+            } catch (error) {
+                console.error('Load gift items error:', error);
+            }
+        }
+
+        async function deleteGiftItem(giftId) {
+            if (!confirm('Tem certeza que deseja remover este presente?')) return;
+            try {
+                const { error } = await supabase.from('gift_items').delete().eq('id', giftId).eq('client_id', currentUser.id);
+                if (error) {
+                    alert('Erro ao remover presente: ' + error.message);
+                    return;
+                }
+                loadGiftItems();
+            } catch (error) {
+                alert('Erro ao remover presente');
+            }
+        }
+
+        // RSVP Functions
+        async function loadEventSelector() {
+            if (!currentUser) return;
+            try {
+                const { data, error } = await supabase.from('events').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: false });
+                if (error) return;
+                const selector = document.getElementById('rsvpEventSelect');
+                selector.innerHTML = '<option value="">Selecione um evento</option>';
+                data.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    option.textContent = `${event.name} - ${new Date(event.date).toLocaleDateString('pt-BR')}`;
+                    selector.appendChild(option);
+                });
+                selector.addEventListener('change', (e) => {
+                    selectedEventForRSVP = e.target.value;
+                    if (selectedEventForRSVP) {
+                        loadSelectedEventRSVPs();
+                    } else {
+                        document.getElementById('rsvpStats').classList.add('hidden');
+                        document.getElementById('rsvpsList').innerHTML = '';
+                    }
+                });
+            } catch (error) {
+                console.error('Load event selector error:', error);
+            }
+        }
+
+        async function loadSelectedEventRSVPs() {
+            if (!selectedEventForRSVP) return;
+            try {
+                const { data, error } = await supabase.from('rsvps').select('*').eq('event_id', selectedEventForRSVP).order('created_at', { ascending: false });
+                if (error) return;
+                let confirmedCount = 0, declinedCount = 0, companionsCount = 0;
+                (data || []).forEach(rsvp => {
                     if (rsvp.attendance === 'yes') {
                         confirmedCount++;
                         companionsCount += rsvp.companions || 0;
@@ -1046,30 +975,22 @@
                         declinedCount++;
                     }
                 });
-
-                const totalAttendees = confirmedCount + companionsCount;
-
                 document.getElementById('rsvpConfirmedCount').textContent = confirmedCount;
                 document.getElementById('rsvpDeclinedCount').textContent = declinedCount;
                 document.getElementById('rsvpCompanionsCount').textContent = companionsCount;
-                document.getElementById('rsvpTotalAttendees').textContent = totalAttendees;
-
-                // Update RSVPs list
+                document.getElementById('rsvpTotalAttendees').textContent = confirmedCount + companionsCount;
+                document.getElementById('rsvpStats').classList.remove('hidden');
                 const rsvpsList = document.getElementById('rsvpsList');
                 rsvpsList.innerHTML = '';
-
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     rsvpsList.innerHTML = '<p class="text-gray-500 text-sm text-center">Nenhuma confirmação ainda</p>';
                     return;
                 }
-
                 data.forEach(rsvp => {
                     const rsvpCard = document.createElement('div');
                     rsvpCard.className = 'border border-gray-200 rounded-lg p-3';
-                    
                     const status = rsvp.attendance === 'yes' ? '✅ Confirmado' : '❌ Não vai';
                     const companions = rsvp.companions > 0 ? ` (+${rsvp.companions})` : '';
-                    
                     rsvpCard.innerHTML = `
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
@@ -1078,157 +999,51 @@
                                 <p class="text-sm mt-1">${status}${companions}</p>
                                 ${rsvp.companion_names ? `<p class="text-xs text-blue-600 mt-1">Acompanhantes: ${rsvp.companion_names}</p>` : ''}
                                 ${rsvp.notes ? `<p class="text-xs text-gray-500 mt-1">${rsvp.notes}</p>` : ''}
+                                ${rsvp.selected_gift ? `<p class="text-xs text-purple-600 mt-1">🎁 ${rsvp.selected_gift}</p>` : ''}
                             </div>
-                            <div class="flex flex-col gap-1 ml-3">
-                                ${rsvp.companions > 0 ? `<button onclick="removeCompanions(${rsvp.id})" class="bg-orange-500 text-white px-2 py-1 rounded text-xs hover:bg-orange-600" title="Remover acompanhantes">👥❌</button>` : ''}
-                                <button onclick="deleteRSVP(${rsvp.id})" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600" title="Eliminar convidado">🗑️</button>
-                            </div>
+                            <button onclick="deleteRSVP(${rsvp.id})" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">🗑️</button>
                         </div>
                     `;
-                    
                     rsvpsList.appendChild(rsvpCard);
                 });
             } catch (error) {
-                console.error('Refresh RSVPs error:', error);
+                console.error('Load selected event RSVPs error:', error);
             }
         }
 
-        // RSVP FUNCTIONS
-        document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Collect companion names
-            const companionCount = parseInt(document.getElementById('companions').value) || 0;
-            const companionNames = [];
-            
-            for (let i = 1; i <= companionCount; i++) {
-                const nameInput = document.getElementById(`companion${i}Name`);
-                if (nameInput && nameInput.value.trim()) {
-                    companionNames.push(nameInput.value.trim());
-                }
-            }
-            
-            const guestName = document.getElementById('guestName').value;
-            const guestPhone = document.getElementById('guestPhone').value;
-            
-            const rsvpData = {
-                event_id: currentEventId,
-                name: guestName,
-                phone: guestPhone,
-                attendance: document.getElementById('attendance').value,
-                companions: companionCount,
-                companion_names: companionNames.length > 0 ? companionNames.join(', ') : null,
-                notes: document.getElementById('notes').value,
-                created_at: new Date().toISOString()
-            };
-
+        async function deleteRSVP(rsvpId) {
+            if (!confirm('Tem certeza que deseja eliminar este convidado?')) return;
             try {
-                // Check if RSVP already exists for this person and event
-                const { data: existingRSVP, error: checkError } = await supabase
-                    .from('rsvps')
-                    .select('id')
-                    .eq('event_id', currentEventId)
-                    .eq('name', guestName)
-                    .eq('phone', guestPhone)
-                    .single();
-
-                let result;
-                if (existingRSVP) {
-                    // Update existing RSVP
-                    result = await supabase
-                        .from('rsvps')
-                        .update({
-                            attendance: rsvpData.attendance,
-                            companions: rsvpData.companions,
-                            companion_names: rsvpData.companion_names,
-                            notes: rsvpData.notes
-                        })
-                        .eq('id', existingRSVP.id);
-                } else {
-                    // Insert new RSVP
-                    result = await supabase
-                        .from('rsvps')
-                        .insert([rsvpData]);
-                }
-
-                if (result.error) {
-                    alert('Erro ao confirmar presença: ' + result.error.message);
+                const { error } = await supabase.from('rsvps').delete().eq('id', rsvpId);
+                if (error) {
+                    alert('Erro ao eliminar convidado: ' + error.message);
                     return;
                 }
-
-                // Store RSVP data in localStorage for editing
-                localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(rsvpData));
-                
-                // Show success message
-                document.getElementById('rsvpForm').parentElement.classList.add('hidden');
-                document.getElementById('rsvpSuccess').classList.remove('hidden');
-                
-                // Load guest messages
-                loadGuestMessages();
+                alert('Convidado eliminado com sucesso!');
+                loadSelectedEventRSVPs();
+                if (selectedEventForRSVP) loadEventStats(selectedEventForRSVP);
             } catch (error) {
-                console.error('RSVP error:', error);
-                alert('Erro ao confirmar presença');
+                alert('Erro ao eliminar convidado');
             }
-        });
+        }
 
-        document.getElementById('attendance').addEventListener('change', (e) => {
-            const companionSection = document.getElementById('companionSection');
-            if (e.target.value === 'yes' && allowCompanions && maxCompanionsAllowed > 0) {
-                companionSection.classList.remove('hidden');
-            } else {
-                companionSection.classList.add('hidden');
-                document.getElementById('companionNamesSection').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('companions').addEventListener('change', (e) => {
-            const companionCount = parseInt(e.target.value);
-            const companionNamesSection = document.getElementById('companionNamesSection');
-            const companionNamesList = document.getElementById('companionNamesList');
-            
-            if (companionCount > 0) {
-                companionNamesSection.classList.remove('hidden');
-                companionNamesList.innerHTML = '';
-                
-                for (let i = 1; i <= companionCount; i++) {
-                    const nameInput = document.createElement('div');
-                    nameInput.innerHTML = `
-                        <input type="text" id="companion${i}Name" 
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                               placeholder="Nome do ${i}º acompanhante">
-                    `;
-                    companionNamesList.appendChild(nameInput);
-                }
-            } else {
-                companionNamesSection.classList.add('hidden');
-                companionNamesList.innerHTML = '';
-            }
-        });
-
+        // RSVP Page Functions
         async function showRSVPPage(eventId, companions) {
             currentEventId = eventId;
             allowCompanions = companions;
-            
             document.getElementById('adminPanel').classList.add('hidden');
             document.getElementById('clientPanel').classList.add('hidden');
             document.getElementById('rsvpPage').classList.remove('hidden');
 
             try {
-                const { data, error } = await supabase
-                    .from('events')
-                    .select('*')
-                    .eq('id', eventId)
-                    .single();
-
+                const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
                 if (error || !data) {
                     alert('Evento não encontrado');
                     return;
                 }
-
                 currentEvent = data;
                 maxCompanionsAllowed = data.max_companions || 0;
 
-                // Check if RSVP deadline has passed
                 const today = new Date();
                 const deadline = new Date(data.rsvp_deadline);
                 
@@ -1237,18 +1052,11 @@
                     document.getElementById('rsvpExpired').classList.remove('hidden');
                     document.getElementById('eventFull').classList.add('hidden');
                 } else {
-                    // Check if event is full
-                    const { data: rsvps } = await supabase
-                        .from('rsvps')
-                        .select('*')
-                        .eq('event_id', eventId)
-                        .eq('attendance', 'yes');
-
+                    const { data: rsvps } = await supabase.from('rsvps').select('*').eq('event_id', eventId).eq('attendance', 'yes');
                     let totalAttendees = 0;
                     if (rsvps) {
                         totalAttendees = rsvps.length + rsvps.reduce((sum, rsvp) => sum + (rsvp.companions || 0), 0);
                     }
-
                     if (data.guest_limit && totalAttendees >= data.guest_limit) {
                         document.getElementById('rsvpForm').classList.add('hidden');
                         document.getElementById('rsvpExpired').classList.add('hidden');
@@ -1260,10 +1068,8 @@
                     }
                 }
 
-                // Populate companions dropdown
                 const companionsSelect = document.getElementById('companions');
                 companionsSelect.innerHTML = '<option value="0">Nenhum acompanhante</option>';
-                
                 for (let i = 1; i <= maxCompanionsAllowed; i++) {
                     companionsSelect.innerHTML += `<option value="${i}">${i} acompanhante${i > 1 ? 's' : ''}</option>`;
                 }
@@ -1278,215 +1084,217 @@
                     </div>
                 `;
                 
-                // Check for existing RSVP
+                await loadGiftOptions();
                 checkExistingRSVP();
             } catch (error) {
-                console.error('Load event error:', error);
                 alert('Erro ao carregar evento');
             }
         }
 
-        // PDF REPORT FUNCTION
-        async function downloadEventReport(eventId) {
+        async function loadGiftOptions() {
             try {
-                // Get event details
-                const { data: eventData, error: eventError } = await supabase
-                    .from('events')
-                    .select('*')
-                    .eq('id', eventId)
-                    .eq('client_id', currentUser.id)
-                    .single();
+                const { data: eventData } = await supabase.from('events').select('client_id, iban').eq('id', currentEventId).single();
+                if (!eventData) return;
 
-                if (eventError || !eventData) {
-                    alert('Evento não encontrado');
-                    return;
+                const giftSection = document.getElementById('giftSection');
+                const ibanSection = document.getElementById('ibanSection');
+                const giftListSection = document.getElementById('giftListSection');
+
+                if (eventData.iban) {
+                    document.getElementById('displayIban').value = eventData.iban;
+                    ibanSection.classList.remove('hidden');
+                    giftSection.classList.remove('hidden');
+                } else {
+                    ibanSection.classList.add('hidden');
                 }
 
-                // Get RSVPs
-                const { data: rsvps, error: rsvpError } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .eq('event_id', eventId)
-                    .order('created_at', { ascending: false });
-
-                if (rsvpError) {
-                    alert('Erro ao carregar confirmações');
-                    return;
-                }
-
-                // Calculate statistics
-                let confirmedCount = 0;
-                let declinedCount = 0;
-                let companionsCount = 0;
-                const confirmedGuests = [];
-                const declinedGuests = [];
-
-                (rsvps || []).forEach(rsvp => {
-                    if (rsvp.attendance === 'yes') {
-                        confirmedCount++;
-                        companionsCount += rsvp.companions || 0;
-                        confirmedGuests.push(rsvp);
-                    } else {
-                        declinedCount++;
-                        declinedGuests.push(rsvp);
-                    }
-                });
-
-                const totalAttendees = confirmedCount + companionsCount;
-
-                // Generate PDF
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-
-                // Header
-                doc.setFontSize(20);
-                doc.setFont(undefined, 'bold');
-                doc.text('RELATÓRIO DO EVENTO', 105, 20, { align: 'center' });
-
-                // Event details
-                doc.setFontSize(16);
-                doc.setFont(undefined, 'bold');
-                doc.text(eventData.name, 105, 35, { align: 'center' });
-
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'normal');
-                const eventDate = new Date(eventData.date).toLocaleDateString('pt-BR');
-                doc.text(`Data: ${eventDate} às ${eventData.time}`, 20, 50);
-                doc.text(`Local: ${eventData.location}`, 20, 60);
-                
-                if (eventData.description) {
-                    doc.text(`Descrição: ${eventData.description}`, 20, 70);
-                }
-
-                // Statistics box
-                doc.setFillColor(240, 240, 240);
-                doc.rect(20, 80, 170, 40, 'F');
-                
-                doc.setFontSize(14);
-                doc.setFont(undefined, 'bold');
-                doc.text('ESTATÍSTICAS', 105, 90, { align: 'center' });
-                
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'normal');
-                doc.text(`Confirmados: ${confirmedCount}`, 30, 100);
-                doc.text(`Não vão: ${declinedCount}`, 30, 110);
-                doc.text(`Acompanhantes: ${companionsCount}`, 120, 100);
-                doc.text(`Total de Pessoas: ${totalAttendees}`, 120, 110);
-
-                let yPosition = 140;
-
-                // Confirmed guests
-                if (confirmedGuests.length > 0) {
-                    doc.setFontSize(14);
-                    doc.setFont(undefined, 'bold');
-                    doc.text('CONFIRMADOS', 20, yPosition);
-                    yPosition += 10;
-
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-
-                    confirmedGuests.forEach((guest, index) => {
-                        if (yPosition > 270) {
-                            doc.addPage();
-                            yPosition = 20;
-                        }
-
-                        const companions = guest.companions > 0 ? ` (+${guest.companions})` : '';
-                        doc.text(`${index + 1}. ${guest.name}${companions}`, 25, yPosition);
-                        yPosition += 5;
-                        doc.text(`   ${guest.phone}`, 25, yPosition);
-                        yPosition += 5;
-                        
-                        if (guest.companion_names) {
-                            doc.text(`   Acompanhantes: ${guest.companion_names}`, 25, yPosition);
-                            yPosition += 5;
-                        }
-                        
-                        if (guest.notes) {
-                            doc.text(`   Obs: ${guest.notes}`, 25, yPosition);
-                            yPosition += 5;
-                        }
-                        yPosition += 3;
+                const { data: gifts } = await supabase.from('gift_items').select('*').eq('client_id', eventData.client_id).gt('available_quantity', 0);
+                if (gifts && gifts.length > 0) {
+                    const availableGifts = document.getElementById('availableGifts');
+                    availableGifts.innerHTML = '';
+                    gifts.forEach(gift => {
+                        const giftOption = document.createElement('div');
+                        giftOption.className = 'flex items-center space-x-3 p-2 border border-gray-200 rounded';
+                        giftOption.innerHTML = `
+                            <input type="radio" name="selectedGift" value="${gift.item_name}" id="gift-${gift.id}" class="text-purple-600">
+                            <label for="gift-${gift.id}" class="flex-1 text-sm">${gift.item_name} (${gift.available_quantity} disponível)</label>
+                        `;
+                        availableGifts.appendChild(giftOption);
                     });
+                    giftListSection.classList.remove('hidden');
+                    giftSection.classList.remove('hidden');
+                } else {
+                    giftListSection.classList.add('hidden');
                 }
 
-                // Declined guests
-                if (declinedGuests.length > 0) {
-                    yPosition += 10;
-                    
-                    if (yPosition > 250) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-
-                    doc.setFontSize(14);
-                    doc.setFont(undefined, 'bold');
-                    doc.text('NÃO CONFIRMADOS', 20, yPosition);
-                    yPosition += 10;
-
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-
-                    declinedGuests.forEach((guest, index) => {
-                        if (yPosition > 270) {
-                            doc.addPage();
-                            yPosition = 20;
-                        }
-
-                        doc.text(`${index + 1}. ${guest.name}`, 25, yPosition);
-                        yPosition += 5;
-                        doc.text(`   ${guest.phone}`, 25, yPosition);
-                        yPosition += 5;
-                        
-                        if (guest.notes) {
-                            doc.text(`   Obs: ${guest.notes}`, 25, yPosition);
-                            yPosition += 5;
-                        }
-                        yPosition += 3;
-                    });
+                if (!eventData.iban && (!gifts || gifts.length === 0)) {
+                    giftSection.classList.add('hidden');
                 }
-
-                // Footer
-                const pageCount = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= pageCount; i++) {
-                    doc.setPage(i);
-                    doc.setFontSize(8);
-                    doc.setFont(undefined, 'normal');
-                    doc.text(`Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 105, 290, { align: 'center' });
-                    doc.text(`Página ${i} de ${pageCount}`, 190, 290, { align: 'right' });
-                }
-
-                // Save PDF
-                const fileName = `Relatorio_${eventData.name.replace(/[^a-zA-Z0-9]/g, '_')}_${eventDate.replace(/\//g, '-')}.pdf`;
-                doc.save(fileName);
-
             } catch (error) {
-                console.error('PDF generation error:', error);
-                alert('Erro ao gerar relatório PDF');
+                console.error('Load gift options error:', error);
             }
         }
 
-        // UTILITY FUNCTIONS
-        function showAdminPanel() {
-            document.getElementById('adminPanel').classList.remove('hidden');
-            document.getElementById('clientPanel').classList.add('hidden');
-            document.getElementById('rsvpPage').classList.add('hidden');
-        }
-
-        function showClientPanel() {
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('clientPanel').classList.remove('hidden');
-            document.getElementById('rsvpPage').classList.add('hidden');
-        }
-
-        function copyLink(linkId) {
-            const linkElement = typeof linkId === 'string' && linkId.startsWith('http') 
-                ? { value: linkId } 
-                : document.getElementById(linkId);
-            
-            navigator.clipboard.writeText(linkElement.value).then(() => {
-                alert('Link copiado!');
+        function copyIban() {
+            const iban = document.getElementById('displayIban').value;
+            navigator.clipboard.writeText(iban).then(() => {
+                alert('IBAN copiado!');
             });
+        }
+
+        document.getElementById('attendance').addEventListener('change', (e) => {
+            const companionSection = document.getElementById('companionSection');
+            const giftSection = document.getElementById('giftSection');
+            if (e.target.value === 'yes') {
+                if (allowCompanions && maxCompanionsAllowed > 0) {
+                    companionSection.classList.remove('hidden');
+                }
+                giftSection.classList.remove('hidden');
+            } else {
+                companionSection.classList.add('hidden');
+                giftSection.classList.add('hidden');
+                document.getElementById('companionNamesSection').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('companions').addEventListener('change', (e) => {
+            const companionCount = parseInt(e.target.value);
+            const companionNamesSection = document.getElementById('companionNamesSection');
+            const companionNamesList = document.getElementById('companionNamesList');
+            
+            if (companionCount > 0) {
+                companionNamesSection.classList.remove('hidden');
+                companionNamesList.innerHTML = '';
+                for (let i = 1; i <= companionCount; i++) {
+                    const nameInput = document.createElement('div');
+                    nameInput.innerHTML = `<input type="text" id="companion${i}Name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Nome do ${i}º acompanhante">`;
+                    companionNamesList.appendChild(nameInput);
+                }
+            } else {
+                companionNamesSection.classList.add('hidden');
+                companionNamesList.innerHTML = '';
+            }
+        });
+
+        document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const companionCount = parseInt(document.getElementById('companions').value) || 0;
+            const companionNames = [];
+            for (let i = 1; i <= companionCount; i++) {
+                const nameInput = document.getElementById(`companion${i}Name`);
+                if (nameInput && nameInput.value.trim()) {
+                    companionNames.push(nameInput.value.trim());
+                }
+            }
+            
+            const selectedGift = document.querySelector('input[name="selectedGift"]:checked');
+            const guestName = document.getElementById('guestName').value;
+            const guestPhone = document.getElementById('guestPhone').value;
+            
+            const rsvpData = {
+                event_id: currentEventId,
+                name: guestName,
+                phone: guestPhone,
+                attendance: document.getElementById('attendance').value,
+                companions: companionCount,
+                companion_names: companionNames.length > 0 ? companionNames.join(', ') : null,
+                selected_gift: selectedGift ? selectedGift.value : null,
+                notes: document.getElementById('notes').value,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const { data: existingRSVP } = await supabase.from('rsvps').select('id').eq('event_id', currentEventId).eq('name', guestName).eq('phone', guestPhone).single();
+                
+                let result;
+                if (existingRSVP) {
+                    result = await supabase.from('rsvps').update({
+                        attendance: rsvpData.attendance,
+                        companions: rsvpData.companions,
+                        companion_names: rsvpData.companion_names,
+                        selected_gift: rsvpData.selected_gift,
+                        notes: rsvpData.notes
+                    }).eq('id', existingRSVP.id);
+                } else {
+                    result = await supabase.from('rsvps').insert([rsvpData]);
+                }
+
+                if (result.error) {
+                    alert('Erro ao confirmar presença: ' + result.error.message);
+                    return;
+                }
+
+                if (selectedGift) {
+                    await supabase.rpc('decrement_gift_quantity', { gift_name: selectedGift.value, client_id: currentEvent.client_id });
+                }
+
+                localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(rsvpData));
+                document.getElementById('rsvpForm').parentElement.classList.add('hidden');
+                document.getElementById('rsvpSuccess').classList.remove('hidden');
+            } catch (error) {
+                alert('Erro ao confirmar presença');
+            }
+        });
+
+        function editResponse() {
+            document.getElementById('rsvpSuccess').classList.add('hidden');
+            document.getElementById('rsvpForm').parentElement.classList.remove('hidden');
+            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
+            if (savedData) {
+                const rsvpData = JSON.parse(savedData);
+                document.getElementById('guestName').value = rsvpData.name;
+                document.getElementById('guestPhone').value = rsvpData.phone;
+                document.getElementById('attendance').value = rsvpData.attendance;
+                document.getElementById('companions').value = rsvpData.companions || 0;
+                document.getElementById('notes').value = rsvpData.notes || '';
+                
+                const companionSection = document.getElementById('companionSection');
+                const giftSection = document.getElementById('giftSection');
+                if (rsvpData.attendance === 'yes') {
+                    if (allowCompanions && maxCompanionsAllowed > 0) {
+                        companionSection.classList.remove('hidden');
+                        const companionCount = rsvpData.companions || 0;
+                        if (companionCount > 0) {
+                            const companionNamesSection = document.getElementById('companionNamesSection');
+                            const companionNamesList = document.getElementById('companionNamesList');
+                            companionNamesSection.classList.remove('hidden');
+                            companionNamesList.innerHTML = '';
+                            const companionNames = rsvpData.companion_names ? rsvpData.companion_names.split(', ') : [];
+                            for (let i = 1; i <= companionCount; i++) {
+                                const nameInput = document.createElement('div');
+                                nameInput.innerHTML = `<input type="text" id="companion${i}Name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Nome do ${i}º acompanhante" value="${companionNames[i-1] || ''}">`;
+                                companionNamesList.appendChild(nameInput);
+                            }
+                        }
+                    }
+                    giftSection.classList.remove('hidden');
+                    if (rsvpData.selected_gift) {
+                        const giftRadio = document.querySelector(`input[name="selectedGift"][value="${rsvpData.selected_gift}"]`);
+                        if (giftRadio) giftRadio.checked = true;
+                    }
+                } else {
+                    companionSection.classList.add('hidden');
+                    giftSection.classList.add('hidden');
+                }
+            }
+        }
+
+        async function checkExistingRSVP() {
+            try {
+                const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
+                if (savedData) {
+                    const rsvpData = JSON.parse(savedData);
+                    const { data: existingRSVP } = await supabase.from('rsvps').select('*').eq('event_id', currentEventId).eq('name', rsvpData.name).eq('phone', rsvpData.phone).single();
+                    if (existingRSVP) {
+                        document.getElementById('rsvpForm').parentElement.classList.add('hidden');
+                        document.getElementById('rsvpSuccess').classList.remove('hidden');
+                    } else {
+                        localStorage.removeItem(`rsvp_${currentEventId}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Check existing RSVP error:', error);
+            }
         }
 
         // Guest login functions
@@ -1499,318 +1307,69 @@
             document.getElementById('guestLoginForm').reset();
         }
 
-        // Guest login form handler
         document.getElementById('guestLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('guestLoginUsername').value;
             const password = document.getElementById('guestLoginPassword').value;
 
             try {
-                // Get the client who owns this event
-                const { data: eventData, error: eventError } = await supabase
-                    .from('events')
-                    .select('client_id')
-                    .eq('id', currentEventId)
-                    .single();
-
-                if (eventError || !eventData) {
+                const { data: eventData } = await supabase.from('events').select('client_id').eq('id', currentEventId).single();
+                if (!eventData) {
                     alert('Erro ao verificar evento');
                     return;
                 }
-
-                // Check if login matches the event owner
-                const { data: clientData, error: clientError } = await supabase
-                    .from('clients')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .eq('id', eventData.client_id)
-                    .single();
-
-                if (clientError || !clientData) {
+                const { data: clientData } = await supabase.from('clients').select('*').eq('username', username).eq('password', password).eq('id', eventData.client_id).single();
+                if (!clientData) {
                     alert('Credenciais incorretas ou você não tem acesso a este evento');
                     return;
                 }
-
-                // Set current user and show client panel directly
+                if (clientData.active === false) {
+                    alert('Sua conta foi desativada. Entre em contato com o administrador.');
+                    return;
+                }
                 currentUser = clientData;
-                
-                // Hide guest login modal
                 hideGuestLogin();
-                
-                // Hide RSVP page and show client panel
                 document.getElementById('rsvpPage').classList.add('hidden');
                 document.getElementById('clientPanel').classList.remove('hidden');
                 document.getElementById('adminPanel').classList.add('hidden');
-                
-                // Show client dashboard directly (skip login form)
                 document.getElementById('clientLogin').classList.add('hidden');
                 document.getElementById('clientDashboard').classList.remove('hidden');
-                
-                // Load client events
+                showClientTab('events');
                 loadClientEvents();
-                
             } catch (error) {
-                console.error('Guest login error:', error);
                 alert('Erro ao fazer login');
             }
         });
 
-        // Edit response function
-        function editResponse() {
-            document.getElementById('rsvpSuccess').classList.add('hidden');
-            document.getElementById('rsvpForm').parentElement.classList.remove('hidden');
-            
-            // Load saved data
-            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
-            if (savedData) {
-                const rsvpData = JSON.parse(savedData);
-                document.getElementById('guestName').value = rsvpData.name;
-                document.getElementById('guestPhone').value = rsvpData.phone;
-                document.getElementById('attendance').value = rsvpData.attendance;
-                document.getElementById('companions').value = rsvpData.companions || 0;
-                document.getElementById('notes').value = rsvpData.notes || '';
-                
-                // Trigger companion section visibility
-                const companionSection = document.getElementById('companionSection');
-                if (rsvpData.attendance === 'yes' && allowCompanions && maxCompanionsAllowed > 0) {
-                    companionSection.classList.remove('hidden');
-                    
-                    // Trigger companion names section
-                    const companionCount = rsvpData.companions || 0;
-                    if (companionCount > 0) {
-                        const companionNamesSection = document.getElementById('companionNamesSection');
-                        const companionNamesList = document.getElementById('companionNamesList');
-                        
-                        companionNamesSection.classList.remove('hidden');
-                        companionNamesList.innerHTML = '';
-                        
-                        const companionNames = rsvpData.companion_names ? rsvpData.companion_names.split(', ') : [];
-                        
-                        for (let i = 1; i <= companionCount; i++) {
-                            const nameInput = document.createElement('div');
-                            nameInput.innerHTML = `
-                                <input type="text" id="companion${i}Name" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                       placeholder="Nome do ${i}º acompanhante"
-                                       value="${companionNames[i-1] || ''}">
-                            `;
-                            companionNamesList.appendChild(nameInput);
-                        }
-                    }
-                } else {
-                    companionSection.classList.add('hidden');
-                }
-            }
+        // Utility Functions
+        function showAdminPanel() {
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('clientPanel').classList.add('hidden');
+            document.getElementById('rsvpPage').classList.add('hidden');
+            document.getElementById('errorPage').classList.add('hidden');
         }
 
-        // Edit message functions
-        function editMessage() {
-            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
-            if (savedData) {
-                const rsvpData = JSON.parse(savedData);
-                document.getElementById('editMessageText').value = rsvpData.notes || '';
-            }
-            document.getElementById('editMessageModal').classList.remove('hidden');
+        function showClientPanel() {
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('clientPanel').classList.remove('hidden');
+            document.getElementById('rsvpPage').classList.add('hidden');
+            document.getElementById('errorPage').classList.add('hidden');
         }
 
-        function hideEditMessage() {
-            document.getElementById('editMessageModal').classList.add('hidden');
-            document.getElementById('editMessageForm').reset();
+        function showErrorPage() {
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('clientPanel').classList.add('hidden');
+            document.getElementById('rsvpPage').classList.add('hidden');
+            // Error page functionality - show alert instead
+            alert('Sua conta foi desativada. Entre em contato com o administrador.');
         }
 
-        // Edit message form handler
-        document.getElementById('editMessageForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
-            if (!savedData) {
-                alert('Erro: dados da confirmação não encontrados');
-                return;
-            }
-
-            const rsvpData = JSON.parse(savedData);
-            const newMessage = document.getElementById('editMessageText').value;
-
-            try {
-                // Update the message in the database
-                const { error } = await supabase
-                    .from('rsvps')
-                    .update({ notes: newMessage })
-                    .eq('event_id', currentEventId)
-                    .eq('name', rsvpData.name)
-                    .eq('phone', rsvpData.phone);
-
-                if (error) {
-                    alert('Erro ao atualizar mensagem: ' + error.message);
-                    return;
-                }
-
-                // Update localStorage
-                rsvpData.notes = newMessage;
-                localStorage.setItem(`rsvp_${currentEventId}`, JSON.stringify(rsvpData));
-
-                alert('Mensagem atualizada com sucesso!');
-                hideEditMessage();
-                
-                // Refresh guest messages
-                loadGuestMessages();
-            } catch (error) {
-                console.error('Edit message error:', error);
-                alert('Erro ao atualizar mensagem');
-            }
-        });
-
-        // Load guest messages function
-        async function loadGuestMessages() {
-            try {
-                // Get the client who owns this event
-                const { data: eventData, error: eventError } = await supabase
-                    .from('events')
-                    .select('client_id')
-                    .eq('id', currentEventId)
-                    .single();
-
-                if (eventError || !eventData) return;
-
-                // Get all events from this client
-                const { data: clientEvents, error: clientEventsError } = await supabase
-                    .from('events')
-                    .select('id')
-                    .eq('client_id', eventData.client_id);
-
-                if (clientEventsError || !clientEvents) return;
-
-                const eventIds = clientEvents.map(event => event.id);
-
-                // Get all RSVPs with notes from this client's events
-                const { data: rsvps, error: rsvpError } = await supabase
-                    .from('rsvps')
-                    .select('*')
-                    .in('event_id', eventIds)
-                    .not('notes', 'is', null)
-                    .neq('notes', '')
-                    .order('created_at', { ascending: false });
-
-                if (rsvpError) return;
-
-                const messagesList = document.getElementById('messagesList');
-                messagesList.innerHTML = '';
-
-                if (!rsvps || rsvps.length === 0) {
-                    messagesList.innerHTML = '<p class="text-gray-500 text-sm text-center">Nenhuma mensagem ainda</p>';
-                } else {
-                    rsvps.forEach(rsvp => {
-                        const messageCard = document.createElement('div');
-                        messageCard.className = 'bg-gray-50 rounded-lg p-3 border border-gray-200';
-                        
-                        messageCard.innerHTML = `
-                            <div class="flex justify-between items-start mb-2">
-                                <h5 class="font-semibold text-gray-800 text-sm">${rsvp.name}</h5>
-                                <span class="text-xs text-gray-500">${new Date(rsvp.created_at).toLocaleDateString('pt-BR')}</span>
-                            </div>
-                            <p class="text-sm text-gray-700">${rsvp.notes}</p>
-                        `;
-                        
-                        messagesList.appendChild(messageCard);
-                    });
-                }
-
-                document.getElementById('guestMessages').classList.remove('hidden');
-            } catch (error) {
-                console.error('Load guest messages error:', error);
-            }
-        }
-
-        // Check for existing RSVP on page load
-        async function checkExistingRSVP() {
-            try {
-                // Only check localStorage for existing RSVP (device-specific)
-                const savedData = localStorage.getItem(`rsvp_${currentEventId}`);
-                
-                if (savedData) {
-                    const rsvpData = JSON.parse(savedData);
-                    
-                    // Verify this RSVP still exists in database
-                    const { data: existingRSVP, error } = await supabase
-                        .from('rsvps')
-                        .select('*')
-                        .eq('event_id', currentEventId)
-                        .eq('name', rsvpData.name)
-                        .eq('phone', rsvpData.phone)
-                        .single();
-
-                    if (!error && existingRSVP) {
-                        // Show success message instead of form
-                        document.getElementById('rsvpForm').parentElement.classList.add('hidden');
-                        document.getElementById('rsvpSuccess').classList.remove('hidden');
-                    } else {
-                        // RSVP no longer exists, clear localStorage
-                        localStorage.removeItem(`rsvp_${currentEventId}`);
-                    }
-                }
-                
-                loadGuestMessages();
-            } catch (error) {
-                console.error('Check existing RSVP error:', error);
-                loadGuestMessages();
-            }
-        }
-
-        // Delete RSVP function
-        async function deleteRSVP(rsvpId) {
-            if (!confirm('Tem certeza que deseja eliminar este convidado?')) {
-                return;
-            }
-
-            try {
-                const { error } = await supabase
-                    .from('rsvps')
-                    .delete()
-                    .eq('id', rsvpId);
-
-                if (error) {
-                    alert('Erro ao eliminar convidado: ' + error.message);
-                    return;
-                }
-
-                alert('Convidado eliminado com sucesso!');
-                refreshCurrentEventRSVPs();
-                loadEventStats(currentEventId);
-            } catch (error) {
-                console.error('Delete RSVP error:', error);
-                alert('Erro ao eliminar convidado');
-            }
-        }
-
-        // Remove companions function
-        async function removeCompanions(rsvpId) {
-            if (!confirm('Tem certeza que deseja remover os acompanhantes deste convidado?')) {
-                return;
-            }
-
-            try {
-                const { error } = await supabase
-                    .from('rsvps')
-                    .update({
-                        companions: 0,
-                        companion_names: null
-                    })
-                    .eq('id', rsvpId);
-
-                if (error) {
-                    alert('Erro ao remover acompanhantes: ' + error.message);
-                    return;
-                }
-
-                alert('Acompanhantes removidos com sucesso!');
-                refreshCurrentEventRSVPs();
-                loadEventStats(currentEventId);
-            } catch (error) {
-                console.error('Remove companions error:', error);
-                alert('Erro ao remover acompanhantes');
-            }
+        function copyLink(linkId) {
+            const linkElement = typeof linkId === 'string' && linkId.startsWith('http') ? { value: linkId } : document.getElementById(linkId);
+            navigator.clipboard.writeText(linkElement.value).then(() => {
+                alert('Link copiado!');
+            });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97314b86241377e0',t:'MTc1NTg1NDQzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9738e2ce61b777d7',t:'MTc1NTkzNDAzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
