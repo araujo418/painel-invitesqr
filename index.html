@@ -6,6 +6,7 @@
     <title>Sistema de Confirmação de Presença</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .tab-active { background-color: #3b82f6; color: white; }
@@ -395,62 +396,13 @@
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
             
-            console.log('Tentativa de login admin:', { username, password }); // Debug
-            
-            try {
-                // Primeiro tenta buscar na tabela admin_users
-                const { data: adminUser, error: adminError } = await supabase
-                    .from('admin_users')
-                    .select('*')
-                    .eq('username', username)
-                    .eq('password', password)
-                    .single();
-                
-                if (adminUser && !adminError) {
-                    console.log('Login admin bem-sucedido via admin_users'); // Debug
-                    document.getElementById('adminLogin').classList.add('hidden');
-                    document.getElementById('adminDashboard').classList.remove('hidden');
-                    showAdminTab('create');
-                    return;
-                }
-                
-                // Se não encontrou, tenta buscar na tabela admin_config
-                const { data: configData, error: configError } = await supabase
-                    .from('admin_config')
-                    .select('*')
-                    .in('key', ['admin_username', 'admin_password']);
-                
-                if (configData && configData.length >= 2) {
-                    const configUsername = configData.find(item => item.key === 'admin_username')?.value;
-                    const configPassword = configData.find(item => item.key === 'admin_password')?.value;
-                    
-                    console.log('Credenciais do config:', { configUsername, configPassword }); // Debug
-                    
-                    if (username === configUsername && password === configPassword) {
-                        console.log('Login admin bem-sucedido via admin_config'); // Debug
-                        document.getElementById('adminLogin').classList.add('hidden');
-                        document.getElementById('adminDashboard').classList.remove('hidden');
-                        showAdminTab('create');
-                        return;
-                    }
-                }
-                
-                // Fallback para credenciais fixas (caso as tabelas estejam vazias)
-                if (username === 'Invites' && password === 'Cataca2025') {
-                    console.log('Login admin bem-sucedido via fallback'); // Debug
-                    document.getElementById('adminLogin').classList.add('hidden');
-                    document.getElementById('adminDashboard').classList.remove('hidden');
-                    showAdminTab('create');
-                    return;
-                }
-                
-                // Se chegou aqui, as credenciais estão incorretas
-                console.log('Credenciais incorretas em todas as verificações'); // Debug
-                alert('Usuário ou senha incorretos');
-                
-            } catch (error) {
-                console.error('Erro no login admin:', error);
-                alert('Erro ao verificar credenciais: ' + error.message);
+            // Admin credentials check
+            if (username === 'Invites' && password === 'Cataca2025') {
+                document.getElementById('adminLogin').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                showAdminTab('create');
+            } else {
+                alert('Credenciais de admin incorretas\nUsuário: Invites\nSenha: Cataca2025');
             }
         });
 
@@ -608,14 +560,13 @@
             const password = document.getElementById('clientLoginPassword').value;
 
             try {
-                // Check if client exists and is active
                 const { data, error } = await supabase.from('clients').select('*').eq('username', username).eq('password', password).single();
                 if (error || !data) {
                     alert('Usuário ou senha incorretos');
                     return;
                 }
                 if (data.active === false) {
-                    showErrorPage();
+                    alert('Sua conta foi desativada. Entre em contato com o administrador.');
                     return;
                 }
                 currentUser = data;
@@ -1346,22 +1297,12 @@
             document.getElementById('adminPanel').classList.remove('hidden');
             document.getElementById('clientPanel').classList.add('hidden');
             document.getElementById('rsvpPage').classList.add('hidden');
-            document.getElementById('errorPage').classList.add('hidden');
         }
 
         function showClientPanel() {
             document.getElementById('adminPanel').classList.add('hidden');
             document.getElementById('clientPanel').classList.remove('hidden');
             document.getElementById('rsvpPage').classList.add('hidden');
-            document.getElementById('errorPage').classList.add('hidden');
-        }
-
-        function showErrorPage() {
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('clientPanel').classList.add('hidden');
-            document.getElementById('rsvpPage').classList.add('hidden');
-            // Error page functionality - show alert instead
-            alert('Sua conta foi desativada. Entre em contato com o administrador.');
         }
 
         function copyLink(linkId) {
@@ -1371,5 +1312,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9738e2ce61b777d7',t:'MTc1NTkzNDAzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9738ac6b830c77d9',t:'MTc1NTkzMTgwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
