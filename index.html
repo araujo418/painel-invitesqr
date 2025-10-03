@@ -1,448 +1,1792 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AdKira – Gerador Seguro de QR Codes</title>
-  <style>
-    body {
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif; 
-      background: #f4f4f4; 
-      padding: 20px; 
-      max-width: 900px; 
-      margin: auto;
-    }
-    h1 {text-align: center; color: #5c67f2; margin-bottom: 30px;}
-    
-    .input-section {
-      background: #fff; 
-      padding: 25px; 
-      border: 1px solid #ddd; 
-      border-radius: 10px; 
-      margin: 20px 0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-      color: #333;
-    }
-    
-    textarea {
-      width: 100%; 
-      height: 150px; 
-      padding: 12px; 
-      font-size: 1em; 
-      margin-bottom: 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      resize: vertical;
-      font-family: Arial, sans-serif;
-    }
-    
-    input[type="date"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 1em;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-    
-    button {
-      padding: 15px 25px; 
-      font-size: 1.1em; 
-      margin: 10px 5px; 
-      border: none; 
-      border-radius: 8px; 
-      background: #5c67f2; 
-      color: white; 
-      cursor: pointer;
-      transition: all 0.3s;
-      font-weight: bold;
-    }
-    
-    button:hover {background: #4a56e2; transform: translateY(-1px);}
-    button:disabled {background: #ccc; cursor: not-allowed; transform: none;}
-    
-    .generate-btn {
-      background: #4CAF50;
-      width: 100%;
-      font-size: 1.2em;
-      padding: 18px;
-    }
-    
-    .generate-btn:hover {background: #45a049;}
-    
-    .download-section {
-      text-align: center;
-      margin: 25px 0;
-    }
-    
-    .download-btn {
-      background: #FF9800;
-      margin: 8px;
-    }
-    
-    .download-btn:hover {background: #F57C00;}
-    
-    .clear-btn {
-      background: #f44336;
-    }
-    
-    .clear-btn:hover {background: #d32f2f;}
-    
-    .stats {
-      background: #fff;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      margin: 20px 0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
-      text-align: center;
-    }
-    
-    .stats h3 {
-      color: #5c67f2;
-      margin-bottom: 15px;
-    }
-    
-    .counter {
-      font-size: 1.5em;
-      font-weight: bold;
-      color: #4CAF50;
-      margin: 10px 0;
-    }
-    
-    .security-info {
-      background: #e8f5e8;
-      border: 1px solid #4CAF50;
-      border-radius: 8px;
-      padding: 15px;
-      margin: 15px 0;
-    }
-    
-    .security-info h4 {
-      color: #2e7d32;
-      margin: 0 0 10px 0;
-    }
-    
-    .security-info ul {
-      margin: 0;
-      padding-left: 20px;
-      color: #2e7d32;
-    }
-    
-    #output {
-      white-space: pre-wrap; 
-      background: #fff; 
-      padding: 20px; 
-      border: 1px solid #ccc; 
-      border-radius: 8px; 
-      margin-top: 20px;
-      font-family: monospace;
-      font-size: 0.9em;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    
-    .grid {
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-      gap: 20px; 
-      margin-top: 25px;
-    }
-    
-    .qr-box {
-      background: #fff; 
-      padding: 15px; 
-      border: 1px solid #ddd; 
-      border-radius: 10px; 
-      text-align: center; 
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
-      transition: transform 0.2s;
-    }
-    
-    .qr-box:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
-    }
-    
-    .qr-box canvas {
-      width: 130px; 
-      height: 130px;
-      border-radius: 4px;
-    }
-    
-    .qr-label {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #5c67f2;
-      font-size: 0.9em;
-    }
-    
-    .qr-name {
-      margin-top: 5px;
-      color: #666;
-      font-size: 0.8em;
-      word-break: break-word;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: #5c67f2;
-      font-style: italic;
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor QR Code - Controle de Entrada</title>
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 2.2em;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .tab-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            border-radius: 15px 15px 0 0;
+            overflow: hidden;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 20px;
+            background: #f8f9fa;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .main-content {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin: 0 0 20px 0;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .scanner-area {
+            text-align: center;
+            padding: 20px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            border-radius: 15px;
+            background: #000;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .scanner-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .result-area {
+            min-height: 200px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .guest-result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #28a745;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .guest-result.denied {
+            border-left-color: #dc3545;
+        }
+
+        .guest-result.partial {
+            border-left-color: #ffc107;
+        }
+
+        .guest-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .guest-status {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .guest-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .companion-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reports-section {
+            grid-column: 1 / -1;
+        }
+
+        .report-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .guest-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .guest-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .encryption-key {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .tab-button {
+                padding: 15px 10px;
+                font-size: 14px;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+            
+            #video {
+                max-width: 100%;
+                height: 400px;
+            }
+            
+            .scanner-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .scanner-controls button {
+                width: 100%;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .status-item {
+                text-align: center;
+            }
+            
+            .report-controls {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>🔐 AdKira – Gerador Seguro de QR Codes</h1>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Controle de Entrada - Eventos</h1>
+            <div class="status-bar">
+                <div class="status-item">
+                    <span id="eventType">Tipo: Geral</span>
+                </div>
+                <div class="status-item">
+                    <span id="totalGuests">Convidados: 0</span>
+                </div>
+                <div class="status-item">
+                    <span id="checkedIn">Presentes: 0</span>
+                </div>
+                <div class="status-item">
+                    <span id="currentTime"></span>
+                </div>
+                <div class="status-item">
+                    <span id="shiftTimer">Turno: 00:00:00</span>
+                </div>
+            </div>
+        </div>
 
-  <div class="input-section">
-    <label for="names">📝 Lista de Convidados (um nome por linha):</label>
-    <textarea id="names" placeholder="Exemplo:
-Maria Silva
-João Santos
-Ana Costa
-Carlos Oliveira
-..."></textarea>
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('scanner')">📱 Scanner</button>
+                <button class="tab-button" onclick="switchTab('config')">⚙️ Configurações</button>
+                <button class="tab-button" onclick="switchTab('reports')">📊 Relatórios</button>
+                <button class="tab-button" onclick="switchTab('analytics')">📈 Analytics</button>
+            </div>
 
-    <label for="validityDate">📅 Data do Evento:</label>
-    <input type="date" id="validityDate" required />
+            <!-- Scanner Tab -->
+            <div id="scanner-tab" class="tab-content active">
+                <div style="text-align: center;">
+                    <h2 style="color: #333; margin-bottom: 30px; font-size: 2.5em;">📱 Scanner QR Code</h2>
+                    
+                    <video id="video" autoplay muted playsinline></video>
+                    
+                    <div class="scanner-controls" style="margin-bottom: 30px;">
+                        <button class="btn btn-primary" style="padding: 15px 30px; font-size: 18px;" onclick="startScanner()">🎥 Iniciar Scanner</button>
+                        <button class="btn btn-danger" style="padding: 15px 30px; font-size: 18px;" onclick="stopScanner()">⏹️ Parar Scanner</button>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 30px;">
+                        <h3 style="margin: 0 0 20px 0; color: #333;">⏰ Controle de Turno</h3>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn btn-success" style="padding: 12px 25px; font-size: 16px;" onclick="startShift()">▶️ Iniciar Turno</button>
+                            <button class="btn btn-warning" style="padding: 12px 25px; font-size: 16px;" onclick="pauseShift()">⏸️ Pausar</button>
+                            <button class="btn btn-danger" style="padding: 12px 25px; font-size: 16px;" onclick="endShift()">⏹️ Finalizar Turno</button>
+                        </div>
+                        <div id="overtimeAlert" style="display: none; margin-top: 15px; padding: 15px; background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 10px; color: #856404; font-size: 16px;">
+                            ⚠️ <strong>Hora Extra Iniciada!</strong> Turno passou de 3 horas.
+                        </div>
+                    </div>
+                    
+                    <div class="result-area" id="scanResult" style="font-size: 18px; min-height: 150px;">
+                        <p style="text-align: center; color: #666; font-size: 20px;">Aguardando leitura do QR Code...</p>
+                    </div>
+                </div>
+            </div>
 
-    <button class="generate-btn" onclick="generateSecureQRCodes()">
-      🔐 Gerar QR Codes Seguros
-    </button>
-  </div>
+            <!-- Configuration Tab -->
+            <div id="config-tab" class="tab-content">
+                <h2 style="color: #333; margin-bottom: 30px;">⚙️ Configurações do Sistema</h2>
+                
+                <div class="settings-section">
+                    <div class="form-group">
+                        <label style="font-size: 18px;">Carregar Lista Encriptada (.txt)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" class="file-input" id="guestFile" accept=".txt" onchange="loadGuestList(event)">
+                            <button class="btn btn-primary" style="padding: 15px 25px; font-size: 16px;">📁 Selecionar Arquivo</button>
+                        </div>
+                        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                            ℹ️ Carregue o arquivo .txt gerado pelo sistema AdKira
+                        </p>
+                    </div>
 
-  <div class="security-info" style="display: none;" id="securityInfo">
-    <h4>🛡️ Recursos de Segurança Ativados:</h4>
-    <ul>
-      <li>✅ Prefixos aleatórios únicos para cada convidado</li>
-      <li>✅ Criptografia AES-256 com chave secreta</li>
-      <li>✅ QR Codes com fundo transparente</li>
-      <li>✅ Dados protegidos contra replicação</li>
-    </ul>
-  </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="weddingMode" onchange="toggleWeddingMode()" style="transform: scale(1.5); margin-right: 15px;">
+                            <label for="weddingMode" style="font-size: 18px;">💒 Modo Casamento (Noivo/Noiva)</label>
+                        </div>
+                    </div>
 
-  <div class="stats" style="display: none;" id="statsSection">
-    <h3>📊 Estatísticas</h3>
-    <div class="counter" id="counter"></div>
-    <div id="eventInfo"></div>
-  </div>
+                    <div class="form-group">
+                        <label style="font-size: 18px;">Sistema de Criptografia AES</label>
+                        <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; border-left: 6px solid #28a745;">
+                            <p style="margin: 0; color: #155724; font-weight: 600; font-size: 16px;">
+                                🔒 Sistema AES configurado e compatível com AdKira
+                            </p>
+                            <p style="margin: 10px 0 0 0; color: #155724; font-size: 14px;">
+                                ✅ Chave de segurança sincronizada automaticamente
+                            </p>
+                        </div>
+                    </div>
 
-  <div class="download-section" style="display: none;" id="downloadSection">
-    <button class="download-btn" onclick="downloadTXT()">📄 Baixar Lista (.txt)</button>
-    <button class="download-btn" onclick="downloadQRPngs()">📦 Baixar QR Codes (.zip)</button>
-    <button class="clear-btn" onclick="clearAll()">🧹 Limpar Tudo</button>
-  </div>
+                    <!-- Backup Status -->
+                    <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 6px solid #28a745;">
+                        <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 18px;">💾 Sistema de Backup Automático</h4>
+                        <p style="margin: 0; color: #155724; font-size: 14px;">
+                            ✅ Salvamento automático a cada 30 segundos<br>
+                            ✅ Recuperação automática ao reabrir o aplicativo<br>
+                            ✅ Dados protegidos contra fechamento acidental
+                        </p>
+                        <div id="backupStatus" style="margin-top: 10px; font-weight: 600; color: #155724; font-size: 14px;"></div>
+                    </div>
+                </div>
 
-  <div id="output" style="display: none;"></div>
-  <section id="qrContainer" class="grid"></section>
+                <div class="guest-list" id="guestList" style="max-height: 400px;">
+                    <p style="text-align: center; color: #666; font-size: 16px;">Nenhuma lista carregada</p>
+                </div>
+            </div>
 
-  <script>
-    let listData = "";
-    let qrDataList = [];
-    const ENCRYPTION_KEY = "phqX3eLwSsxEnHgp";
+            <!-- Reports Tab -->
+            <div id="reports-tab" class="tab-content">
+                <h2 style="color: #333; margin-bottom: 30px;">📊 Relatórios e Estatísticas</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTotal">0</div>
+                        <div class="stat-label">Total Convidados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statPresent">0</div>
+                        <div class="stat-label">Presentes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statPending">0</div>
+                        <div class="stat-label">Aguardando</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statPercentage">0%</div>
+                        <div class="stat-label">Taxa Presença</div>
+                    </div>
+                </div>
 
-    function generateRandomPrefix() {
-      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      let result = '';
-      for (let i = 0; i < 3; i++) {
-        result += letters.charAt(Math.floor(Math.random() * letters.length));
-      }
-      return result;
-    }
+                <div class="report-controls" style="margin: 30px 0;">
+                    <button class="btn btn-primary" onclick="downloadPDFReport()">📄 Baixar Relatório PDF</button>
+                    <button class="btn btn-success" onclick="downloadExcelReport()">📊 Baixar Excel</button>
+                    <button class="btn btn-warning" onclick="downloadShiftReport()">⏰ Relatório de Turnos</button>
+                    <button class="btn btn-primary" onclick="exportBackup()">💾 Exportar Backup</button>
+                    <div class="file-input-wrapper">
+                        <input type="file" class="file-input" id="backupFile" accept=".json" onchange="importBackup(event)">
+                        <button class="btn btn-success">📁 Importar Backup</button>
+                    </div>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpar Dados</button>
+                </div>
 
-    function encryptData(data) {
-      return CryptoJS.AES.encrypt(data, ENCRYPTION_KEY).toString();
-    }
+                <div id="weddingReports" style="display: none;">
+                    <h3 style="color: #333; margin: 30px 0 20px 0;">💒 Relatórios por Lado</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                        <div>
+                            <h4 style="color: #333;">👰 Convidados da Noiva</h4>
+                            <div class="guest-list" id="brideGuests"></div>
+                        </div>
+                        <div>
+                            <h4 style="color: #333;">🤵 Convidados do Noivo</h4>
+                            <div class="guest-list" id="groomGuests"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    function generateSecureQRCodes() {
-      const names = document.getElementById('names').value.trim().split(/\r?\n/).filter(Boolean);
-      const validityDate = document.getElementById('validityDate').value.trim();
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content">
+                <h2 style="color: #333; margin-bottom: 30px;">📈 Analytics em Tempo Real</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div>
+                        <h3 style="margin: 0 0 20px 0; color: #666;">Fluxo de Entrada por Hora</h3>
+                        <div id="hourlyChart" style="background: white; padding: 20px; border-radius: 10px; min-height: 200px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <p style="text-align: center; color: #666; margin: 80px 0;">Aguardando dados de entrada...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 20px 0; color: #666;">Estatísticas de Fluxo</h3>
+                        <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <div style="margin-bottom: 15px; font-size: 16px;">
+                                <strong>Taxa atual:</strong> <span id="flowRate">0 na última hora</span>
+                            </div>
+                            <div style="margin-bottom: 15px; font-size: 16px;">
+                                <strong>Previsão:</strong> <span id="prediction">Calculando...</span>
+                            </div>
+                            <div style="font-size: 16px;">
+                                <strong>Pico:</strong> <span id="peakHour">Aguardando dados</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-      if (!names.length) {
-        alert('Por favor, insira pelo menos um nome na lista.');
-        return;
-      }
+                <!-- VIP Management -->
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 6px solid #ffc107;">
+                    <h3 style="margin: 0 0 15px 0; color: #856404;">👑 Gestão de Convidados VIP</h3>
+                    <p style="margin: 0; color: #856404; font-size: 14px;">
+                        ✨ Marque convidados especiais como VIP na aba Configurações<br>
+                        🔔 Receba notificações automáticas quando VIPs chegarem<br>
+                        📊 Acompanhe estatísticas especiais para convidados VIP
+                    </p>
+                    <div style="margin-top: 15px;">
+                        <strong style="color: #856404;">VIPs Cadastrados:</strong> 
+                        <span id="vipCount" style="color: #856404;">0</span>
+                    </div>
+                </div>
 
-      if (!validityDate) {
-        alert('Por favor, defina a data do evento.');
-        return;
-      }
+                <!-- Alert System Status -->
+                <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; border-left: 6px solid #17a2b8;">
+                    <h3 style="margin: 0 0 15px 0; color: #0c5460;">🚨 Sistema de Alertas</h3>
+                    <div style="color: #0c5460; font-size: 14px;">
+                        <p style="margin: 5px 0;">🔔 Lista 90% completa - Alerta automático</p>
+                        <p style="margin: 5px 0;">⚠️ Menos de 10 convidados restantes - Aviso especial</p>
+                        <p style="margin: 5px 0;">👑 Chegada de VIP - Notificação destacada</p>
+                        <p style="margin: 5px 0;">⏰ Hora extra - Alerta após 3 horas de turno</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-      // Mostra loading
-      const qrWrap = document.getElementById('qrContainer');
-      qrWrap.innerHTML = '<div class="loading">🔄 Gerando QR Codes seguros...</div>';
 
-      // Pequeno delay para mostrar o loading
-      setTimeout(() => {
-        processQRGeneration(names, validityDate);
-      }, 100);
-    }
+    </div>
 
-    function processQRGeneration(names, validityDate) {
-      const usedPrefixes = new Set();
-      let out = `#validade:${validityDate}\n#criptografia:AES-256\n#chave:${ENCRYPTION_KEY}\n\n`;
-      let counter = 1;
-      const qrWrap = document.getElementById('qrContainer');
-      qrWrap.innerHTML = '';
-      qrDataList = [];
+    <!-- Footer -->
+    <footer style="
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 1200px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border-top: 3px solid #667eea;
+    ">
+        <p style="
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        ">
+            ✨ Created By <strong style="color: #667eea;">AdKira</strong> © 2025 ✨
+        </p>
+        <p style="
+            margin: 5px 0 0 0;
+            color: #999;
+            font-size: 12px;
+        ">
+            Sistema Profissional de Controle de Entrada para Eventos
+        </p>
+    </footer>
 
-      names.forEach(name => {
-        // Gera prefixo aleatório único
-        let prefix;
-        do {
-          prefix = generateRandomPrefix();
-        } while (usedPrefixes.has(prefix));
-        usedPrefixes.add(prefix);
-
-        // Cria código único
-        const code = prefix + String(counter).padStart(3, '0');
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        // Global variables
+        let scanner = null;
+        let guestDatabase = [];
+        let checkedInGuests = [];
+        let isWeddingMode = false;
+        let encryptionKey = 'phqX3eLwSsxEnHgp'; // Mesma chave do gerador AdKira
+        let pendingCompanions = new Map();
         
-        // Dados para criptografar
-        const dataToEncrypt = JSON.stringify({
-          code: code,
-          name: name,
-          event_date: validityDate,
-          generated_at: new Date().toISOString()
+        // Shift timer variables
+        let shiftStartTime = null;
+        let shiftPausedTime = 0;
+        let shiftTimer = null;
+        let isShiftActive = false;
+        let isShiftPaused = false;
+        let overtimeStarted = false;
+
+        // Backup and analytics variables
+        let checkInHistory = [];
+        let vipGuests = [];
+        let lastBackupTime = null;
+        let autoBackupInterval = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            initializeEncryptionKey();
+            loadFromLocalStorage();
+            startAutoBackup();
+            setInterval(updateAnalytics, 30000); // Update analytics every 30 seconds
+            updateVIPCount();
         });
 
-        // Criptografa os dados
-        const encryptedData = encryptData(dataToEncrypt);
-        
-        // Adiciona à lista
-        out += `${code},${name}\n`;
-
-        // Cria elemento visual
-        const box = document.createElement('div');
-        box.className = 'qr-box';
-        
-        const qrDiv = document.createElement('div');
-        box.appendChild(qrDiv);
-        
-        const codeLabel = document.createElement('div');
-        codeLabel.className = 'qr-label';
-        codeLabel.textContent = code;
-        box.appendChild(codeLabel);
-        
-        const nameLabel = document.createElement('div');
-        nameLabel.className = 'qr-name';
-        nameLabel.textContent = name;
-        box.appendChild(nameLabel);
-        
-        qrWrap.appendChild(box);
-
-        // Gera QR Code com fundo transparente
-        const qr = new QRCode(qrDiv, {
-          text: encryptedData,
-          width: 130,
-          height: 130,
-          colorDark: "#000000",
-          colorLight: "rgba(0,0,0,0)", // Fundo transparente
-          correctLevel: QRCode.CorrectLevel.H
-        });
-
-        // Armazena dados para download
-        qrDataList.push({
-          code: code,
-          name: name,
-          canvas: qrDiv.querySelector('canvas')
-        });
-
-        counter++;
-      });
-
-      listData = out.trim();
-      
-      // Atualiza interface
-      document.getElementById('output').textContent = listData;
-      document.getElementById('output').style.display = 'block';
-      document.getElementById('counter').textContent = `${names.length} convidados com QR Codes seguros gerados`;
-      document.getElementById('eventInfo').textContent = `Evento: ${new Date(validityDate).toLocaleDateString('pt-BR')}`;
-      
-      // Mostra seções
-      document.getElementById('securityInfo').style.display = 'block';
-      document.getElementById('statsSection').style.display = 'block';
-      document.getElementById('downloadSection').style.display = 'block';
-    }
-
-    function downloadTXT() {
-      if (!listData) {
-        alert('Gere os QR Codes primeiro.');
-        return;
-      }
-      
-      const blob = new Blob([listData], { type: 'text/plain;charset=utf-8' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `lista_convidados_${new Date().toISOString().split('T')[0]}.txt`;
-      link.click();
-    }
-
-    async function downloadQRPngs() {
-      if (!qrDataList.length) {
-        alert('Gere os QR Codes primeiro.');
-        return;
-      }
-
-      const zip = new JSZip();
-      
-      // Aguarda um pouco para garantir que todos os QR codes foram renderizados
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      qrDataList.forEach((item, index) => {
-        try {
-          const canvas = item.canvas;
-          if (canvas) {
-            const dataURL = canvas.toDataURL('image/png');
-            const data = dataURL.split(',')[1];
-            const fileName = `${item.code}_${item.name.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-            zip.file(fileName, data, { base64: true });
-          }
-        } catch (error) {
-          console.error(`Erro ao processar QR Code ${item.code}:`, error);
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Update analytics when switching to analytics tab
+            if (tabName === 'analytics') {
+                updateAnalytics();
+                updateVIPCount();
+            }
         }
-      });
 
-      try {
-        const blob = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `qr_codes_seguros_${new Date().toISOString().split('T')[0]}.zip`;
-        link.click();
-      } catch (error) {
-        alert('Erro ao gerar arquivo ZIP. Tente novamente.');
-        console.error('Erro ZIP:', error);
-      }
-    }
+        function updateVIPCount() {
+            const vipCountElement = document.getElementById('vipCount');
+            if (vipCountElement) {
+                vipCountElement.textContent = vipGuests.length;
+            }
+        }
 
-    function clearAll() {
-      if (confirm('Tem certeza que deseja limpar todos os dados?')) {
-        document.getElementById('names').value = '';
-        document.getElementById('validityDate').value = '';
-        document.getElementById('output').textContent = '';
-        document.getElementById('output').style.display = 'none';
-        document.getElementById('qrContainer').innerHTML = '';
-        document.getElementById('securityInfo').style.display = 'none';
-        document.getElementById('statsSection').style.display = 'none';
-        document.getElementById('downloadSection').style.display = 'none';
-        
-        listData = '';
-        qrDataList = [];
-      }
-    }
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleString('pt-BR', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+        }
 
-    // Define data padrão como hoje
-    document.getElementById('validityDate').valueAsDate = new Date();
-  </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988b7658e0ce3f1f',t:'MTc1OTQ4NDI2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        // AES Encryption functions (compatível com o gerador AdKira)
+        function encryptData(data) {
+            return CryptoJS.AES.encrypt(data, encryptionKey).toString();
+        }
+
+        function decryptData(encryptedText) {
+            try {
+                const bytes = CryptoJS.AES.decrypt(encryptedText, encryptionKey);
+                return bytes.toString(CryptoJS.enc.Utf8);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function initializeEncryptionKey() {
+            // Chave já está definida como constante no aplicativo (sincronizada com AdKira)
+        }
+
+        // Backup and Recovery System
+        function saveToLocalStorage() {
+            try {
+                const backupData = {
+                    guestDatabase: guestDatabase,
+                    checkedInGuests: checkedInGuests,
+                    isWeddingMode: isWeddingMode,
+                    pendingCompanions: Array.from(pendingCompanions.entries()),
+                    shiftStartTime: shiftStartTime,
+                    shiftPausedTime: shiftPausedTime,
+                    isShiftActive: isShiftActive,
+                    isShiftPaused: isShiftPaused,
+                    overtimeStarted: overtimeStarted,
+                    checkInHistory: checkInHistory,
+                    vipGuests: vipGuests,
+                    lastSaved: new Date().toISOString()
+                };
+                
+                localStorage.setItem('eventControlBackup', JSON.stringify(backupData));
+                lastBackupTime = new Date();
+                updateBackupStatus();
+                
+            } catch (error) {
+                console.error('Erro ao salvar backup:', error);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const backupData = localStorage.getItem('eventControlBackup');
+                if (backupData) {
+                    const data = JSON.parse(backupData);
+                    
+                    guestDatabase = data.guestDatabase || [];
+                    checkedInGuests = data.checkedInGuests || [];
+                    isWeddingMode = data.isWeddingMode || false;
+                    pendingCompanions = new Map(data.pendingCompanions || []);
+                    shiftStartTime = data.shiftStartTime;
+                    shiftPausedTime = data.shiftPausedTime || 0;
+                    isShiftActive = data.isShiftActive || false;
+                    isShiftPaused = data.isShiftPaused || false;
+                    overtimeStarted = data.overtimeStarted || false;
+                    checkInHistory = data.checkInHistory || [];
+                    vipGuests = data.vipGuests || [];
+                    
+                    // Restore UI state
+                    document.getElementById('weddingMode').checked = isWeddingMode;
+                    toggleWeddingMode();
+                    updateGuestList();
+                    updateStats();
+                    updateWeddingReports();
+                    
+                    // Resume shift timer if active
+                    if (isShiftActive && !isShiftPaused) {
+                        shiftTimer = setInterval(updateShiftTimer, 1000);
+                    }
+                    
+                    // Show recovery message
+                    if (data.lastSaved) {
+                        const lastSaved = new Date(data.lastSaved);
+                        showNotification(`Dados recuperados automaticamente! Último backup: ${lastSaved.toLocaleString('pt-BR')}`, 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao carregar backup:', error);
+                showNotification('Erro ao recuperar dados salvos', 'error');
+            }
+        }
+
+        function startAutoBackup() {
+            // Save every 30 seconds
+            autoBackupInterval = setInterval(() => {
+                saveToLocalStorage();
+            }, 30000);
+            
+            // Save on page unload
+            window.addEventListener('beforeunload', () => {
+                saveToLocalStorage();
+            });
+        }
+
+        function exportBackup() {
+            try {
+                const backupData = {
+                    guestDatabase: guestDatabase,
+                    checkedInGuests: checkedInGuests,
+                    isWeddingMode: isWeddingMode,
+                    pendingCompanions: Array.from(pendingCompanions.entries()),
+                    checkInHistory: checkInHistory,
+                    vipGuests: vipGuests,
+                    exportDate: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                const dataStr = JSON.stringify(backupData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `backup_evento_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                showNotification('Backup exportado com sucesso!', 'success');
+            } catch (error) {
+                showNotification('Erro ao exportar backup', 'error');
+            }
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    // Validate backup structure
+                    if (!backupData.version || !backupData.exportDate) {
+                        throw new Error('Formato de backup inválido');
+                    }
+                    
+                    if (confirm('Importar backup irá substituir todos os dados atuais. Continuar?')) {
+                        guestDatabase = backupData.guestDatabase || [];
+                        checkedInGuests = backupData.checkedInGuests || [];
+                        isWeddingMode = backupData.isWeddingMode || false;
+                        pendingCompanions = new Map(backupData.pendingCompanions || []);
+                        checkInHistory = backupData.checkInHistory || [];
+                        vipGuests = backupData.vipGuests || [];
+                        
+                        // Update UI
+                        document.getElementById('weddingMode').checked = isWeddingMode;
+                        toggleWeddingMode();
+                        updateGuestList();
+                        updateStats();
+                        updateWeddingReports();
+                        
+                        // Save to localStorage
+                        saveToLocalStorage();
+                        
+                        showNotification('Backup importado com sucesso!', 'success');
+                    }
+                } catch (error) {
+                    showNotification('Erro ao importar backup: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function updateBackupStatus() {
+            const statusElement = document.getElementById('backupStatus');
+            if (statusElement && lastBackupTime) {
+                statusElement.textContent = `Último backup: ${lastBackupTime.toLocaleTimeString('pt-BR')}`;
+            }
+        }
+
+        // Notification System
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease;
+            `;
+            
+            switch(type) {
+                case 'success':
+                    notification.style.background = '#28a745';
+                    break;
+                case 'error':
+                    notification.style.background = '#dc3545';
+                    break;
+                case 'warning':
+                    notification.style.background = '#ffc107';
+                    notification.style.color = '#212529';
+                    break;
+                default:
+                    notification.style.background = '#17a2b8';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // Analytics System
+        function updateAnalytics() {
+            updateHourlyChart();
+            updateFlowStats();
+            checkGuestListStatus();
+            checkVIPAlerts();
+        }
+
+        function updateHourlyChart() {
+            const hourlyData = {};
+            
+            // Initialize hours
+            for (let i = 0; i < 24; i++) {
+                hourlyData[i] = 0;
+            }
+            
+            // Count check-ins by hour
+            checkInHistory.forEach(entry => {
+                const hour = new Date(entry.timestamp).getHours();
+                hourlyData[hour]++;
+            });
+            
+            // Update chart display
+            updateHourlyChartDisplay(hourlyData);
+        }
+
+        function updateHourlyChartDisplay(hourlyData) {
+            const maxValue = Math.max(...Object.values(hourlyData));
+            const chartHTML = Object.entries(hourlyData).map(([hour, count]) => {
+                const percentage = maxValue > 0 ? (count / maxValue) * 100 : 0;
+                return `
+                    <div style="display: flex; align-items: end; margin: 0 2px;">
+                        <div style="
+                            width: 20px;
+                            height: ${Math.max(percentage, 2)}px;
+                            background: ${percentage > 0 ? '#667eea' : '#e9ecef'};
+                            border-radius: 2px 2px 0 0;
+                            margin-bottom: 20px;
+                        "></div>
+                        <div style="
+                            position: absolute;
+                            margin-top: ${Math.max(percentage, 2) + 25}px;
+                            font-size: 10px;
+                            width: 20px;
+                            text-align: center;
+                        ">${hour}h</div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('hourlyChart').innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: end; height: 120px; position: relative;">
+                    ${chartHTML}
+                </div>
+            `;
+        }
+
+        function updateFlowStats() {
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            const recentCheckIns = checkInHistory.filter(entry => 
+                new Date(entry.timestamp) > oneHourAgo
+            ).length;
+            
+            document.getElementById('flowRate').textContent = `${recentCheckIns} na última hora`;
+            
+            // Find peak hour
+            const hourlyData = {};
+            checkInHistory.forEach(entry => {
+                const hour = new Date(entry.timestamp).getHours();
+                hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+            });
+            
+            const peakHour = Object.entries(hourlyData).reduce((a, b) => 
+                hourlyData[a[0]] > hourlyData[b[0]] ? a : b, [0, 0]
+            );
+            
+            if (peakHour[1] > 0) {
+                document.getElementById('peakHour').textContent = `${peakHour[0]}h (${peakHour[1]} entradas)`;
+            }
+            
+            // Predict arrivals based on pattern
+            const currentHour = now.getHours();
+            const historicalAverage = calculateHourlyAverage(currentHour);
+            const prediction = Math.max(0, historicalAverage - recentCheckIns);
+            
+            document.getElementById('prediction').textContent = `~${Math.round(prediction)} esperados`;
+        }
+
+        function calculateHourlyAverage(hour) {
+            const sameHourEntries = checkInHistory.filter(entry => 
+                new Date(entry.timestamp).getHours() === hour
+            );
+            return sameHourEntries.length > 0 ? sameHourEntries.length : 0;
+        }
+
+        function checkGuestListStatus() {
+            const totalGuests = guestDatabase.length;
+            const checkedInCount = guestDatabase.filter(g => g.checkedIn).length;
+            const remainingGuests = totalGuests - checkedInCount;
+            
+            if (totalGuests > 0) {
+                const percentage = (checkedInCount / totalGuests) * 100;
+                
+                if (percentage >= 90 && !sessionStorage.getItem('alert90shown')) {
+                    showNotification('⚠️ Lista quase completa! 90% dos convidados já chegaram', 'warning');
+                    sessionStorage.setItem('alert90shown', 'true');
+                } else if (remainingGuests <= 10 && remainingGuests > 0 && !sessionStorage.getItem('alert10shown')) {
+                    showNotification(`⚠️ Apenas ${remainingGuests} convidados restantes!`, 'warning');
+                    sessionStorage.setItem('alert10shown', 'true');
+                }
+            }
+        }
+
+        function checkVIPAlerts() {
+            vipGuests.forEach(vipId => {
+                const guest = guestDatabase.find(g => g.id === vipId);
+                if (guest && guest.checkedIn && !guest.vipNotified) {
+                    showNotification(`👑 Convidado VIP chegou: ${guest.name}`, 'success');
+                    guest.vipNotified = true;
+                    saveToLocalStorage();
+                }
+            });
+        }
+
+        function markAsVIP(guestId) {
+            if (!vipGuests.includes(guestId)) {
+                vipGuests.push(guestId);
+                saveToLocalStorage();
+                showNotification('Convidado marcado como VIP', 'success');
+                updateGuestList();
+                updateVIPCount();
+            }
+        }
+
+        function removeVIP(guestId) {
+            const index = vipGuests.indexOf(guestId);
+            if (index > -1) {
+                vipGuests.splice(index, 1);
+                saveToLocalStorage();
+                showNotification('Status VIP removido', 'info');
+                updateGuestList();
+                updateVIPCount();
+            }
+        }
+
+        // Shift timer functions
+        function startShift() {
+            if (isShiftActive && !isShiftPaused) {
+                alert('Turno já está ativo!');
+                return;
+            }
+
+            if (isShiftPaused) {
+                // Resume from pause
+                shiftPausedTime += Date.now() - shiftStartTime;
+                isShiftPaused = false;
+            } else {
+                // Start new shift
+                shiftStartTime = Date.now();
+                shiftPausedTime = 0;
+                overtimeStarted = false;
+                document.getElementById('overtimeAlert').style.display = 'none';
+            }
+
+            isShiftActive = true;
+            
+            shiftTimer = setInterval(updateShiftTimer, 1000);
+            saveToLocalStorage();
+            showNotification('Turno iniciado! Cronômetro ativo.', 'success');
+        }
+
+        function pauseShift() {
+            if (!isShiftActive || isShiftPaused) {
+                alert('Nenhum turno ativo para pausar!');
+                return;
+            }
+
+            isShiftPaused = true;
+            clearInterval(shiftTimer);
+            shiftTimer = null;
+            saveToLocalStorage();
+            showNotification('Turno pausado.', 'warning');
+        }
+
+        function endShift() {
+            if (!isShiftActive) {
+                alert('Nenhum turno ativo para finalizar!');
+                return;
+            }
+
+            const totalTime = calculateShiftTime();
+            const hours = Math.floor(totalTime / 3600000);
+            const minutes = Math.floor((totalTime % 3600000) / 60000);
+            
+            let message = `Turno finalizado!\nTempo total: ${hours}h ${minutes}min`;
+            
+            if (totalTime > 10800000) { // 3 hours in milliseconds
+                const overtimeMs = totalTime - 10800000;
+                const overtimeHours = Math.floor(overtimeMs / 3600000);
+                const overtimeMinutes = Math.floor((overtimeMs % 3600000) / 60000);
+                message += `\n⚠️ Hora extra: ${overtimeHours}h ${overtimeMinutes}min`;
+            }
+
+            alert(message);
+
+            // Reset shift
+            isShiftActive = false;
+            isShiftPaused = false;
+            shiftStartTime = null;
+            shiftPausedTime = 0;
+            overtimeStarted = false;
+            
+            if (shiftTimer) {
+                clearInterval(shiftTimer);
+                shiftTimer = null;
+            }
+            
+            document.getElementById('shiftTimer').textContent = 'Turno: 00:00:00';
+            document.getElementById('overtimeAlert').style.display = 'none';
+            saveToLocalStorage();
+        }
+
+        function calculateShiftTime() {
+            if (!shiftStartTime) return 0;
+            
+            if (isShiftPaused) {
+                return shiftPausedTime;
+            } else {
+                return (Date.now() - shiftStartTime) - shiftPausedTime;
+            }
+        }
+
+        function updateShiftTimer() {
+            const totalTime = calculateShiftTime();
+            const hours = Math.floor(totalTime / 3600000);
+            const minutes = Math.floor((totalTime % 3600000) / 60000);
+            const seconds = Math.floor((totalTime % 60000) / 1000);
+            
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Check for overtime (3 hours = 10800000 milliseconds)
+            if (totalTime > 10800000 && !overtimeStarted) {
+                overtimeStarted = true;
+                document.getElementById('overtimeAlert').style.display = 'block';
+                showNotification('⚠️ Hora extra iniciada! Turno passou de 3 horas.', 'warning');
+                saveToLocalStorage();
+            }
+            
+            if (totalTime > 10800000) {
+                document.getElementById('shiftTimer').innerHTML = `<span style="color: #dc3545; font-weight: bold;">Turno: ${timeString} ⚠️</span>`;
+            } else {
+                document.getElementById('shiftTimer').textContent = `Turno: ${timeString}`;
+            }
+        }
+
+        // Guest list management
+        function loadGuestList(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const encryptedContent = e.target.result.trim();
+                
+                // Tentar descriptografar o conteúdo
+                const decryptedContent = decryptData(encryptedContent);
+                if (!decryptedContent) {
+                    showNotification('Erro: Arquivo não pôde ser descriptografado! Verifique se é um arquivo gerado pelo AdKira.', 'error');
+                    return;
+                }
+                
+                const lines = decryptedContent.split('\n').filter(line => line.trim());
+                
+                guestDatabase = lines.map((line, index) => {
+                    const trimmedLine = line.trim();
+                    const [code, name] = trimmedLine.split(',');
+                    
+                    if (!code || !name) {
+                        console.warn('Linha inválida ignorada:', trimmedLine);
+                        return null;
+                    }
+                    
+                    const hasCompanion = /\s+(e\s+acompanhante|e\s+esposa|e\s+marlene|e\s+\w+)$/i.test(name);
+                    const isPlural = hasCompanion || /\s+e\s+/i.test(name);
+                    
+                    return {
+                        id: index + 1,
+                        code: code.trim(),
+                        name: name.trim(),
+                        isPlural: isPlural,
+                        hasCompanion: hasCompanion,
+                        side: isWeddingMode ? (Math.random() > 0.5 ? 'noiva' : 'noivo') : 'geral',
+                        checkedIn: false,
+                        companionCheckedIn: false,
+                        checkInTime: null,
+                        companionCheckInTime: null,
+                        vipNotified: false
+                    };
+                }).filter(guest => guest !== null);
+
+                updateGuestList();
+                updateStats();
+                saveToLocalStorage();
+                showNotification(`${guestDatabase.length} convidados carregados e descriptografados com sucesso!`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        function updateGuestList() {
+            const listElement = document.getElementById('guestList');
+            if (guestDatabase.length === 0) {
+                listElement.innerHTML = '<p style="text-align: center; color: #666;">Nenhuma lista carregada</p>';
+                return;
+            }
+
+            listElement.innerHTML = guestDatabase.map(guest => {
+                const isVIP = vipGuests.includes(guest.id);
+                // Remove o código/prefixo do nome para exibição
+                const displayName = guest.name.replace(/^\[.*?\]\s*/, '');
+                return `
+                    <div class="guest-item" style="background: ${isVIP ? '#fff3cd' : 'white'}; border-left: ${isVIP ? '4px solid #ffc107' : 'none'};">
+                        <span>
+                            ${isVIP ? '👑 ' : ''}${displayName} ${guest.isPlural ? '(Plural)' : '(Individual)'}
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="color: ${guest.checkedIn ? '#28a745' : '#dc3545'};">
+                                ${guest.checkedIn ? '✓' : '✗'}
+                            </span>
+                            <button class="btn ${isVIP ? 'btn-warning' : 'btn-primary'}" 
+                                    style="padding: 4px 8px; font-size: 12px;" 
+                                    onclick="${isVIP ? `removeVIP(${guest.id})` : `markAsVIP(${guest.id})`}">
+                                ${isVIP ? 'Remover VIP' : 'Marcar VIP'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('totalGuests').textContent = `Convidados: ${guestDatabase.length}`;
+        }
+
+        function toggleWeddingMode() {
+            isWeddingMode = document.getElementById('weddingMode').checked;
+            document.getElementById('eventType').textContent = `Tipo: ${isWeddingMode ? 'Casamento' : 'Geral'}`;
+            document.getElementById('weddingReports').style.display = isWeddingMode ? 'block' : 'none';
+            
+            if (isWeddingMode && guestDatabase.length > 0) {
+                // Redistribute guests randomly between bride and groom
+                guestDatabase.forEach(guest => {
+                    guest.side = Math.random() > 0.5 ? 'noiva' : 'noivo';
+                });
+                updateWeddingReports();
+            }
+            saveToLocalStorage();
+        }
+
+        // Scanner functions
+        async function startScanner() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                scanner = setInterval(() => {
+                    scanQRCode();
+                }, 500);
+                
+            } catch (err) {
+                alert('Erro ao acessar a câmera: ' + err.message);
+            }
+        }
+
+        function stopScanner() {
+            if (scanner) {
+                clearInterval(scanner);
+                scanner = null;
+            }
+            
+            const video = document.getElementById('video');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+
+        function scanQRCode() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            
+            if (code) {
+                processQRCode(code.data);
+            }
+        }
+
+        function processQRCode(qrData) {
+            const decryptedData = decryptData(qrData);
+            if (!decryptedData) {
+                showResult('QR Code inválido ou chave incorreta!', 'denied');
+                return;
+            }
+
+            try {
+                const guestData = JSON.parse(decryptedData);
+                
+                // Buscar convidado pelo código gerado
+                const guest = guestDatabase.find(g => g.code === guestData.code);
+                
+                if (!guest) {
+                    showResult(`Convidado não encontrado na lista!\nCódigo: ${guestData.code}`, 'denied');
+                    return;
+                }
+
+                // Verificar se o nome confere (segurança adicional)
+                if (guest.name !== guestData.name) {
+                    showResult('Dados do QR Code não conferem com a lista!', 'denied');
+                    return;
+                }
+
+                handleGuestEntry(guest);
+                
+            } catch (e) {
+                showResult('Erro ao processar QR Code!', 'denied');
+            }
+        }
+
+        function handleGuestEntry(guest) {
+            const now = new Date();
+            
+            if (guest.isPlural && guest.hasCompanion) {
+                // Handle guests with companions
+                if (!guest.checkedIn && !guest.companionCheckedIn) {
+                    // First person arriving
+                    guest.checkedIn = true;
+                    guest.checkInTime = now;
+                    pendingCompanions.set(guest.id, guest);
+                    
+                    // Add to check-in history
+                    checkInHistory.push({
+                        guestId: guest.id,
+                        guestName: guest.name,
+                        timestamp: now.toISOString(),
+                        type: 'partial'
+                    });
+                    
+                    showResult(
+                        `${guest.name}`,
+                        'partial',
+                        'Primeira pessoa registrada. Aguardando acompanhante.',
+                        guest,
+                        true
+                    );
+                } else if (guest.checkedIn && !guest.companionCheckedIn) {
+                    // Second person arriving
+                    guest.companionCheckedIn = true;
+                    guest.companionCheckInTime = now;
+                    pendingCompanions.delete(guest.id);
+                    
+                    // Add companion to check-in history
+                    checkInHistory.push({
+                        guestId: guest.id,
+                        guestName: guest.name + ' (Acompanhante)',
+                        timestamp: now.toISOString(),
+                        type: 'companion'
+                    });
+                    
+                    showResult(
+                        `${guest.name}`,
+                        'approved',
+                        'Acompanhante registrado. Entrada completa liberada!',
+                        guest
+                    );
+                } else {
+                    showResult(
+                        `${guest.name}`,
+                        'denied',
+                        'Todos já registraram entrada anteriormente.',
+                        guest
+                    );
+                }
+            } else if (guest.isPlural) {
+                // Multiple people but no specific companion tracking
+                if (!guest.checkedIn) {
+                    guest.checkedIn = true;
+                    guest.checkInTime = now;
+                    
+                    // Add to check-in history
+                    checkInHistory.push({
+                        guestId: guest.id,
+                        guestName: guest.name,
+                        timestamp: now.toISOString(),
+                        type: 'group'
+                    });
+                    
+                    showResult(
+                        `${guest.name}`,
+                        'approved',
+                        'Entrada liberada para o grupo!',
+                        guest
+                    );
+                } else {
+                    showResult(
+                        `${guest.name}`,
+                        'denied',
+                        'Grupo já registrou entrada anteriormente.',
+                        guest
+                    );
+                }
+            } else {
+                // Individual guest
+                if (!guest.checkedIn) {
+                    guest.checkedIn = true;
+                    guest.checkInTime = now;
+                    
+                    // Add to check-in history
+                    checkInHistory.push({
+                        guestId: guest.id,
+                        guestName: guest.name,
+                        timestamp: now.toISOString(),
+                        type: 'individual'
+                    });
+                    
+                    showResult(
+                        `${guest.name}`,
+                        'approved',
+                        'Entrada aprovada!',
+                        guest
+                    );
+                } else {
+                    showResult(
+                        `${guest.name}`,
+                        'denied',
+                        'Já registrou entrada anteriormente.',
+                        guest
+                    );
+                }
+            }
+
+            // Save backup after each entry
+            saveToLocalStorage();
+            updateStats();
+            updateWeddingReports();
+            updateGuestList();
+        }
+
+        function showResult(guestName, status, message, guest = null, showCompanionControls = false) {
+            const resultArea = document.getElementById('scanResult');
+            const statusClass = status === 'approved' ? '' : status === 'partial' ? 'partial' : 'denied';
+            const statusIcon = status === 'approved' ? '✅' : status === 'partial' ? '⏳' : '❌';
+            const statusText = status === 'approved' ? 'ENTRADA LIBERADA' : 
+                             status === 'partial' ? 'ENTRADA PARCIAL' : 'ENTRADA NEGADA';
+
+            let companionControls = '';
+            if (showCompanionControls && guest) {
+                companionControls = `
+                    <div class="companion-controls">
+                        <button class="btn btn-success" onclick="registerCompanion(${guest.id})">
+                            Registrar Acompanhante Agora
+                        </button>
+                        <button class="btn btn-warning" onclick="cancelPendingCompanion(${guest.id})">
+                            Cancelar Espera
+                        </button>
+                    </div>
+                `;
+            }
+
+            resultArea.innerHTML = `
+                <div class="guest-result ${statusClass}">
+                    <div class="guest-name">${statusIcon} ${guestName}</div>
+                    <div class="guest-status">${statusText}</div>
+                    <div style="margin: 10px 0; color: #666;">${message}</div>
+                    <div class="guest-time">
+                        ${new Date().toLocaleString('pt-BR')}
+                    </div>
+                    ${companionControls}
+                </div>
+            `;
+
+            // Auto-clear result after 5 seconds
+            setTimeout(() => {
+                if (!showCompanionControls) {
+                    resultArea.innerHTML = '<p style="text-align: center; color: #666;">Aguardando leitura do QR Code...</p>';
+                }
+            }, 5000);
+        }
+
+        function registerCompanion(guestId) {
+            const guest = guestDatabase.find(g => g.id === guestId);
+            if (guest) {
+                guest.companionCheckedIn = true;
+                guest.companionCheckInTime = new Date();
+                pendingCompanions.delete(guestId);
+                
+                // Add companion to check-in history
+                checkInHistory.push({
+                    guestId: guest.id,
+                    guestName: guest.name + ' (Acompanhante Manual)',
+                    timestamp: new Date().toISOString(),
+                    type: 'companion_manual'
+                });
+                
+                showResult(
+                    `${guest.name}`,
+                    'approved',
+                    'Acompanhante registrado manualmente. Entrada completa!',
+                    guest
+                );
+                
+                saveToLocalStorage();
+                updateStats();
+                updateWeddingReports();
+            }
+        }
+
+        function cancelPendingCompanion(guestId) {
+            const guest = guestDatabase.find(g => g.id === guestId);
+            if (guest) {
+                guest.checkedIn = false;
+                guest.checkInTime = null;
+                pendingCompanions.delete(guestId);
+                
+                // Remove from check-in history
+                checkInHistory = checkInHistory.filter(entry => 
+                    !(entry.guestId === guestId && entry.type === 'partial')
+                );
+                
+                document.getElementById('scanResult').innerHTML = 
+                    '<p style="text-align: center; color: #666;">Entrada cancelada. Aguardando nova leitura...</p>';
+                
+                saveToLocalStorage();
+                updateStats();
+                updateWeddingReports();
+            }
+        }
+
+        function updateStats() {
+            const total = guestDatabase.length;
+            const present = guestDatabase.filter(g => g.checkedIn).length;
+            const pending = pendingCompanions.size;
+            const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statPresent').textContent = present;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statPercentage').textContent = percentage + '%';
+            document.getElementById('checkedIn').textContent = `Presentes: ${present}`;
+        }
+
+        function updateWeddingReports() {
+            if (!isWeddingMode) return;
+
+            const brideGuests = guestDatabase.filter(g => g.side === 'noiva');
+            const groomGuests = guestDatabase.filter(g => g.side === 'noivo');
+
+            document.getElementById('brideGuests').innerHTML = brideGuests.map(guest => {
+                const displayName = guest.name.replace(/^\[.*?\]\s*/, '');
+                return `
+                    <div class="guest-item">
+                        <span>${displayName}</span>
+                        <span style="color: ${guest.checkedIn ? '#28a745' : '#dc3545'};">
+                            ${guest.checkedIn ? '✓ ' + guest.checkInTime?.toLocaleTimeString('pt-BR') : '✗'}
+                        </span>
+                    </div>
+                `;
+            }).join('') || '<p>Nenhum convidado da noiva</p>';
+
+            document.getElementById('groomGuests').innerHTML = groomGuests.map(guest => {
+                const displayName = guest.name.replace(/^\[.*?\]\s*/, '');
+                return `
+                    <div class="guest-item">
+                        <span>${displayName}</span>
+                        <span style="color: ${guest.checkedIn ? '#28a745' : '#dc3545'};">
+                            ${guest.checkedIn ? '✓ ' + guest.checkInTime?.toLocaleTimeString('pt-BR') : '✗'}
+                        </span>
+                    </div>
+                `;
+            }).join('') || '<p>Nenhum convidado do noivo</p>';
+        }
+
+        // Report functions
+        function downloadPDFReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.text('Relatório de Entrada - Evento', 20, 30);
+            
+            doc.setFontSize(12);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, 45);
+            doc.text(`Tipo: ${isWeddingMode ? 'Casamento' : 'Evento Geral'}`, 20, 55);
+            
+            // Statistics
+            doc.text(`Total de Convidados: ${guestDatabase.length}`, 20, 70);
+            doc.text(`Presentes: ${guestDatabase.filter(g => g.checkedIn).length}`, 20, 80);
+            doc.text(`Pendentes: ${pendingCompanions.size}`, 20, 90);
+            doc.text(`VIPs: ${vipGuests.length}`, 20, 100);
+            
+            // Guest list
+            let yPos = 120;
+            doc.text('Lista de Convidados:', 20, yPos);
+            yPos += 15;
+            
+            guestDatabase.forEach(guest => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                
+                const status = guest.checkedIn ? 'Presente' : 'Ausente';
+                const time = guest.checkInTime ? guest.checkInTime.toLocaleString('pt-BR') : '-';
+                const vipStatus = vipGuests.includes(guest.id) ? ' (VIP)' : '';
+                
+                doc.text(`[${guest.code}] ${guest.name}${vipStatus} - ${status} - ${time}`, 20, yPos);
+                yPos += 10;
+            });
+            
+            doc.save('relatorio_evento.pdf');
+        }
+
+        function downloadExcelReport() {
+            let csvContent = 'Código,Nome,Status,Horário Entrada,Lado,Tipo,VIP\n';
+            
+            guestDatabase.forEach(guest => {
+                const status = guest.checkedIn ? 'Presente' : 'Ausente';
+                const time = guest.checkInTime ? guest.checkInTime.toLocaleString('pt-BR') : '';
+                const side = isWeddingMode ? guest.side : 'N/A';
+                const type = guest.isPlural ? 'Plural' : 'Individual';
+                const vip = vipGuests.includes(guest.id) ? 'Sim' : 'Não';
+                
+                csvContent += `"${guest.code}","${guest.name}","${status}","${time}","${side}","${type}","${vip}"\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'relatorio_evento.csv';
+            link.click();
+        }
+
+        function downloadShiftReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.text('Relatório de Controle de Turnos', 20, 30);
+            
+            doc.setFontSize(12);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, 45);
+            doc.text(`Evento: ${isWeddingMode ? 'Casamento' : 'Evento Geral'}`, 20, 55);
+            
+            // Current shift info
+            let yPos = 70;
+            doc.text('Status do Turno Atual:', 20, yPos);
+            yPos += 15;
+            
+            if (isShiftActive) {
+                const totalTime = calculateShiftTime();
+                const hours = Math.floor(totalTime / 3600000);
+                const minutes = Math.floor((totalTime % 3600000) / 60000);
+                
+                doc.text(`• Turno ativo: ${hours}h ${minutes}min`, 25, yPos);
+                yPos += 10;
+                
+                if (isShiftPaused) {
+                    doc.text('• Status: PAUSADO', 25, yPos);
+                } else {
+                    doc.text('• Status: ATIVO', 25, yPos);
+                }
+                yPos += 10;
+                
+                if (totalTime > 10800000) {
+                    const overtimeMs = totalTime - 10800000;
+                    const overtimeHours = Math.floor(overtimeMs / 3600000);
+                    const overtimeMinutes = Math.floor((overtimeMs % 3600000) / 60000);
+                    doc.text(`• HORA EXTRA: ${overtimeHours}h ${overtimeMinutes}min`, 25, yPos);
+                    yPos += 10;
+                }
+            } else {
+                doc.text('• Nenhum turno ativo no momento', 25, yPos);
+                yPos += 10;
+            }
+            
+            yPos += 10;
+            doc.text('Informações do Sistema:', 20, yPos);
+            yPos += 15;
+            doc.text('• Limite de turno regular: 3 horas', 25, yPos);
+            yPos += 10;
+            doc.text('• Alerta de hora extra: Automático após 3h', 25, yPos);
+            yPos += 10;
+            doc.text('• Controle: Iniciar/Pausar/Finalizar disponível', 25, yPos);
+            
+            doc.save('relatorio_turnos.pdf');
+        }
+
+        function clearAllData() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                guestDatabase = [];
+                checkedInGuests = [];
+                pendingCompanions.clear();
+                checkInHistory = [];
+                vipGuests = [];
+                
+                // Clear session storage alerts
+                sessionStorage.removeItem('alert90shown');
+                sessionStorage.removeItem('alert10shown');
+                
+                updateGuestList();
+                updateStats();
+                updateWeddingReports();
+                saveToLocalStorage();
+                
+                document.getElementById('scanResult').innerHTML = 
+                    '<p style="text-align: center; color: #666;">Dados limpos. Aguardando nova configuração...</p>';
+                    
+                showNotification('Todos os dados foram limpos', 'info');
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bb84c045b3f1f',t:'MTc1OTQ4Njk2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
