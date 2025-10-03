@@ -676,6 +676,22 @@
                             <span>Leituras: <strong id="scanCount">0</strong></span>
                         </div>
                     </div>
+
+                    <!-- Manual Scanner Controls -->
+                    <div class="scanner-controls-pro">
+                        <button class="btn-scanner btn-start" id="startBtn" onclick="startScanner()">
+                            <div class="btn-icon">▶️</div>
+                            <div class="btn-text">Iniciar Scanner</div>
+                        </button>
+                        <button class="btn-scanner btn-stop" id="stopBtn" onclick="stopScanner()" disabled>
+                            <div class="btn-icon">⏹️</div>
+                            <div class="btn-text">Parar Scanner</div>
+                        </button>
+                        <button class="btn-scanner btn-switch" onclick="switchCamera()" disabled id="switchBtn">
+                            <div class="btn-icon">🔄</div>
+                            <div class="btn-text">Trocar Câmera</div>
+                        </button>
+                    </div>
                     
                     <!-- Video Container with Overlay -->
                     <div class="video-container">
@@ -701,6 +717,17 @@
                     
 
                     
+                    <!-- Next QR Control -->
+                    <div style="background: #e8f5e8; border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center; border-left: 6px solid #28a745;">
+                        <h4 style="margin: 0 0 15px 0; color: #155724;">📱 Controle de Leitura</h4>
+                        <button class="btn btn-success" id="nextQRBtn" onclick="prepareForNextQR()" style="padding: 15px 30px; font-size: 16px; font-weight: 600;">
+                            Próximo
+                        </button>
+                        <p style="margin: 10px 0 0 0; color: #155724; font-size: 14px;">
+                            Clique para preparar a leitura do próximo QR Code
+                        </p>
+                    </div>
+
                     <!-- Results Area -->
                     <div class="result-area-pro" id="scanResult">
                         <div class="waiting-state">
@@ -748,6 +775,34 @@
                     </div>
 
                     <!-- Backup Status -->
+                    <!-- Controle de Turno -->
+                    <div class="settings-section">
+                        <h3 style="color: #333; margin-bottom: 20px; font-size: 20px;">⏰ Controle de Turno</h3>
+                        
+                        <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 25px; text-align: center;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 20px; flex-wrap: wrap;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2.5em; font-weight: 700; color: #667eea; margin-bottom: 5px;" id="shiftTimer">00:00:00</div>
+                                    <div style="color: #666; font-size: 14px;">Tempo de Turno</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 1.5em; font-weight: 600; color: #28a745;" id="shiftStatus">Turno Inativo</div>
+                                    <div style="color: #666; font-size: 14px;">Status Atual</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                                <button class="btn btn-success" id="startShiftBtn" onclick="startShift()">▶️ Iniciar Turno</button>
+                                <button class="btn btn-warning" id="pauseShiftBtn" onclick="pauseShift()" disabled>⏸️ Pausar</button>
+                                <button class="btn btn-danger" id="endShiftBtn" onclick="endShift()" disabled>⏹️ Finalizar</button>
+                            </div>
+                            
+                            <div class="overtime-alert" id="overtimeAlert">
+                                ⚠️ <strong>HORA EXTRA INICIADA!</strong> Turno ultrapassou 3 horas.
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 6px solid #28a745;">
                         <h4 style="margin: 0 0 15px 0; color: #155724; font-size: 18px;">💾 Sistema de Backup Automático</h4>
                         <p style="margin: 0; color: #155724; font-size: 14px;">
@@ -916,6 +971,14 @@
         let lastBackupTime = null;
         let autoBackupInterval = null;
 
+        // Shift control variables
+        let shiftStartTime = null;
+        let shiftPausedTime = 0;
+        let isShiftActive = false;
+        let isShiftPaused = false;
+        let shiftTimer = null;
+        let overtimeStarted = false;
+
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
             updateClock();
@@ -925,8 +988,9 @@
             startAutoBackup();
             setInterval(updateAnalytics, 30000);
             updateVIPCount();
-            // Auto-start scanner
-            setTimeout(startScanner, 1000);
+            
+            // Don't auto-start scanner, let user control it
+            console.log('🚀 Sistema iniciado. Use os botões para controlar o scanner.');
         });
 
         // Tab switching function
@@ -985,40 +1049,77 @@
             try {
                 updateScannerStatus('Iniciando...', false);
                 
-                const constraints = {
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1920, min: 640 },
-                        height: { ideal: 1080, min: 480 },
-                        frameRate: { ideal: 30, min: 15 }
+                // Try multiple constraint configurations
+                const constraintOptions = [
+                    {
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280, min: 640 },
+                            height: { ideal: 720, min: 480 }
+                        }
+                    },
+                    {
+                        video: {
+                            facingMode: 'environment'
+                        }
+                    },
+                    {
+                        video: true
                     }
-                };
+                ];
                 
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                let stream = null;
+                for (const constraints of constraintOptions) {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        console.log('✅ Câmera conectada com:', constraints);
+                        break;
+                    } catch (err) {
+                        console.log('❌ Falha com constraints:', constraints, err.message);
+                        continue;
+                    }
+                }
+                
+                if (!stream) {
+                    throw new Error('Não foi possível acessar a câmera');
+                }
+                
                 const video = document.getElementById('video');
                 video.srcObject = stream;
                 
                 video.onloadedmetadata = () => {
-                    video.play();
-                    updateScannerStatus('Scanner Ativo - Pronto para Leitura', true);
-                    
-                    // Start scanning with optimized frequency
-                    scanner = setInterval(() => {
-                        scanQRCode();
-                    }, 150);
+                    video.play().then(() => {
+                        updateScannerStatus('Scanner Ativo - Pronto para Leitura', true);
+                        console.log('📹 Vídeo iniciado:', video.videoWidth, 'x', video.videoHeight);
+                        
+                        // Update button states
+                        document.getElementById('startBtn').disabled = true;
+                        document.getElementById('stopBtn').disabled = false;
+                        document.getElementById('switchBtn').disabled = false;
+                        
+                        // Start scanning with optimized frequency
+                        scanner = setInterval(() => {
+                            scanQRCode();
+                        }, 100); // Increased frequency
+                        
+                        showNotification('Scanner iniciado com sucesso!', 'success');
+                    }).catch(err => {
+                        console.error('Erro ao reproduzir vídeo:', err);
+                        updateScannerStatus('Erro ao reproduzir vídeo', false);
+                    });
                 };
-                
-                showNotification('Scanner iniciado automaticamente!', 'success');
                 
             } catch (err) {
                 console.error('Camera error:', err);
                 updateScannerStatus('Erro na Câmera - Verifique Permissões', false);
                 showNotification('Erro ao acessar a câmera. Verifique as permissões do navegador.', 'error');
                 
-                // Retry after 3 seconds
-                setTimeout(() => {
-                    startScanner();
-                }, 3000);
+                // Show detailed error info
+                console.log('🔍 Detalhes do erro:', {
+                    name: err.name,
+                    message: err.message,
+                    constraint: err.constraint
+                });
             }
         }
 
@@ -1030,9 +1131,13 @@
             const context = canvas.getContext('2d');
             
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                // Use video dimensions for better quality
                 const width = video.videoWidth || video.clientWidth;
                 const height = video.videoHeight || video.clientHeight;
+                
+                if (width === 0 || height === 0) {
+                    console.log('⚠️ Dimensões inválidas:', width, 'x', height);
+                    return;
+                }
                 
                 canvas.width = width;
                 canvas.height = height;
@@ -1040,37 +1145,64 @@
                 // Draw the video frame
                 context.drawImage(video, 0, 0, width, height);
                 
-                // Get image data from center area for better focus
-                const centerX = Math.floor(width * 0.25);
-                const centerY = Math.floor(height * 0.25);
-                const centerWidth = Math.floor(width * 0.5);
-                const centerHeight = Math.floor(height * 0.5);
+                // Multiple scanning strategies
+                const scanAreas = [
+                    // Full image
+                    { x: 0, y: 0, w: width, h: height, name: 'full' },
+                    // Center area (larger)
+                    { x: Math.floor(width * 0.2), y: Math.floor(height * 0.2), 
+                      w: Math.floor(width * 0.6), h: Math.floor(height * 0.6), name: 'center' },
+                    // Top half
+                    { x: 0, y: 0, w: width, h: Math.floor(height * 0.5), name: 'top' },
+                    // Bottom half
+                    { x: 0, y: Math.floor(height * 0.5), w: width, h: Math.floor(height * 0.5), name: 'bottom' }
+                ];
                 
-                const imageData = context.getImageData(centerX, centerY, centerWidth, centerHeight);
-                
-                // Try to decode QR code with multiple attempts
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "attemptBoth",
-                });
-                
-                if (code && code.data) {
-                    scanCount++;
-                    document.getElementById('scanCount').textContent = scanCount;
-                    
-                    // Visual feedback
-                    showScanSuccess();
-                    
-                    // Pause scanning temporarily to avoid duplicates
-                    clearInterval(scanner);
-                    processQRCode(code.data);
-                    
-                    // Resume scanning after 3 seconds
-                    setTimeout(() => {
-                        if (scanner === null) {
-                            scanner = setInterval(scanQRCode, 150);
+                for (const area of scanAreas) {
+                    try {
+                        const imageData = context.getImageData(area.x, area.y, area.w, area.h);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "attemptBoth",
+                        });
+                        
+                        if (code && code.data && code.data.length > 10) {
+                            scanCount++;
+                            document.getElementById('scanCount').textContent = scanCount;
+                            
+                            console.log(`🎯 QR detectado na área ${area.name}:`, code.data.substring(0, 50) + '...');
+                            showNotification(`QR detectado! Processando...`, 'success');
+                            
+                            // Visual feedback
+                            showScanSuccess();
+                            
+                            // Pause scanning temporarily to avoid duplicates
+                            clearInterval(scanner);
+                            scanner = null;
+                            
+                            processQRCode(code.data);
+                            
+                            // Resume scanning after 2 seconds
+                            setTimeout(() => {
+                                if (scanner === null) {
+                                    scanner = setInterval(scanQRCode, 100);
+                                }
+                            }, 2000);
+                            
+                            return; // Exit after first successful scan
                         }
-                    }, 3000);
+                    } catch (err) {
+                        console.log(`❌ Erro na área ${area.name}:`, err.message);
+                    }
                 }
+                
+                // Debug info every 50 scans (5 seconds at 100ms)
+                if (scanCount % 50 === 0) {
+                    console.log('📱 Scanner ativo, aguardando QR Code...');
+                    console.log('📐 Resolução atual:', width, 'x', height);
+                    console.log('🔍 Total de tentativas:', scanCount);
+                }
+            } else {
+                console.log('⏳ Vídeo não está pronto. ReadyState:', video.readyState);
             }
         }
         
@@ -1088,40 +1220,71 @@
         }
 
         function processQRCode(qrData) {
-            console.log('QR Code detectado:', qrData);
+            console.log('🔍 Processando QR Code:', qrData.substring(0, 100) + '...');
             
-            // First try to decrypt
+            // Strategy 1: Try as encrypted data (AdKira format)
             const decryptedData = decryptData(qrData);
-            if (!decryptedData) {
-                console.log('Falha na descriptografia, tentando como texto simples...');
-                
-                // Try as plain text for testing
+            if (decryptedData) {
+                console.log('✅ Descriptografia bem-sucedida');
                 try {
-                    const testData = JSON.parse(qrData);
-                    if (testData.code && testData.name) {
-                        console.log('QR Code em texto simples detectado:', testData);
-                        processGuestData(testData);
+                    const guestData = JSON.parse(decryptedData);
+                    if (guestData.code && guestData.name) {
+                        console.log('✅ Dados válidos encontrados:', guestData);
+                        processGuestData(guestData);
                         return;
                     }
                 } catch (e) {
-                    // Not JSON, try as simple text
-                    showResult(`QR Code lido: ${qrData.substring(0, 50)}...`, 'denied');
+                    console.log('❌ JSON inválido após descriptografia:', e.message);
+                }
+            }
+            
+            // Strategy 2: Try as plain JSON
+            try {
+                const testData = JSON.parse(qrData);
+                if (testData.code && testData.name) {
+                    console.log('✅ QR Code JSON simples detectado:', testData);
+                    processGuestData(testData);
                     return;
                 }
-                
-                showResult('QR Code inválido ou chave incorreta!', 'denied');
-                return;
-            }
-
-            try {
-                const guestData = JSON.parse(decryptedData);
-                console.log('Dados descriptografados:', guestData);
-                processGuestData(guestData);
-                
             } catch (e) {
-                console.error('Erro ao processar JSON:', e);
-                showResult('Erro ao processar QR Code!', 'denied');
+                console.log('❌ Não é JSON válido:', e.message);
             }
+            
+            // Strategy 3: Try to extract data from URL format
+            try {
+                if (qrData.includes('code=') && qrData.includes('name=')) {
+                    const url = new URL(qrData.startsWith('http') ? qrData : 'https://example.com?' + qrData);
+                    const code = url.searchParams.get('code');
+                    const name = url.searchParams.get('name');
+                    
+                    if (code && name) {
+                        console.log('✅ Dados extraídos da URL:', { code, name });
+                        processGuestData({ code: decodeURIComponent(code), name: decodeURIComponent(name) });
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('❌ Não é URL válida:', e.message);
+            }
+            
+            // Strategy 4: Try simple text format "CODE,NAME"
+            if (qrData.includes(',')) {
+                const parts = qrData.split(',');
+                if (parts.length >= 2) {
+                    const code = parts[0].trim();
+                    const name = parts.slice(1).join(',').trim();
+                    
+                    if (code && name) {
+                        console.log('✅ Dados extraídos do formato CSV:', { code, name });
+                        processGuestData({ code, name });
+                        return;
+                    }
+                }
+            }
+            
+            // Strategy 5: Show raw data for debugging
+            console.log('❌ Formato não reconhecido. Dados brutos:', qrData);
+            showResult(`QR Code não reconhecido`, 'denied', `Dados: ${qrData.substring(0, 100)}${qrData.length > 100 ? '...' : ''}`);
         }
         
         function processGuestData(guestData) {
@@ -1963,6 +2126,9 @@
                 checkInHistory = [];
                 vipGuests = [];
                 
+                // Reset shift data
+                endShift();
+                
                 sessionStorage.removeItem('alert90shown');
                 sessionStorage.removeItem('alert10shown');
                 
@@ -1982,6 +2148,227 @@
                 showNotification('Todos os dados foram limpos', 'info');
             }
         }
+
+        // Shift Control Functions
+        function startShift() {
+            if (!isShiftActive) {
+                shiftStartTime = new Date();
+                shiftPausedTime = 0;
+                isShiftActive = true;
+                isShiftPaused = false;
+                overtimeStarted = false;
+                
+                document.getElementById('startShiftBtn').disabled = true;
+                document.getElementById('pauseShiftBtn').disabled = false;
+                document.getElementById('endShiftBtn').disabled = false;
+                document.getElementById('shiftStatus').textContent = 'Turno Ativo';
+                document.getElementById('shiftStatus').style.color = '#28a745';
+                
+                shiftTimer = setInterval(updateShiftTimer, 1000);
+                saveToLocalStorage();
+                showNotification('Turno iniciado!', 'success');
+            }
+        }
+
+        function pauseShift() {
+            if (isShiftActive && !isShiftPaused) {
+                isShiftPaused = true;
+                shiftPausedTime += new Date() - shiftStartTime;
+                
+                document.getElementById('pauseShiftBtn').textContent = '▶️ Retomar';
+                document.getElementById('pauseShiftBtn').onclick = resumeShift;
+                document.getElementById('shiftStatus').textContent = 'Turno Pausado';
+                document.getElementById('shiftStatus').style.color = '#ffc107';
+                
+                clearInterval(shiftTimer);
+                saveToLocalStorage();
+                showNotification('Turno pausado', 'warning');
+            }
+        }
+
+        function resumeShift() {
+            if (isShiftActive && isShiftPaused) {
+                isShiftPaused = false;
+                shiftStartTime = new Date();
+                
+                document.getElementById('pauseShiftBtn').textContent = '⏸️ Pausar';
+                document.getElementById('pauseShiftBtn').onclick = pauseShift;
+                document.getElementById('shiftStatus').textContent = 'Turno Ativo';
+                document.getElementById('shiftStatus').style.color = '#28a745';
+                
+                shiftTimer = setInterval(updateShiftTimer, 1000);
+                saveToLocalStorage();
+                showNotification('Turno retomado', 'success');
+            }
+        }
+
+        function endShift() {
+            if (isShiftActive) {
+                const totalTime = calculateShiftTime();
+                const hours = Math.floor(totalTime / 3600000);
+                const minutes = Math.floor((totalTime % 3600000) / 60000);
+                
+                isShiftActive = false;
+                isShiftPaused = false;
+                shiftStartTime = null;
+                shiftPausedTime = 0;
+                overtimeStarted = false;
+                
+                document.getElementById('startShiftBtn').disabled = false;
+                document.getElementById('pauseShiftBtn').disabled = true;
+                document.getElementById('pauseShiftBtn').textContent = '⏸️ Pausar';
+                document.getElementById('pauseShiftBtn').onclick = pauseShift;
+                document.getElementById('endShiftBtn').disabled = true;
+                document.getElementById('shiftStatus').textContent = 'Turno Inativo';
+                document.getElementById('shiftStatus').style.color = '#dc3545';
+                document.getElementById('shiftTimer').textContent = '00:00:00';
+                document.getElementById('overtimeAlert').style.display = 'none';
+                
+                clearInterval(shiftTimer);
+                saveToLocalStorage();
+                showNotification(`Turno finalizado! Duração: ${hours}h ${minutes}min`, 'info');
+            }
+        }
+
+        function updateShiftTimer() {
+            if (isShiftActive && !isShiftPaused) {
+                const totalTime = calculateShiftTime();
+                const hours = Math.floor(totalTime / 3600000);
+                const minutes = Math.floor((totalTime % 3600000) / 60000);
+                const seconds = Math.floor((totalTime % 60000) / 1000);
+                
+                const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('shiftTimer').textContent = timeString;
+                
+                // Check for overtime (3 hours = 10800000 ms)
+                if (totalTime > 10800000 && !overtimeStarted) {
+                    overtimeStarted = true;
+                    document.getElementById('overtimeAlert').style.display = 'block';
+                    document.getElementById('shiftTimer').style.color = '#dc3545';
+                    showNotification('⚠️ HORA EXTRA INICIADA! Turno ultrapassou 3 horas.', 'warning');
+                }
+            }
+        }
+
+        function calculateShiftTime() {
+            if (!isShiftActive) return 0;
+            
+            if (isShiftPaused) {
+                return shiftPausedTime;
+            } else {
+                return shiftPausedTime + (new Date() - shiftStartTime);
+            }
+        }
+
+        // Next QR Function
+        function prepareForNextQR() {
+            // Clear current result
+            document.getElementById('scanResult').innerHTML = `
+                <div class="waiting-state">
+                    <div class="pulse-icon">📱</div>
+                    <h3>Pronto para Próximo QR</h3>
+                    <p>Aponte a câmera para o próximo QR Code</p>
+                </div>
+            `;
+            
+            // Resume scanner if it was paused
+            if (!scanner && document.getElementById('video').srcObject) {
+                scanner = setInterval(() => {
+                    scanQRCode();
+                }, 100);
+                updateScannerStatus('Scanner Ativo - Pronto para Leitura', true);
+            }
+            
+            showNotification('Pronto para ler o próximo QR Code!', 'success');
+            console.log('📱 Sistema preparado para próxima leitura');
+        }
+
+        function stopScanner() {
+            const video = document.getElementById('video');
+            
+            // Stop scanning
+            if (scanner) {
+                clearInterval(scanner);
+                scanner = null;
+            }
+            
+            // Stop video stream
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            // Update UI
+            updateScannerStatus('Scanner Parado', false);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('switchBtn').disabled = true;
+            
+            showNotification('Scanner parado', 'info');
+        }
+
+        let currentFacingMode = 'environment';
+        
+        function switchCamera() {
+            // Toggle between front and back camera
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            
+            // Stop current scanner
+            stopScanner();
+            
+            // Start with new camera
+            setTimeout(() => {
+                startScannerWithFacing(currentFacingMode);
+            }, 500);
+        }
+
+        async function startScannerWithFacing(facingMode) {
+            try {
+                updateScannerStatus('Trocando câmera...', false);
+                
+                const constraints = {
+                    video: {
+                        facingMode: facingMode,
+                        width: { ideal: 1280, min: 640 },
+                        height: { ideal: 720, min: 480 }
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        updateScannerStatus('Scanner Ativo - Pronto para Leitura', true);
+                        console.log('📹 Câmera trocada:', facingMode, video.videoWidth, 'x', video.videoHeight);
+                        
+                        // Update button states
+                        document.getElementById('startBtn').disabled = true;
+                        document.getElementById('stopBtn').disabled = false;
+                        document.getElementById('switchBtn').disabled = false;
+                        
+                        // Start scanning
+                        scanner = setInterval(() => {
+                            scanQRCode();
+                        }, 100);
+                        
+                        const cameraType = facingMode === 'environment' ? 'traseira' : 'frontal';
+                        showNotification(`Câmera ${cameraType} ativada!`, 'success');
+                    });
+                };
+                
+            } catch (err) {
+                console.error('Erro ao trocar câmera:', err);
+                showNotification('Erro ao trocar câmera', 'error');
+                
+                // Fallback to regular start
+                startScanner();
+            }
+        }
+
+
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bdd9f86b83f1f',t:'MTc1OTQ4ODQ5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bec2190433f1f',t:'MTc1OTQ4OTA4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
