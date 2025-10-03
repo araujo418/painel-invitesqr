@@ -650,9 +650,6 @@
                 <div class="status-item">
                     <span id="currentTime"></span>
                 </div>
-                <div class="status-item">
-                    <span id="shiftTimer">Turno: 00:00:00</span>
-                </div>
             </div>
         </div>
 
@@ -702,34 +699,7 @@
                         <canvas id="scannerCanvas" style="display: none;"></canvas>
                     </div>
                     
-                    <!-- Scanner Controls -->
-                    <div class="scanner-controls-pro">
-                        <button class="btn-scanner btn-start" id="startBtn" onclick="startScanner()">
-                            <span class="btn-icon">🎥</span>
-                            <span class="btn-text">Iniciar Scanner</span>
-                        </button>
-                        <button class="btn-scanner btn-stop" id="stopBtn" onclick="stopScanner()" disabled>
-                            <span class="btn-icon">⏹️</span>
-                            <span class="btn-text">Parar Scanner</span>
-                        </button>
-                        <button class="btn-scanner btn-switch" id="switchBtn" onclick="switchCamera()" disabled>
-                            <span class="btn-icon">🔄</span>
-                            <span class="btn-text">Trocar Câmera</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Turno Controls -->
-                    <div class="shift-controls">
-                        <h3>⏰ Controle de Turno</h3>
-                        <div class="shift-buttons">
-                            <button class="btn btn-success" onclick="startShift()">▶️ Iniciar Turno</button>
-                            <button class="btn btn-warning" onclick="pauseShift()">⏸️ Pausar</button>
-                            <button class="btn btn-danger" onclick="endShift()">⏹️ Finalizar Turno</button>
-                        </div>
-                        <div id="overtimeAlert" class="overtime-alert">
-                            ⚠️ <strong>Hora Extra Iniciada!</strong> Turno passou de 3 horas.
-                        </div>
-                    </div>
+
                     
                     <!-- Results Area -->
                     <div class="result-area-pro" id="scanResult">
@@ -938,16 +908,7 @@
         let isWeddingMode = false;
         let encryptionKey = 'phqX3eLwSsxEnHgp'; // Mesma chave do gerador AdKira
         let pendingCompanions = new Map();
-        let currentFacingMode = 'environment';
         let scanCount = 0;
-        
-        // Shift timer variables
-        let shiftStartTime = null;
-        let shiftPausedTime = 0;
-        let shiftTimer = null;
-        let isShiftActive = false;
-        let isShiftPaused = false;
-        let overtimeStarted = false;
 
         // Backup and analytics variables
         let checkInHistory = [];
@@ -964,6 +925,8 @@
             startAutoBackup();
             setInterval(updateAnalytics, 30000);
             updateVIPCount();
+            // Auto-start scanner
+            setTimeout(startScanner, 1000);
         });
 
         // Tab switching function
@@ -1021,13 +984,13 @@
         async function startScanner() {
             try {
                 updateScannerStatus('Iniciando...', false);
-                document.getElementById('startBtn').disabled = true;
                 
                 const constraints = {
                     video: {
-                        facingMode: currentFacingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        facingMode: 'environment',
+                        width: { ideal: 1920, min: 640 },
+                        height: { ideal: 1080, min: 480 },
+                        frameRate: { ideal: 30, min: 15 }
                     }
                 };
                 
@@ -1037,56 +1000,29 @@
                 
                 video.onloadedmetadata = () => {
                     video.play();
-                    updateScannerStatus('Scanner Ativo', true);
-                    document.getElementById('stopBtn').disabled = false;
-                    document.getElementById('switchBtn').disabled = false;
+                    updateScannerStatus('Scanner Ativo - Pronto para Leitura', true);
                     
-                    // Start scanning with better performance
+                    // Start scanning with optimized frequency
                     scanner = setInterval(() => {
                         scanQRCode();
-                    }, 100);
+                    }, 150);
                 };
                 
-                showNotification('Scanner iniciado com sucesso!', 'success');
+                showNotification('Scanner iniciado automaticamente!', 'success');
                 
             } catch (err) {
                 console.error('Camera error:', err);
-                updateScannerStatus('Erro na Câmera', false);
-                document.getElementById('startBtn').disabled = false;
-                showNotification('Erro ao acessar a câmera: ' + err.message, 'error');
-            }
-        }
-
-        function stopScanner() {
-            if (scanner) {
-                clearInterval(scanner);
-                scanner = null;
-            }
-            
-            const video = document.getElementById('video');
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-            }
-            
-            updateScannerStatus('Scanner Desligado', false);
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('switchBtn').disabled = true;
-            
-            showNotification('Scanner parado', 'info');
-        }
-
-        async function switchCamera() {
-            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-            
-            if (scanner) {
-                stopScanner();
+                updateScannerStatus('Erro na Câmera - Verifique Permissões', false);
+                showNotification('Erro ao acessar a câmera. Verifique as permissões do navegador.', 'error');
+                
+                // Retry after 3 seconds
                 setTimeout(() => {
                     startScanner();
-                }, 500);
+                }, 3000);
             }
         }
+
+
 
         function scanQRCode() {
             const video = document.getElementById('video');
@@ -1094,60 +1030,114 @@
             const context = canvas.getContext('2d');
             
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                // Use video dimensions for better quality
+                const width = video.videoWidth || video.clientWidth;
+                const height = video.videoHeight || video.clientHeight;
                 
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw the video frame
+                context.drawImage(video, 0, 0, width, height);
+                
+                // Get image data from center area for better focus
+                const centerX = Math.floor(width * 0.25);
+                const centerY = Math.floor(height * 0.25);
+                const centerWidth = Math.floor(width * 0.5);
+                const centerHeight = Math.floor(height * 0.5);
+                
+                const imageData = context.getImageData(centerX, centerY, centerWidth, centerHeight);
+                
+                // Try to decode QR code with multiple attempts
                 const code = jsQR(imageData.data, imageData.width, imageData.height, {
                     inversionAttempts: "attemptBoth",
                 });
                 
-                if (code) {
+                if (code && code.data) {
                     scanCount++;
                     document.getElementById('scanCount').textContent = scanCount;
                     
-                    // Pausa temporariamente para evitar múltiplas leituras
+                    // Visual feedback
+                    showScanSuccess();
+                    
+                    // Pause scanning temporarily to avoid duplicates
                     clearInterval(scanner);
                     processQRCode(code.data);
                     
-                    // Reinicia o scanner após 2 segundos
+                    // Resume scanning after 3 seconds
                     setTimeout(() => {
-                        if (document.getElementById('stopBtn').disabled === false) {
-                            scanner = setInterval(scanQRCode, 100);
+                        if (scanner === null) {
+                            scanner = setInterval(scanQRCode, 150);
                         }
-                    }, 2000);
+                    }, 3000);
                 }
+            }
+        }
+        
+        function showScanSuccess() {
+            const scanLine = document.getElementById('scanLine');
+            if (scanLine) {
+                scanLine.style.background = 'linear-gradient(90deg, transparent, #00ff88, transparent)';
+                scanLine.style.boxShadow = '0 0 10px #00ff88';
+                
+                setTimeout(() => {
+                    scanLine.style.background = 'linear-gradient(90deg, transparent, #00ff88, transparent)';
+                    scanLine.style.boxShadow = 'none';
+                }, 1000);
             }
         }
 
         function processQRCode(qrData) {
+            console.log('QR Code detectado:', qrData);
+            
+            // First try to decrypt
             const decryptedData = decryptData(qrData);
             if (!decryptedData) {
+                console.log('Falha na descriptografia, tentando como texto simples...');
+                
+                // Try as plain text for testing
+                try {
+                    const testData = JSON.parse(qrData);
+                    if (testData.code && testData.name) {
+                        console.log('QR Code em texto simples detectado:', testData);
+                        processGuestData(testData);
+                        return;
+                    }
+                } catch (e) {
+                    // Not JSON, try as simple text
+                    showResult(`QR Code lido: ${qrData.substring(0, 50)}...`, 'denied');
+                    return;
+                }
+                
                 showResult('QR Code inválido ou chave incorreta!', 'denied');
                 return;
             }
 
             try {
                 const guestData = JSON.parse(decryptedData);
-                
-                const guest = guestDatabase.find(g => g.code === guestData.code);
-                
-                if (!guest) {
-                    showResult(`Convidado não encontrado na lista!\nCódigo: ${guestData.code}`, 'denied');
-                    return;
-                }
-
-                if (guest.name !== guestData.name) {
-                    showResult('Dados do QR Code não conferem com a lista!', 'denied');
-                    return;
-                }
-
-                handleGuestEntry(guest);
+                console.log('Dados descriptografados:', guestData);
+                processGuestData(guestData);
                 
             } catch (e) {
+                console.error('Erro ao processar JSON:', e);
                 showResult('Erro ao processar QR Code!', 'denied');
             }
+        }
+        
+        function processGuestData(guestData) {
+            const guest = guestDatabase.find(g => g.code === guestData.code);
+            
+            if (!guest) {
+                showResult(`Convidado não encontrado na lista!\nCódigo: ${guestData.code}`, 'denied');
+                return;
+            }
+
+            if (guest.name !== guestData.name) {
+                showResult('Dados do QR Code não conferem com a lista!', 'denied');
+                return;
+            }
+
+            handleGuestEntry(guest);
         }
 
         function handleGuestEntry(guest) {
@@ -1622,110 +1612,7 @@
             }
         }
 
-        // Shift timer functions
-        function startShift() {
-            if (isShiftActive && !isShiftPaused) {
-                alert('Turno já está ativo!');
-                return;
-            }
 
-            if (isShiftPaused) {
-                shiftPausedTime += Date.now() - shiftStartTime;
-                isShiftPaused = false;
-            } else {
-                shiftStartTime = Date.now();
-                shiftPausedTime = 0;
-                overtimeStarted = false;
-                document.getElementById('overtimeAlert').style.display = 'none';
-            }
-
-            isShiftActive = true;
-            shiftTimer = setInterval(updateShiftTimer, 1000);
-            saveToLocalStorage();
-            showNotification('Turno iniciado! Cronômetro ativo.', 'success');
-        }
-
-        function pauseShift() {
-            if (!isShiftActive || isShiftPaused) {
-                alert('Nenhum turno ativo para pausar!');
-                return;
-            }
-
-            isShiftPaused = true;
-            clearInterval(shiftTimer);
-            shiftTimer = null;
-            saveToLocalStorage();
-            showNotification('Turno pausado.', 'warning');
-        }
-
-        function endShift() {
-            if (!isShiftActive) {
-                alert('Nenhum turno ativo para finalizar!');
-                return;
-            }
-
-            const totalTime = calculateShiftTime();
-            const hours = Math.floor(totalTime / 3600000);
-            const minutes = Math.floor((totalTime % 3600000) / 60000);
-            
-            let message = `Turno finalizado!\nTempo total: ${hours}h ${minutes}min`;
-            
-            if (totalTime > 10800000) {
-                const overtimeMs = totalTime - 10800000;
-                const overtimeHours = Math.floor(overtimeMs / 3600000);
-                const overtimeMinutes = Math.floor((overtimeMs % 3600000) / 60000);
-                message += `\n⚠️ Hora extra: ${overtimeHours}h ${overtimeMinutes}min`;
-            }
-
-            alert(message);
-
-            isShiftActive = false;
-            isShiftPaused = false;
-            shiftStartTime = null;
-            shiftPausedTime = 0;
-            overtimeStarted = false;
-            
-            if (shiftTimer) {
-                clearInterval(shiftTimer);
-                shiftTimer = null;
-            }
-            
-            document.getElementById('shiftTimer').textContent = 'Turno: 00:00:00';
-            document.getElementById('overtimeAlert').style.display = 'none';
-            saveToLocalStorage();
-        }
-
-        function calculateShiftTime() {
-            if (!shiftStartTime) return 0;
-            
-            if (isShiftPaused) {
-                return shiftPausedTime;
-            } else {
-                return (Date.now() - shiftStartTime) - shiftPausedTime;
-            }
-        }
-
-        function updateShiftTimer() {
-            const totalTime = calculateShiftTime();
-            const hours = Math.floor(totalTime / 3600000);
-            const minutes = Math.floor((totalTime % 3600000) / 60000);
-            const seconds = Math.floor((totalTime % 60000) / 1000);
-            
-            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            if (totalTime > 10800000 && !overtimeStarted) {
-                overtimeStarted = true;
-                document.getElementById('overtimeAlert').style.display = 'block';
-                showNotification('⚠️ Hora extra iniciada! Turno passou de 3 horas.', 'warning');
-                saveToLocalStorage();
-            }
-            
-            if (totalTime > 10800000) {
-                document.getElementById('shiftTimer').innerHTML = `<span style="color: #dc3545; font-weight: bold;">Turno: ${timeString} ⚠️</span>`;
-            } else {
-                document.getElementById('shiftTimer').textContent = `Turno: ${timeString}`;
-            }
-        }
 
         function updateStats() {
             const total = guestDatabase.length;
@@ -2096,5 +1983,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bd53a237b3f1f',t:'MTc1OTQ4ODE0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'988bdd9f86b83f1f',t:'MTc1OTQ4ODQ5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
