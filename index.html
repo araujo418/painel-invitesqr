@@ -492,13 +492,33 @@
                         </p>
                     </div>
 
+                    <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 6px solid #ffc107; margin: 20px 0;">
+                        <h4 style="margin: 0 0 15px 0; color: #856404;">📋 Lista de Convidados Criptografada</h4>
+                        <p style="margin: 0 0 15px 0; color: #856404; font-size: 14px;">
+                            Cole aqui a lista TXT criptografada com a chave phqX3eLwSsxEnHgp:
+                        </p>
+                        <textarea id="encryptedGuestList" 
+                                  style="width: 100%; height: 120px; padding: 15px; border: 2px solid #ffc107; border-radius: 8px; font-family: monospace; font-size: 12px; resize: vertical;"
+                                  placeholder="Cole aqui o conteúdo TXT criptografado da lista de convidados..."></textarea>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-success" onclick="loadGuestList()" style="margin-right: 10px;">
+                                🔓 Descriptografar e Carregar Lista
+                            </button>
+                            <button class="btn" onclick="clearGuestList()" style="background: #dc3545; color: white;">
+                                🗑️ Limpar Lista
+                            </button>
+                        </div>
+                        <div id="guestListStatus" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;">
+                        </div>
+                    </div>
+
                     <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; border-left: 6px solid #17a2b8;">
                         <h4 style="margin: 0 0 15px 0; color: #0c5460;">📱 Status do Scanner</h4>
-                        <p style="margin: 0; color: #0c5460; font-size: 14px;">
-                            🔄 Scanner automático sempre ativo<br>
-                            📹 Detecção contínua de QR Codes<br>
-                            🔍 Múltiplas áreas de varredura<br>
-                            ⚡ Processamento em tempo real
+                        <p id="scannerStatus" style="margin: 0; color: #0c5460; font-size: 14px;">
+                            🔄 Iniciando scanner...<br>
+                            📹 Aguardando câmera...<br>
+                            🔍 Preparando detecção...<br>
+                            ⚡ Carregando sistema...
                         </p>
                     </div>
                 </div>
@@ -596,25 +616,96 @@
         // Global variables
         let scanner = null;
         let scanCount = 0;
+        let validScans = 0;
+        let invalidScans = 0;
         let encryptionKey = 'phqX3eLwSsxEnHgp'; // Chave padrão AdKira
         let isProcessing = false;
+        let guestList = []; // Lista de convidados válidos
+        let lastQRData = ''; // Para evitar leituras duplicadas
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
+            updateScannerStatus('🔄 Iniciando sistema...', 'info');
             startScanner();
         });
+
+        // Update scanner status
+        function updateScannerStatus(message, type = 'info') {
+            const statusElement = document.getElementById('scannerStatus');
+            if (statusElement) {
+                const timestamp = new Date().toLocaleTimeString('pt-BR');
+                const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : '🔄';
+                statusElement.innerHTML = `${icon} [${timestamp}] ${message}`;
+            }
+        }
+
+        // Load and decrypt guest list
+        function loadGuestList() {
+            const encryptedText = document.getElementById('encryptedGuestList').value.trim();
+            const statusDiv = document.getElementById('guestListStatus');
+            
+            if (!encryptedText) {
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.innerHTML = '❌ Por favor, cole o conteúdo criptografado da lista.';
+                return;
+            }
+            
+            try {
+                const decryptedText = decryptData(encryptedText);
+                if (decryptedText) {
+                    // Parse the decrypted list (assuming each line is a guest name)
+                    guestList = decryptedText.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0);
+                    
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.background = '#d4edda';
+                    statusDiv.style.color = '#155724';
+                    statusDiv.innerHTML = `✅ Lista carregada com sucesso! ${guestList.length} convidados encontrados.`;
+                    
+                    updateScannerStatus(`Lista de ${guestList.length} convidados carregada`, 'success');
+                } else {
+                    throw new Error('Falha na descriptografia');
+                }
+            } catch (error) {
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.innerHTML = '❌ Erro ao descriptografar a lista. Verifique se o conteúdo está correto.';
+            }
+        }
+
+        // Clear guest list
+        function clearGuestList() {
+            guestList = [];
+            document.getElementById('encryptedGuestList').value = '';
+            const statusDiv = document.getElementById('guestListStatus');
+            statusDiv.style.display = 'none';
+            updateScannerStatus('Lista de convidados removida', 'warning');
+        }
 
 
 
         // Auto-start scanner
         async function startScanner() {
             try {
+                updateScannerStatus('📹 Solicitando acesso à câmera...', 'info');
+                
                 const constraintOptions = [
                     {
                         video: {
                             facingMode: 'environment',
-                            width: { ideal: 1280, min: 640 },
-                            height: { ideal: 720, min: 480 }
+                            width: { ideal: 1920, min: 640 },
+                            height: { ideal: 1080, min: 480 }
+                        }
+                    },
+                    {
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
                         }
                     },
                     {
@@ -623,16 +714,27 @@
                         }
                     },
                     {
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    },
+                    {
                         video: true
                     }
                 ];
                 
                 let stream = null;
-                for (const constraints of constraintOptions) {
+                let usedConstraint = null;
+                
+                for (let i = 0; i < constraintOptions.length; i++) {
                     try {
-                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        updateScannerStatus(`📹 Tentativa ${i + 1}/${constraintOptions.length}...`, 'info');
+                        stream = await navigator.mediaDevices.getUserMedia(constraintOptions[i]);
+                        usedConstraint = constraintOptions[i];
                         break;
                     } catch (err) {
+                        console.log(`Tentativa ${i + 1} falhou:`, err.message);
                         continue;
                     }
                 }
@@ -641,24 +743,34 @@
                     throw new Error('Não foi possível acessar nenhuma câmera');
                 }
                 
+                updateScannerStatus('✅ Câmera conectada com sucesso!', 'success');
+                
                 const video = document.getElementById('video');
                 video.srcObject = stream;
                 
                 video.onloadedmetadata = () => {
                     video.play().then(() => {
-                        // Start continuous scanning
+                        const width = video.videoWidth || video.clientWidth;
+                        const height = video.videoHeight || video.clientHeight;
+                        
+                        updateScannerStatus(`✅ Vídeo ativo: ${width}x${height}px`, 'success');
+                        
+                        // Start continuous scanning with higher frequency
                         scanner = setInterval(() => {
                             if (!isProcessing) {
                                 scanQRCode();
                             }
-                        }, 100);
+                        }, 50); // Scan every 50ms for better detection
+                        
+                        updateScannerStatus('🔍 Scanner automático ativado - Pronto!', 'success');
+                        
                     }).catch(err => {
-                        console.error('Erro ao reproduzir vídeo:', err);
+                        updateScannerStatus(`❌ Erro ao reproduzir vídeo: ${err.message}`, 'error');
                     });
                 };
                 
             } catch (err) {
-                console.error('Erro na câmera:', err);
+                updateScannerStatus(`❌ Erro crítico: ${err.message}`, 'error');
                 showResult('Erro na Câmera', 'denied', 'Verifique as permissões do navegador para acessar a câmera.');
             }
         }
@@ -681,9 +793,18 @@
                 
                 // Try multiple scan areas for better detection
                 const scanAreas = [
+                    // Central area (most likely)
+                    { x: Math.floor(width * 0.2), y: Math.floor(height * 0.2), 
+                      w: Math.floor(width * 0.6), h: Math.floor(height * 0.6), name: 'central-grande' },
+                    // Smaller central area
+                    { x: Math.floor(width * 0.3), y: Math.floor(height * 0.3), 
+                      w: Math.floor(width * 0.4), h: Math.floor(height * 0.4), name: 'central-pequena' },
+                    // Full area
                     { x: 0, y: 0, w: width, h: height, name: 'completa' },
-                    { x: Math.floor(width * 0.25), y: Math.floor(height * 0.25), 
-                      w: Math.floor(width * 0.5), h: Math.floor(height * 0.5), name: 'central' }
+                    // Top half
+                    { x: 0, y: 0, w: width, h: Math.floor(height * 0.6), name: 'superior' },
+                    // Bottom half
+                    { x: 0, y: Math.floor(height * 0.4), w: width, h: Math.floor(height * 0.6), name: 'inferior' }
                 ];
                 
                 for (const area of scanAreas) {
@@ -693,9 +814,18 @@
                             inversionAttempts: "attemptBoth",
                         });
                         
-                        if (code && code.data && code.data.length > 10) {
+                        if (code && code.data && code.data.length > 5) {
+                            // Avoid duplicate readings
+                            if (code.data === lastQRData) {
+                                return;
+                            }
+                            
+                            lastQRData = code.data;
                             scanCount++;
                             document.getElementById('scanCount').textContent = scanCount;
+                            
+                            console.log(`🔍 QR detectado na área ${area.name}:`, code.data.substring(0, 50) + '...');
+                            updateScannerStatus(`🔍 QR detectado! Processando...`, 'success');
                             
                             // Pause scanning to avoid duplicates
                             isProcessing = true;
@@ -703,10 +833,12 @@
                             // Process the QR code
                             processQRCode(code.data);
                             
-                            // Resume scanning after 3 seconds
+                            // Resume scanning after 4 seconds
                             setTimeout(() => {
                                 isProcessing = false;
-                            }, 3000);
+                                lastQRData = ''; // Reset to allow new readings
+                                updateScannerStatus('🔍 Pronto para próximo QR Code', 'success');
+                            }, 4000);
                             
                             return;
                         }
@@ -719,61 +851,120 @@
 
         // Main QR processing function
         function processQRCode(qrData) {
-            console.log('Processando QR Code:', qrData.substring(0, 100) + '...');
+            console.log('=== PROCESSANDO QR CODE ===');
+            console.log('Dados brutos:', qrData.substring(0, 100) + '...');
+            console.log('Tamanho:', qrData.length, 'caracteres');
+            
+            updateScannerStatus('🔓 Tentando descriptografar...', 'info');
             
             // Step 1: Try to decrypt the data
             const decryptedData = decryptData(qrData);
             
             if (decryptedData) {
-                console.log('✅ Descriptografia bem-sucedida');
+                console.log('✅ DESCRIPTOGRAFIA BEM-SUCEDIDA!');
+                console.log('Dados descriptografados:', decryptedData);
+                updateScannerStatus('✅ Descriptografia bem-sucedida!', 'success');
                 
                 // Step 2: Try to parse as JSON
                 try {
                     const guestData = JSON.parse(decryptedData);
                     
                     if (guestData.code && guestData.name) {
-                        console.log('✅ Dados válidos encontrados:', guestData);
-                        showGuestResult(guestData, 'approved');
+                        console.log('✅ Dados JSON válidos:', guestData);
+                        validateAndShowGuest(guestData);
                         return;
                     } else {
+                        console.log('❌ JSON sem campos obrigatórios');
+                        invalidScans++;
+                        updateReportStats();
                         showResult('Dados Incompletos', 'warning', 'QR Code descriptografado mas sem dados válidos de convidado.');
                         return;
                     }
                 } catch (jsonError) {
-                    console.log('Tentando outros formatos...');
+                    console.log('❌ Não é JSON válido, tentando outros formatos...');
                 }
                 
                 // Step 3: Try other formats with decrypted data
-                if (tryOtherFormats(decryptedData)) {
+                if (tryOtherFormats(decryptedData, true)) {
                     return;
                 }
                 
             } else {
-                console.log('Descriptografia falhou, tentando formatos simples...');
+                console.log('❌ Descriptografia falhou, tentando formatos não criptografados...');
+                updateScannerStatus('⚠️ Descriptografia falhou, tentando outros formatos...', 'warning');
                 
                 // Step 4: Try as plain text formats
-                if (tryOtherFormats(qrData)) {
+                if (tryOtherFormats(qrData, false)) {
                     return;
                 }
             }
             
             // Step 5: Show raw data for debugging
+            console.log('❌ NENHUM FORMATO RECONHECIDO');
+            invalidScans++;
+            updateReportStats();
             showResult('QR Code Não Reconhecido', 'denied', 
                 `Formato não suportado. Dados: ${qrData.substring(0, 200)}${qrData.length > 200 ? '...' : ''}`);
         }
 
+        // Validate guest against list and show result
+        function validateAndShowGuest(guestData) {
+            console.log('=== VALIDANDO CONVIDADO ===');
+            console.log('Nome do convidado:', guestData.name);
+            console.log('Lista carregada:', guestList.length, 'convidados');
+            
+            if (guestList.length === 0) {
+                console.log('⚠️ Nenhuma lista carregada - aprovando automaticamente');
+                validScans++;
+                updateReportStats();
+                showGuestResult(guestData, 'approved', 'Dados válidos (sem lista de validação)');
+                return;
+            }
+            
+            // Check if guest name is in the list (case insensitive)
+            const guestNameLower = guestData.name.toLowerCase().trim();
+            const isValidGuest = guestList.some(validName => 
+                validName.toLowerCase().trim() === guestNameLower
+            );
+            
+            if (isValidGuest) {
+                console.log('✅ CONVIDADO ENCONTRADO NA LISTA!');
+                validScans++;
+                updateReportStats();
+                showGuestResult(guestData, 'approved', 'Convidado autorizado ✅');
+            } else {
+                console.log('❌ CONVIDADO NÃO ENCONTRADO NA LISTA');
+                console.log('Procurando por:', guestNameLower);
+                console.log('Na lista:', guestList.map(n => n.toLowerCase()));
+                invalidScans++;
+                updateReportStats();
+                showGuestResult(guestData, 'denied', 'Convidado não autorizado ❌');
+            }
+        }
+
+        // Update report statistics
+        function updateReportStats() {
+            document.getElementById('totalScans').textContent = scanCount;
+            document.getElementById('validScans').textContent = validScans;
+            document.getElementById('invalidScans').textContent = invalidScans;
+        }
+
         // Try other data formats
-        function tryOtherFormats(data) {
+        function tryOtherFormats(data, wasDecrypted) {
+            console.log('=== TESTANDO FORMATOS ALTERNATIVOS ===');
+            console.log('Dados:', data.substring(0, 100) + '...');
+            console.log('Foi descriptografado:', wasDecrypted);
+            
             // Format 1: Plain JSON
             try {
                 const testData = JSON.parse(data);
                 if (testData.code && testData.name) {
                     console.log('✅ JSON simples detectado');
-                    showGuestResult(testData, 'approved');
+                    validateAndShowGuest(testData);
                     return true;
                 }
             } catch (e) {
-                // Not JSON
+                console.log('❌ Não é JSON simples');
             }
             
             // Format 2: URL parameters
@@ -785,15 +976,15 @@
                     
                     if (code && name) {
                         console.log('✅ Formato URL detectado');
-                        showGuestResult({ 
+                        validateAndShowGuest({ 
                             code: decodeURIComponent(code), 
                             name: decodeURIComponent(name) 
-                        }, 'approved');
+                        });
                         return true;
                     }
                 }
             } catch (e) {
-                // Not URL format
+                console.log('❌ Não é formato URL');
             }
             
             // Format 3: CSV format "CODE,NAME"
@@ -805,7 +996,7 @@
                     
                     if (code && name && code.length > 0 && name.length > 0) {
                         console.log('✅ Formato CSV detectado');
-                        showGuestResult({ code, name }, 'approved');
+                        validateAndShowGuest({ code, name });
                         return true;
                     }
                 }
@@ -819,11 +1010,22 @@
                 
                 if (code.length > 0 && name.length > 0) {
                     console.log('✅ Formato texto simples detectado');
-                    showGuestResult({ code, name }, 'approved');
+                    validateAndShowGuest({ code, name });
                     return true;
                 }
             }
             
+            // Format 5: Just a name (create a simple code)
+            if (data.trim().length > 2 && !data.includes('\n') && data.split(' ').length <= 5) {
+                console.log('✅ Formato nome simples detectado');
+                validateAndShowGuest({ 
+                    code: 'AUTO-' + Date.now().toString().slice(-6), 
+                    name: data.trim() 
+                });
+                return true;
+            }
+            
+            console.log('❌ Nenhum formato alternativo reconhecido');
             return false;
         }
 
@@ -844,29 +1046,53 @@
         }
 
         // Show guest result
-        function showGuestResult(guestData, status) {
+        function showGuestResult(guestData, status, customMessage = '') {
             const resultSection = document.getElementById('resultSection');
             const statusClass = status === 'approved' ? '' : status === 'warning' ? 'warning' : 'denied';
             const statusIcon = status === 'approved' ? '✅' : status === 'warning' ? '⚠️' : '❌';
-            const statusText = status === 'approved' ? 'DADOS VÁLIDOS' : 
-                             status === 'warning' ? 'DADOS INCOMPLETOS' : 'DADOS INVÁLIDOS';
+            
+            let statusText = '';
+            if (customMessage) {
+                statusText = customMessage;
+            } else {
+                statusText = status === 'approved' ? 'CONVIDADO AUTORIZADO' : 
+                           status === 'warning' ? 'DADOS INCOMPLETOS' : 'CONVIDADO NÃO AUTORIZADO';
+            }
+
+            const listInfo = guestList.length > 0 ? 
+                `<div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    📋 Validado contra lista de ${guestList.length} convidados
+                </div>` : 
+                `<div style="margin-top: 10px; font-size: 0.9em; color: #856404;">
+                    ⚠️ Nenhuma lista de validação carregada
+                </div>`;
 
             resultSection.innerHTML = `
                 <div class="guest-result ${statusClass}">
                     <div class="guest-name">${statusIcon} ${guestData.name || 'Nome não encontrado'}</div>
                     <div class="guest-code">Código: ${guestData.code || 'Código não encontrado'}</div>
                     <div class="guest-status ${status}">${statusText}</div>
+                    ${listInfo}
                     <div class="guest-details">
-                        <strong>Dados Descriptografados:</strong><br>
-                        ${JSON.stringify(guestData, null, 2)}
+                        <strong>Dados Processados:</strong><br>
+                        Nome: ${guestData.name}<br>
+                        Código: ${guestData.code}<br>
+                        Status: ${statusText}
                     </div>
                     <div class="guest-time">
-                        Lido em: ${new Date().toLocaleString('pt-BR')}
+                        Processado em: ${new Date().toLocaleString('pt-BR')}
                     </div>
                 </div>
             `;
 
-
+            // Update scanner status
+            if (status === 'approved') {
+                updateScannerStatus('✅ Convidado autorizado!', 'success');
+            } else if (status === 'denied') {
+                updateScannerStatus('❌ Convidado não autorizado!', 'error');
+            } else {
+                updateScannerStatus('⚠️ Dados incompletos', 'warning');
+            }
         }
 
         // Show general result
@@ -915,5 +1141,5 @@
             isProcessing = false;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98921e5470fb3f1f',t:'MTc1OTU1NDA1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98922cb294c23f1f',t:'MTc1OTU1NDY0NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
