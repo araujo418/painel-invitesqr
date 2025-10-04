@@ -312,41 +312,67 @@
             transform: translateY(-2px);
         }
 
-        .debug-section {
+
+
+        .tab-container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
-            padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        .debug-log {
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            border-radius: 15px 15px 0 0;
+            overflow: hidden;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 20px;
             background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
             color: #333;
-        }
-
-        .debug-entry {
-            margin-bottom: 5px;
-            padding: 2px 0;
-        }
-
-        .debug-entry.success {
-            color: #28a745;
-        }
-
-        .debug-entry.error {
-            color: #dc3545;
-        }
-
-        .debug-entry.info {
-            color: #17a2b8;
+            margin: 0 0 20px 0;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
         }
 
         @media (max-width: 768px) {
@@ -381,75 +407,187 @@
             <p>Sistema de Validação e Descriptografia</p>
         </div>
 
-        <!-- Scanner Section -->
-        <div class="scanner-section">
-            <h2 style="color: #333; margin-bottom: 20px; text-align: center;">📱 Scanner Automático</h2>
-            
-            <!-- Scanner Status -->
-            <div class="scanner-status">
-                <div class="status-indicator">
-                    <div class="status-dot"></div>
-                    <span>Scanner Ativo - Pronto para Leitura</span>
-                </div>
-                <div class="scan-count">
-                    <span>Leituras: <strong id="scanCount">0</strong></span>
-                </div>
+        <!-- Tab System -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('scanner')">📱 Scanner</button>
+                <button class="tab-button" onclick="switchTab('config')">⚙️ Configurações</button>
+                <button class="tab-button" onclick="switchTab('reports')">📊 Relatórios</button>
+                <button class="tab-button" onclick="switchTab('analytics')">📈 Analytics</button>
             </div>
 
-            <!-- Video Container -->
-            <div class="video-container">
-                <video id="video" autoplay muted playsinline></video>
-                <div class="scanner-overlay">
-                    <div class="scan-frame">
-                        <div class="corner top-left"></div>
-                        <div class="corner top-right"></div>
-                        <div class="corner bottom-left"></div>
-                        <div class="corner bottom-right"></div>
-                        <div class="scan-line"></div>
+            <!-- Scanner Tab -->
+            <div id="scanner-tab" class="tab-content active">
+                <div class="scanner-section">
+                    <h2 style="color: #333; margin-bottom: 20px; text-align: center;">📱 Scanner Automático</h2>
+                    
+                    <!-- Scanner Status -->
+                    <div class="scanner-status">
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <span>Scanner Ativo - Pronto para Leitura</span>
+                        </div>
+                        <div class="scan-count">
+                            <span>Leituras: <strong id="scanCount">0</strong></span>
+                        </div>
                     </div>
-                    <div class="scan-instructions">
-                        <p>Posicione o QR Code dentro da moldura</p>
-                        <div class="scan-tips">
-                            <span>💡 Mantenha distância de 15-30cm</span>
-                            <span>💡 Certifique-se de boa iluminação</span>
-                            <span>🔐 Descriptografia automática</span>
+
+                    <!-- Video Container -->
+                    <div class="video-container">
+                        <video id="video" autoplay muted playsinline></video>
+                        <div class="scanner-overlay">
+                            <div class="scan-frame">
+                                <div class="corner top-left"></div>
+                                <div class="corner top-right"></div>
+                                <div class="corner bottom-left"></div>
+                                <div class="corner bottom-right"></div>
+                                <div class="scan-line"></div>
+                            </div>
+                            <div class="scan-instructions">
+                                <p>Posicione o QR Code dentro da moldura</p>
+                                <div class="scan-tips">
+                                    <span>💡 Mantenha distância de 15-30cm</span>
+                                    <span>💡 Certifique-se de boa iluminação</span>
+                                    <span>🔐 Descriptografia automática</span>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="scannerCanvas" style="display: none;"></canvas>
+                    </div>
+
+                    <!-- Next QR Control -->
+                    <div class="next-qr-section">
+                        <h4 style="margin: 0 0 15px 0; color: #155724;">📱 Controle de Leitura</h4>
+                        <button class="btn btn-success" onclick="prepareForNextQR()">
+                            Próximo QR Code
+                        </button>
+                        <p style="margin: 10px 0 0 0; color: #155724; font-size: 14px;">
+                            Clique para preparar a leitura do próximo código
+                        </p>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div class="result-section" id="resultSection">
+                        <div class="waiting-state">
+                            <div class="pulse-icon">🔍</div>
+                            <h3>Aguardando QR Code</h3>
+                            <p>Aponte a câmera para um QR Code criptografado</p>
                         </div>
                     </div>
                 </div>
-                <canvas id="scannerCanvas" style="display: none;"></canvas>
             </div>
 
-            <!-- Next QR Control -->
-            <div class="next-qr-section">
-                <h4 style="margin: 0 0 15px 0; color: #155724;">📱 Controle de Leitura</h4>
-                <button class="btn btn-success" onclick="prepareForNextQR()">
-                    Próximo QR Code
-                </button>
-                <p style="margin: 10px 0 0 0; color: #155724; font-size: 14px;">
-                    Clique para preparar a leitura do próximo código
-                </p>
+            <!-- Configuration Tab -->
+            <div id="config-tab" class="tab-content">
+                <div class="card">
+                    <h2>⚙️ Configurações do Sistema</h2>
+                    <p>Configurações de criptografia e validação de QR Codes.</p>
+                    
+                    <div style="background: #e8f5e8; padding: 20px; border-radius: 10px; border-left: 6px solid #28a745; margin: 20px 0;">
+                        <h4 style="margin: 0 0 15px 0; color: #155724;">🔒 Sistema de Criptografia AES</h4>
+                        <p style="margin: 0; color: #155724; font-size: 14px;">
+                            ✅ Chave de segurança configurada: phqX3eLwSsxEnHgp<br>
+                            ✅ Compatível com sistema AdKira<br>
+                            ✅ Descriptografia automática ativa
+                        </p>
+                    </div>
+
+                    <div style="background: #d1ecf1; padding: 20px; border-radius: 10px; border-left: 6px solid #17a2b8;">
+                        <h4 style="margin: 0 0 15px 0; color: #0c5460;">📱 Status do Scanner</h4>
+                        <p style="margin: 0; color: #0c5460; font-size: 14px;">
+                            🔄 Scanner automático sempre ativo<br>
+                            📹 Detecção contínua de QR Codes<br>
+                            🔍 Múltiplas áreas de varredura<br>
+                            ⚡ Processamento em tempo real
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="reports-tab" class="tab-content">
+                <div class="card">
+                    <h2>📊 Relatórios e Estatísticas</h2>
+                    <p>Visualize estatísticas de leitura e validação de QR Codes.</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2em; font-weight: 700; color: #667eea;" id="totalScans">0</div>
+                            <div style="color: #666; font-size: 0.9em;">Total de Leituras</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2em; font-weight: 700; color: #28a745;" id="validScans">0</div>
+                            <div style="color: #666; font-size: 0.9em;">QR Codes Válidos</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2em; font-weight: 700; color: #dc3545;" id="invalidScans">0</div>
+                            <div style="color: #666; font-size: 0.9em;">QR Codes Inválidos</div>
+                        </div>
+                    </div>
+
+                    <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 6px solid #ffc107; margin: 20px 0;">
+                        <h4 style="margin: 0 0 15px 0; color: #856404;">📈 Estatísticas de Uso</h4>
+                        <p style="margin: 0; color: #856404; font-size: 14px;">
+                            📱 Sistema em funcionamento desde o carregamento da página<br>
+                            🔍 Leituras processadas automaticamente<br>
+                            🔐 Descriptografia em tempo real<br>
+                            ✅ Validação instantânea de dados
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content">
+                <div class="card">
+                    <h2>📈 Analytics em Tempo Real</h2>
+                    <p>Análise detalhada do desempenho do sistema de leitura.</p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0;">
+                        <div>
+                            <h3 style="margin: 0 0 15px 0; color: #666;">🔍 Performance do Scanner</h3>
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                <div style="margin-bottom: 15px; font-size: 16px;">
+                                    <strong>Taxa de leitura:</strong> <span>Contínua (10 FPS)</span>
+                                </div>
+                                <div style="margin-bottom: 15px; font-size: 16px;">
+                                    <strong>Áreas de varredura:</strong> <span>2 zonas ativas</span>
+                                </div>
+                                <div style="font-size: 16px;">
+                                    <strong>Algoritmo:</strong> <span>jsQR com inversão</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0 0 15px 0; color: #666;">🔐 Criptografia</h3>
+                            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                <div style="margin-bottom: 15px; font-size: 16px;">
+                                    <strong>Algoritmo:</strong> <span>AES-256</span>
+                                </div>
+                                <div style="margin-bottom: 15px; font-size: 16px;">
+                                    <strong>Chave:</strong> <span>phqX3eLwSsxEnHgp</span>
+                                </div>
+                                <div style="font-size: 16px;">
+                                    <strong>Compatibilidade:</strong> <span>AdKira 100%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #d4edda; padding: 20px; border-radius: 10px; border-left: 6px solid #28a745;">
+                        <h3 style="margin: 0 0 15px 0; color: #155724;">✅ Sistema Operacional</h3>
+                        <div style="color: #155724; font-size: 14px;">
+                            <p style="margin: 5px 0;">🔄 Scanner automático ativo</p>
+                            <p style="margin: 5px 0;">🔐 Descriptografia funcionando</p>
+                            <p style="margin: 5px 0;">📱 Câmera conectada</p>
+                            <p style="margin: 5px 0;">⚡ Processamento em tempo real</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Results Section -->
-        <div class="result-section" id="resultSection">
-            <div class="waiting-state">
-                <div class="pulse-icon">🔍</div>
-                <h3>Aguardando QR Code</h3>
-                <p>Aponte a câmera para um QR Code criptografado</p>
-            </div>
-        </div>
 
-        <!-- Debug Section -->
-        <div class="debug-section">
-            <h3 style="color: #333; margin-bottom: 15px;">🔧 Log de Debug</h3>
-            <div class="debug-log" id="debugLog">
-                <div class="debug-entry info">Sistema iniciado - Aguardando QR Code...</div>
-            </div>
-            <button class="btn btn-success" onclick="clearDebugLog()" style="margin-top: 10px; padding: 8px 16px; font-size: 14px;">
-                Limpar Log
-            </button>
-        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.js"></script>
@@ -463,37 +601,14 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            addDebugLog('Iniciando sistema...', 'info');
             startScanner();
         });
 
-        // Debug logging function
-        function addDebugLog(message, type = 'info') {
-            const debugLog = document.getElementById('debugLog');
-            const timestamp = new Date().toLocaleTimeString('pt-BR');
-            const entry = document.createElement('div');
-            entry.className = `debug-entry ${type}`;
-            entry.textContent = `[${timestamp}] ${message}`;
-            
-            debugLog.appendChild(entry);
-            debugLog.scrollTop = debugLog.scrollHeight;
-            
-            // Keep only last 50 entries
-            while (debugLog.children.length > 50) {
-                debugLog.removeChild(debugLog.firstChild);
-            }
-        }
 
-        function clearDebugLog() {
-            document.getElementById('debugLog').innerHTML = '';
-            addDebugLog('Log limpo - Sistema ativo', 'info');
-        }
 
         // Auto-start scanner
         async function startScanner() {
             try {
-                addDebugLog('Solicitando acesso à câmera...', 'info');
-                
                 const constraintOptions = [
                     {
                         video: {
@@ -516,10 +631,8 @@
                 for (const constraints of constraintOptions) {
                     try {
                         stream = await navigator.mediaDevices.getUserMedia(constraints);
-                        addDebugLog('Câmera conectada com sucesso', 'success');
                         break;
                     } catch (err) {
-                        addDebugLog(`Tentativa de câmera falhou: ${err.message}`, 'error');
                         continue;
                     }
                 }
@@ -533,23 +646,19 @@
                 
                 video.onloadedmetadata = () => {
                     video.play().then(() => {
-                        addDebugLog(`Vídeo iniciado: ${video.videoWidth}x${video.videoHeight}`, 'success');
-                        
                         // Start continuous scanning
                         scanner = setInterval(() => {
                             if (!isProcessing) {
                                 scanQRCode();
                             }
                         }, 100);
-                        
-                        addDebugLog('Scanner automático ativado', 'success');
                     }).catch(err => {
-                        addDebugLog(`Erro ao reproduzir vídeo: ${err.message}`, 'error');
+                        console.error('Erro ao reproduzir vídeo:', err);
                     });
                 };
                 
             } catch (err) {
-                addDebugLog(`Erro crítico na câmera: ${err.message}`, 'error');
+                console.error('Erro na câmera:', err);
                 showResult('Erro na Câmera', 'denied', 'Verifique as permissões do navegador para acessar a câmera.');
             }
         }
@@ -588,9 +697,6 @@
                             scanCount++;
                             document.getElementById('scanCount').textContent = scanCount;
                             
-                            addDebugLog(`QR detectado na área ${area.name}`, 'success');
-                            addDebugLog(`Tamanho dos dados: ${code.data.length} caracteres`, 'info');
-                            
                             // Pause scanning to avoid duplicates
                             isProcessing = true;
                             
@@ -613,36 +719,28 @@
 
         // Main QR processing function
         function processQRCode(qrData) {
-            addDebugLog('=== INICIANDO PROCESSAMENTO ===', 'info');
-            addDebugLog(`Dados brutos (primeiros 100 chars): ${qrData.substring(0, 100)}...`, 'info');
-            addDebugLog(`Tamanho total: ${qrData.length} caracteres`, 'info');
+            console.log('Processando QR Code:', qrData.substring(0, 100) + '...');
             
             // Step 1: Try to decrypt the data
-            addDebugLog('Tentando descriptografar com chave AdKira...', 'info');
             const decryptedData = decryptData(qrData);
             
             if (decryptedData) {
-                addDebugLog('✅ DESCRIPTOGRAFIA BEM-SUCEDIDA!', 'success');
-                addDebugLog(`Dados descriptografados: ${decryptedData}`, 'success');
+                console.log('✅ Descriptografia bem-sucedida');
                 
                 // Step 2: Try to parse as JSON
                 try {
                     const guestData = JSON.parse(decryptedData);
-                    addDebugLog('✅ JSON válido encontrado', 'success');
-                    addDebugLog(`Dados parseados: ${JSON.stringify(guestData)}`, 'success');
                     
                     if (guestData.code && guestData.name) {
-                        addDebugLog('✅ Dados de convidado válidos encontrados', 'success');
+                        console.log('✅ Dados válidos encontrados:', guestData);
                         showGuestResult(guestData, 'approved');
                         return;
                     } else {
-                        addDebugLog('❌ Dados JSON não contêm code e name', 'error');
                         showResult('Dados Incompletos', 'warning', 'QR Code descriptografado mas sem dados válidos de convidado.');
                         return;
                     }
                 } catch (jsonError) {
-                    addDebugLog(`❌ Erro ao parsear JSON: ${jsonError.message}`, 'error');
-                    addDebugLog('Tentando outros formatos...', 'info');
+                    console.log('Tentando outros formatos...');
                 }
                 
                 // Step 3: Try other formats with decrypted data
@@ -651,8 +749,7 @@
                 }
                 
             } else {
-                addDebugLog('❌ Descriptografia falhou', 'error');
-                addDebugLog('Tentando ler como dados não criptografados...', 'info');
+                console.log('Descriptografia falhou, tentando formatos simples...');
                 
                 // Step 4: Try as plain text formats
                 if (tryOtherFormats(qrData)) {
@@ -661,25 +758,22 @@
             }
             
             // Step 5: Show raw data for debugging
-            addDebugLog('❌ Nenhum formato reconhecido', 'error');
             showResult('QR Code Não Reconhecido', 'denied', 
                 `Formato não suportado. Dados: ${qrData.substring(0, 200)}${qrData.length > 200 ? '...' : ''}`);
         }
 
         // Try other data formats
         function tryOtherFormats(data) {
-            addDebugLog('Testando formatos alternativos...', 'info');
-            
             // Format 1: Plain JSON
             try {
                 const testData = JSON.parse(data);
                 if (testData.code && testData.name) {
-                    addDebugLog('✅ JSON simples detectado', 'success');
+                    console.log('✅ JSON simples detectado');
                     showGuestResult(testData, 'approved');
                     return true;
                 }
             } catch (e) {
-                addDebugLog('Não é JSON simples', 'info');
+                // Not JSON
             }
             
             // Format 2: URL parameters
@@ -690,7 +784,7 @@
                     const name = url.searchParams.get('name');
                     
                     if (code && name) {
-                        addDebugLog('✅ Formato URL detectado', 'success');
+                        console.log('✅ Formato URL detectado');
                         showGuestResult({ 
                             code: decodeURIComponent(code), 
                             name: decodeURIComponent(name) 
@@ -699,7 +793,7 @@
                     }
                 }
             } catch (e) {
-                addDebugLog('Não é formato URL', 'info');
+                // Not URL format
             }
             
             // Format 3: CSV format "CODE,NAME"
@@ -710,7 +804,7 @@
                     const name = parts.slice(1).join(',').trim();
                     
                     if (code && name && code.length > 0 && name.length > 0) {
-                        addDebugLog('✅ Formato CSV detectado', 'success');
+                        console.log('✅ Formato CSV detectado');
                         showGuestResult({ code, name }, 'approved');
                         return true;
                     }
@@ -724,7 +818,7 @@
                 const name = words.slice(1).join(' ');
                 
                 if (code.length > 0 && name.length > 0) {
-                    addDebugLog('✅ Formato texto simples detectado', 'success');
+                    console.log('✅ Formato texto simples detectado');
                     showGuestResult({ code, name }, 'approved');
                     return true;
                 }
@@ -736,19 +830,15 @@
         // AES Decryption function
         function decryptData(encryptedText) {
             try {
-                addDebugLog(`Usando chave: ${encryptionKey}`, 'info');
                 const bytes = CryptoJS.AES.decrypt(encryptedText, encryptionKey);
                 const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
                 
                 if (decryptedText && decryptedText.length > 0) {
-                    addDebugLog(`Descriptografia retornou ${decryptedText.length} caracteres`, 'success');
                     return decryptedText;
                 } else {
-                    addDebugLog('Descriptografia retornou string vazia', 'error');
                     return null;
                 }
             } catch (error) {
-                addDebugLog(`Erro na descriptografia: ${error.message}`, 'error');
                 return null;
             }
         }
@@ -776,7 +866,7 @@
                 </div>
             `;
 
-            addDebugLog(`Resultado exibido: ${statusText} para ${guestData.name}`, 'success');
+
         }
 
         // Show general result
@@ -796,6 +886,22 @@
             `;
         }
 
+        // Tab switching function
+        function switchTab(tabName) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
         // Prepare for next QR
         function prepareForNextQR() {
             document.getElementById('resultSection').innerHTML = `
@@ -807,8 +913,7 @@
             `;
             
             isProcessing = false;
-            addDebugLog('Sistema preparado para próxima leitura', 'info');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'989217b832923f1f',t:'MTc1OTU1Mzc4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98921e5470fb3f1f',t:'MTc1OTU1NDA1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
