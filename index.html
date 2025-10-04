@@ -494,12 +494,27 @@
 
                     <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 6px solid #ffc107; margin: 20px 0;">
                         <h4 style="margin: 0 0 15px 0; color: #856404;">📋 Lista de Convidados Criptografada</h4>
-                        <p style="margin: 0 0 15px 0; color: #856404; font-size: 14px;">
-                            Cole aqui a lista TXT criptografada com a chave phqX3eLwSsxEnHgp:
-                        </p>
-                        <textarea id="encryptedGuestList" 
-                                  style="width: 100%; height: 120px; padding: 15px; border: 2px solid #ffc107; border-radius: 8px; font-family: monospace; font-size: 12px; resize: vertical;"
-                                  placeholder="Cole aqui o conteúdo TXT criptografado da lista de convidados..."></textarea>
+                        
+                        <!-- File Upload Option -->
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 2px dashed #ffc107;">
+                            <h5 style="margin: 0 0 10px 0; color: #856404;">📁 Upload de Arquivo TXT</h5>
+                            <input type="file" id="fileInput" accept=".txt" style="margin-bottom: 10px; padding: 8px; border: 1px solid #ffc107; border-radius: 4px; width: 100%;">
+                            <button class="btn btn-success" onclick="loadFileGuestList()" style="margin-right: 10px;">
+                                📁 Carregar Arquivo TXT
+                            </button>
+                        </div>
+                        
+                        <!-- Manual Text Input Option -->
+                        <div style="margin-bottom: 20px;">
+                            <h5 style="margin: 0 0 10px 0; color: #856404;">✏️ Ou Cole o Conteúdo Manualmente</h5>
+                            <p style="margin: 0 0 15px 0; color: #856404; font-size: 14px;">
+                                Cole aqui a lista TXT criptografada com a chave phqX3eLwSsxEnHgp:
+                            </p>
+                            <textarea id="encryptedGuestList" 
+                                      style="width: 100%; height: 120px; padding: 15px; border: 2px solid #ffc107; border-radius: 8px; font-family: monospace; font-size: 12px; resize: vertical;"
+                                      placeholder="Cole aqui o conteúdo TXT criptografado da lista de convidados..."></textarea>
+                        </div>
+                        
                         <div style="margin-top: 15px;">
                             <button class="btn btn-success" onclick="loadGuestList()" style="margin-right: 10px;">
                                 🔓 Descriptografar e Carregar Lista
@@ -520,6 +535,16 @@
                             🔍 Preparando detecção...<br>
                             ⚡ Carregando sistema...
                         </p>
+                    </div>
+
+                    <div style="background: #e2e3e5; padding: 20px; border-radius: 10px; border-left: 6px solid #6c757d; margin-top: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: #495057;">🔧 Debug do Scanner</h4>
+                        <div id="debugInfo" style="font-family: monospace; font-size: 12px; color: #495057; background: white; padding: 15px; border-radius: 5px; max-height: 200px; overflow-y: auto;">
+                            Aguardando atividade do scanner...
+                        </div>
+                        <button class="btn" onclick="clearDebugLog()" style="background: #6c757d; color: white; margin-top: 10px; padding: 8px 16px; font-size: 12px;">
+                            🗑️ Limpar Log
+                        </button>
                     </div>
                 </div>
             </div>
@@ -626,6 +651,7 @@
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
             updateScannerStatus('🔄 Iniciando sistema...', 'info');
+            addDebugLog('🚀 Sistema iniciado - carregando componentes...');
             startScanner();
         });
 
@@ -639,7 +665,46 @@
             }
         }
 
-        // Load and decrypt guest list
+        // Load guest list from file upload
+        function loadFileGuestList() {
+            const fileInput = document.getElementById('fileInput');
+            const statusDiv = document.getElementById('guestListStatus');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.innerHTML = '❌ Por favor, selecione um arquivo TXT.';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            if (!file.name.toLowerCase().endsWith('.txt')) {
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.innerHTML = '❌ Por favor, selecione apenas arquivos .txt';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const encryptedText = e.target.result.trim();
+                processGuestListData(encryptedText, statusDiv);
+            };
+            
+            reader.onerror = function() {
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.innerHTML = '❌ Erro ao ler o arquivo.';
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // Load and decrypt guest list from textarea
         function loadGuestList() {
             const encryptedText = document.getElementById('encryptedGuestList').value.trim();
             const statusDiv = document.getElementById('guestListStatus');
@@ -652,6 +717,11 @@
                 return;
             }
             
+            processGuestListData(encryptedText, statusDiv);
+        }
+
+        // Process guest list data (common function for both upload and manual input)
+        function processGuestListData(encryptedText, statusDiv) {
             try {
                 const decryptedText = decryptData(encryptedText);
                 if (decryptedText) {
@@ -663,7 +733,8 @@
                     statusDiv.style.display = 'block';
                     statusDiv.style.background = '#d4edda';
                     statusDiv.style.color = '#155724';
-                    statusDiv.innerHTML = `✅ Lista carregada com sucesso! ${guestList.length} convidados encontrados.`;
+                    statusDiv.innerHTML = `✅ Lista carregada com sucesso! ${guestList.length} convidados encontrados.<br>
+                        <small>Primeiros nomes: ${guestList.slice(0, 3).join(', ')}${guestList.length > 3 ? '...' : ''}</small>`;
                     
                     updateScannerStatus(`Lista de ${guestList.length} convidados carregada`, 'success');
                 } else {
@@ -681,9 +752,37 @@
         function clearGuestList() {
             guestList = [];
             document.getElementById('encryptedGuestList').value = '';
+            document.getElementById('fileInput').value = '';
             const statusDiv = document.getElementById('guestListStatus');
             statusDiv.style.display = 'none';
             updateScannerStatus('Lista de convidados removida', 'warning');
+        }
+
+        // Debug logging function
+        function addDebugLog(message) {
+            const debugDiv = document.getElementById('debugInfo');
+            if (debugDiv) {
+                const timestamp = new Date().toLocaleTimeString('pt-BR');
+                const logEntry = `[${timestamp}] ${message}\n`;
+                debugDiv.textContent = logEntry + debugDiv.textContent;
+                
+                // Keep only last 50 lines
+                const lines = debugDiv.textContent.split('\n');
+                if (lines.length > 50) {
+                    debugDiv.textContent = lines.slice(0, 50).join('\n');
+                }
+                
+                // Auto scroll to top
+                debugDiv.scrollTop = 0;
+            }
+        }
+
+        // Clear debug log
+        function clearDebugLog() {
+            const debugDiv = document.getElementById('debugInfo');
+            if (debugDiv) {
+                debugDiv.textContent = 'Log limpo - aguardando atividade...';
+            }
         }
 
 
@@ -692,6 +791,7 @@
         async function startScanner() {
             try {
                 updateScannerStatus('📹 Solicitando acesso à câmera...', 'info');
+                addDebugLog('📹 Iniciando processo de acesso à câmera...');
                 
                 const constraintOptions = [
                     {
@@ -730,11 +830,13 @@
                 for (let i = 0; i < constraintOptions.length; i++) {
                     try {
                         updateScannerStatus(`📹 Tentativa ${i + 1}/${constraintOptions.length}...`, 'info');
+                        addDebugLog(`📹 Tentativa ${i + 1}: ${JSON.stringify(constraintOptions[i])}`);
                         stream = await navigator.mediaDevices.getUserMedia(constraintOptions[i]);
                         usedConstraint = constraintOptions[i];
+                        addDebugLog(`✅ Câmera conectada com configuração ${i + 1}`);
                         break;
                     } catch (err) {
-                        console.log(`Tentativa ${i + 1} falhou:`, err.message);
+                        addDebugLog(`❌ Tentativa ${i + 1} falhou: ${err.message}`);
                         continue;
                     }
                 }
@@ -744,6 +846,7 @@
                 }
                 
                 updateScannerStatus('✅ Câmera conectada com sucesso!', 'success');
+                addDebugLog('✅ Stream de vídeo obtido com sucesso');
                 
                 const video = document.getElementById('video');
                 video.srcObject = stream;
@@ -754,6 +857,7 @@
                         const height = video.videoHeight || video.clientHeight;
                         
                         updateScannerStatus(`✅ Vídeo ativo: ${width}x${height}px`, 'success');
+                        addDebugLog(`📺 Vídeo ativo: ${width}x${height}px`);
                         
                         // Start continuous scanning with higher frequency
                         scanner = setInterval(() => {
@@ -763,14 +867,17 @@
                         }, 50); // Scan every 50ms for better detection
                         
                         updateScannerStatus('🔍 Scanner automático ativado - Pronto!', 'success');
+                        addDebugLog('🔍 Scanner automático iniciado (50ms interval)');
                         
                     }).catch(err => {
                         updateScannerStatus(`❌ Erro ao reproduzir vídeo: ${err.message}`, 'error');
+                        addDebugLog(`❌ Erro ao reproduzir vídeo: ${err.message}`);
                     });
                 };
                 
             } catch (err) {
                 updateScannerStatus(`❌ Erro crítico: ${err.message}`, 'error');
+                addDebugLog(`❌ ERRO CRÍTICO: ${err.message}`);
                 showResult('Erro na Câmera', 'denied', 'Verifique as permissões do navegador para acessar a câmera.');
             }
         }
@@ -804,43 +911,70 @@
                     // Top half
                     { x: 0, y: 0, w: width, h: Math.floor(height * 0.6), name: 'superior' },
                     // Bottom half
-                    { x: 0, y: Math.floor(height * 0.4), w: width, h: Math.floor(height * 0.6), name: 'inferior' }
+                    { x: 0, y: Math.floor(height * 0.4), w: width, h: Math.floor(height * 0.6), name: 'inferior' },
+                    // Left half
+                    { x: 0, y: 0, w: Math.floor(width * 0.6), h: height, name: 'esquerda' },
+                    // Right half
+                    { x: Math.floor(width * 0.4), y: 0, w: Math.floor(width * 0.6), h: height, name: 'direita' }
                 ];
                 
                 for (const area of scanAreas) {
                     try {
                         const imageData = context.getImageData(area.x, area.y, area.w, area.h);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                            inversionAttempts: "attemptBoth",
-                        });
                         
-                        if (code && code.data && code.data.length > 5) {
-                            // Avoid duplicate readings
-                            if (code.data === lastQRData) {
+                        // Try with different jsQR configurations
+                        const configs = [
+                            { inversionAttempts: "attemptBoth" },
+                            { inversionAttempts: "onlyInvert" },
+                            { inversionAttempts: "dontInvert" },
+                            { inversionAttempts: "attemptBoth", canOverwriteImage: true }
+                        ];
+                        
+                        for (const config of configs) {
+                            const code = jsQR(imageData.data, imageData.width, imageData.height, config);
+                            
+                            if (code && code.data && code.data.length > 10) {
+                                // Check if it looks like encrypted data (Base64-like)
+                                const isEncryptedLike = /^[A-Za-z0-9+/=]{20,}$/.test(code.data) || 
+                                                       code.data.startsWith('U2FsdGVkX1');
+                                
+                                addDebugLog(`🔍 QR DETECTADO! Área: ${area.name}, Config: ${JSON.stringify(config)}`);
+                                addDebugLog(`📊 Dados: ${code.data.substring(0, 100)}...`);
+                                addDebugLog(`📊 Tamanho: ${code.data.length} chars, Criptografado: ${isEncryptedLike}`);
+                                
+                                console.log(`🔍 QR detectado na área ${area.name} (config: ${JSON.stringify(config)}):`, 
+                                           code.data.substring(0, 100) + '...');
+                                console.log(`📊 Tamanho: ${code.data.length} chars, Parece criptografado: ${isEncryptedLike}`);
+                                
+                                // Avoid duplicate readings
+                                if (code.data === lastQRData) {
+                                    addDebugLog('⚠️ QR duplicado ignorado');
+                                    return;
+                                }
+                                
+                                lastQRData = code.data;
+                                scanCount++;
+                                document.getElementById('scanCount').textContent = scanCount;
+                                
+                                updateScannerStatus(`🔍 QR detectado! Processando...`, 'success');
+                                addDebugLog('🔄 Iniciando processamento do QR...');
+                                
+                                // Pause scanning to avoid duplicates
+                                isProcessing = true;
+                                
+                                // Process the QR code
+                                processQRCode(code.data);
+                                
+                                // Resume scanning after 4 seconds
+                                setTimeout(() => {
+                                    isProcessing = false;
+                                    lastQRData = ''; // Reset to allow new readings
+                                    updateScannerStatus('🔍 Pronto para próximo QR Code', 'success');
+                                    addDebugLog('✅ Scanner reativado para próximo QR');
+                                }, 4000);
+                                
                                 return;
                             }
-                            
-                            lastQRData = code.data;
-                            scanCount++;
-                            document.getElementById('scanCount').textContent = scanCount;
-                            
-                            console.log(`🔍 QR detectado na área ${area.name}:`, code.data.substring(0, 50) + '...');
-                            updateScannerStatus(`🔍 QR detectado! Processando...`, 'success');
-                            
-                            // Pause scanning to avoid duplicates
-                            isProcessing = true;
-                            
-                            // Process the QR code
-                            processQRCode(code.data);
-                            
-                            // Resume scanning after 4 seconds
-                            setTimeout(() => {
-                                isProcessing = false;
-                                lastQRData = ''; // Reset to allow new readings
-                                updateScannerStatus('🔍 Pronto para próximo QR Code', 'success');
-                            }, 4000);
-                            
-                            return;
                         }
                     } catch (err) {
                         // Silent error for scanning attempts
@@ -851,16 +985,24 @@
 
         // Main QR processing function
         function processQRCode(qrData) {
+            addDebugLog('=== PROCESSANDO QR CODE ===');
+            addDebugLog(`📊 Dados brutos: ${qrData.substring(0, 100)}...`);
+            addDebugLog(`📊 Tamanho: ${qrData.length} caracteres`);
+            
             console.log('=== PROCESSANDO QR CODE ===');
             console.log('Dados brutos:', qrData.substring(0, 100) + '...');
             console.log('Tamanho:', qrData.length, 'caracteres');
             
             updateScannerStatus('🔓 Tentando descriptografar...', 'info');
+            addDebugLog('🔓 Tentando descriptografar com chave AdKira...');
             
             // Step 1: Try to decrypt the data
             const decryptedData = decryptData(qrData);
             
             if (decryptedData) {
+                addDebugLog('✅ DESCRIPTOGRAFIA BEM-SUCEDIDA!');
+                addDebugLog(`📊 Dados descriptografados: ${decryptedData.substring(0, 100)}...`);
+                
                 console.log('✅ DESCRIPTOGRAFIA BEM-SUCEDIDA!');
                 console.log('Dados descriptografados:', decryptedData);
                 updateScannerStatus('✅ Descriptografia bem-sucedida!', 'success');
@@ -870,10 +1012,12 @@
                     const guestData = JSON.parse(decryptedData);
                     
                     if (guestData.code && guestData.name) {
+                        addDebugLog(`✅ JSON válido encontrado: ${guestData.name} (${guestData.code})`);
                         console.log('✅ Dados JSON válidos:', guestData);
                         validateAndShowGuest(guestData);
                         return;
                     } else {
+                        addDebugLog('❌ JSON sem campos obrigatórios (code/name)');
                         console.log('❌ JSON sem campos obrigatórios');
                         invalidScans++;
                         updateReportStats();
@@ -881,15 +1025,18 @@
                         return;
                     }
                 } catch (jsonError) {
+                    addDebugLog(`❌ Não é JSON válido: ${jsonError.message}`);
                     console.log('❌ Não é JSON válido, tentando outros formatos...');
                 }
                 
                 // Step 3: Try other formats with decrypted data
+                addDebugLog('🔄 Tentando outros formatos com dados descriptografados...');
                 if (tryOtherFormats(decryptedData, true)) {
                     return;
                 }
                 
             } else {
+                addDebugLog('❌ Descriptografia falhou - tentando formatos não criptografados...');
                 console.log('❌ Descriptografia falhou, tentando formatos não criptografados...');
                 updateScannerStatus('⚠️ Descriptografia falhou, tentando outros formatos...', 'warning');
                 
@@ -900,6 +1047,7 @@
             }
             
             // Step 5: Show raw data for debugging
+            addDebugLog('❌ NENHUM FORMATO RECONHECIDO');
             console.log('❌ NENHUM FORMATO RECONHECIDO');
             invalidScans++;
             updateReportStats();
@@ -1141,5 +1289,5 @@
             isProcessing = false;
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98922cb294c23f1f',t:'MTc1OTU1NDY0NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9892383521963f1f',t:'MTc1OTU1NTExNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
