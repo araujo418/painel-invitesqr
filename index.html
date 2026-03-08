@@ -1232,7 +1232,11 @@
                           </span>
                         </div>
                         <div class="flex gap-2 mt-3">
-                          <button type="button" class="text-sm text-red-600 hover:text-red-800 delete-conf-btn" data-conf-id="${conf.id}" data-event-id="${event.id}">Eliminar</button>
+                          <button type="button" class="delete-conf-trash" data-conf-id="${conf.id}" data-event-id="${event.id}" title="Clique para confirmar eliminação">
+                            <svg class="w-5 h-5 text-red-500 hover:text-red-700 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     `;
@@ -1507,6 +1511,12 @@
                   </form>
                 </div>
               </div>
+              
+              ${event.messages_enabled ? `
+                <div class="mt-8 border-t pt-8">
+                  ${renderMessagesAfterConfirmation(event.id, 'new-guest')}
+                </div>
+              ` : ''}
             </div>
           </div>
           ${renderFooter()}
@@ -2049,10 +2059,11 @@
           const userId = e.target.dataset.userId;
           deleteUser(userId);
         }
-        if (e.target.classList.contains('delete-conf-btn')) {
-          const confId = e.target.dataset.confId;
-          const eventId = e.target.dataset.eventId;
-          deleteConfirmation(confId, eventId);
+        if (e.target.classList.contains('delete-conf-trash') || e.target.closest('.delete-conf-trash')) {
+          const btn = e.target.closest('.delete-conf-trash');
+          const confId = btn.dataset.confId;
+          const eventId = btn.dataset.eventId;
+          handleDeleteConfirmationButton(btn, confId, eventId);
         }
         if (e.target.classList.contains('toggle-password-btn')) {
           e.preventDefault();
@@ -2892,6 +2903,29 @@
       }
     }
 
+    function handleDeleteConfirmationButton(btn, confId, eventId) {
+      if (btn.dataset.state === 'confirming') {
+        // Segunda clique - executar eliminação
+        executeDeleteConfirmation(confId, eventId);
+      } else {
+        // Primeira clique - mudar para estado de confirmação
+        btn.dataset.state = 'confirming';
+        btn.innerHTML = `<svg class="w-5 h-5 text-red-700 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+        </svg>`;
+        
+        // Voltar ao estado normal após 3 segundos se não clicar novamente
+        setTimeout(() => {
+          if (btn.dataset.state === 'confirming') {
+            btn.dataset.state = '';
+            btn.innerHTML = `<svg class="w-5 h-5 text-red-500 hover:text-red-700 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>`;
+          }
+        }, 3000);
+      }
+    }
+
     function executeDeleteConfirmation(confirmationId, eventId) {
       const confirmation = db.confirmations.find(c => c.id === confirmationId && c.event_id === eventId);
       if (confirmation) {
@@ -3387,11 +3421,16 @@
       if (event) {
         event.messages_enabled = enabled;
         isLoading = true;
+        
         supabaseClient.from('events').update({ messages_enabled: enabled }).eq('id', eventId).then(result => {
           if (result.error) {
-            showToast('Erro ao atualizar: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+            if (result.error.code === '42703' || result.error.message.includes('messages_enabled')) {
+              showToast('⚠️ Coluna de recados não existe. Execute o SQL no Supabase para criar as colunas necessárias.', 'error');
+            } else {
+              showToast('Erro ao atualizar: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+            }
           } else {
-            showToast(enabled ? 'Sistema de recados ativado' : 'Sistema de recados desativado');
+            showToast(enabled ? '✓ Recados ativados' : '✓ Recados desativados');
             render();
           }
           isLoading = false;
@@ -3405,5 +3444,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d905b3d156d070c',t:'MTc3Mjk1NzM1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90639ec149070c',t:'MTc3Mjk1NzY5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
