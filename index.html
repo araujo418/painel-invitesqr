@@ -9,8 +9,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
   <style>
     * { font-family: 'Poppins', sans-serif; }
     .font-display { font-family: 'Poppins', sans-serif; }
@@ -207,63 +205,7 @@
       border-radius: 10px;
       margin-bottom: 8px;
     }
-    .cropper-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 101;
-      padding: 20px;
-    }
-    .cropper-container-box {
-      background: white;
-      border-radius: 16px;
-      max-width: 500px;
-      width: 100%;
-      max-height: 90%;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .cropper-header {
-      padding: 16px;
-      border-bottom: 1px solid #e5e7eb;
-      font-weight: 600;
-      text-align: center;
-    }
-    .cropper-body {
-      flex: 1;
-      overflow: auto;
-      padding: 16px;
-    }
-    .cropper-image {
-      max-width: 100%;
-      max-height: 400px;
-    }
-    .cropper-footer {
-      padding: 16px;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      gap: 8px;
-    }
-    .cropper-footer button {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    .cropper-footer .cancel-btn {
-      background: #f3f4f6;
-      color: #374151;
-    }
-    .cropper-footer .crop-btn {
-      background: linear-gradient(135deg, #007f9f 0%, #005f7f 100%);
-      color: white;
-    }
+
     .badge {
       display: inline-block;
       padding: 4px 12px;
@@ -303,6 +245,23 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvZ3Nsa3pxZGh0cHBvZnR6aWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MDU3ODAsImV4cCI6MjA4ODI4MTc4MH0.s5WynZLrhiA6lhCzP1iead5yciOu_ajaglIHF3IIYBs';
     
     let supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Initialize database schema if needed
+    async function initializeDatabase() {
+      try {
+        // Check if tables exist, if not create them
+        const tables = ['users', 'events', 'confirmations', 'messages', 'event_links', 'gift_suggestions', 'gift_claims'];
+        
+        for (const table of tables) {
+          const { data, error } = await supabaseClient.from(table).select('count()', { count: 'exact', head: true });
+          if (error && error.code === 'PGRST116') {
+            console.log(`Table ${table} doesn't exist yet`);
+          }
+        }
+      } catch (err) {
+        console.log('Database check:', err.message);
+      }
+    }
 
     // ========== STATE MANAGEMENT ==========
     let db = { users: [], events: [], confirmations: [], messages: [], event_links: [], notifications: [], gift_suggestions: [], gift_claims: [] };
@@ -395,6 +354,18 @@
         if (!linksRes.error) db.event_links = linksRes.data || [];
         if (!giftsRes.error) db.gift_suggestions = giftsRes.data || [];
         if (!giftClaimsRes.error) db.gift_claims = giftClaimsRes.data || [];
+        
+        // Auto-enable gift system if gifts exist for an event
+        if (db.events.length > 0 && db.gift_suggestions.length > 0) {
+          db.events.forEach(event => {
+            const eventHasGifts = db.gift_suggestions.some(g => g.event_id === event.id);
+            if (eventHasGifts && !event.gift_suggestions_enabled) {
+              event.gift_suggestions_enabled = true;
+              // Sync to Supabase quietly
+              supabaseClient.from('events').update({ gift_suggestions_enabled: true }).eq('id', event.id).catch(() => {});
+            }
+          });
+        }
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
         showToast('Erro ao conectar com servidor', 'error');
@@ -916,16 +887,6 @@
               <div class="space-y-3">
                 ${db.users.map(user => `
                   <div class="card">
-                <h3 class="font-semibold text-gray-900 mb-4">ℹ️ Detalhes do Evento</h3>
-                <div class="space-y-3 text-sm">
-                  ${event.event_time ? `<div><strong>Hora:</strong> ${event.event_time}</div>` : ''}
-                  ${event.event_location ? `<div><strong>Local:</strong> ${event.event_location}</div>` : ''}
-                  ${event.organizer_contact ? `<div><strong>Contacto:</strong> ${event.organizer_contact}</div>` : ''}
-                  ${event.event_description ? `<div><strong>Descrição:</strong> ${event.event_description}</div>` : ''}
-                </div>
-              </div>
-              
-              <div class="card">
                     <div class="flex items-start justify-between mb-3">
                       <div>
                         <div class="font-semibold text-gray-900">${user.username}</div>
@@ -1147,7 +1108,7 @@
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Hora do Evento</label>
-                  <input type="time" id="eventTime" class="input-field" required>
+                  <input type="time" id="eventTime" class="input-field">
                 </div>
                 
                 <div>
@@ -1167,12 +1128,17 @@
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Capa</label>
-                  <input type="file" id="coverImageFile" class="input-field" accept="image/*" onchange="previewCoverImage()">
-                  <p class="text-xs text-gray-500 mt-1">Selecione uma imagem do seu dispositivo</p>
-                  <div id="coverPreview" class="mt-3 rounded-lg overflow-hidden hidden">
-                    <img id="coverPreviewImg" class="w-full h-48 object-cover" alt="Pré-visualização">
+                  <div class="flex gap-2">
+                    <input type="file" id="coverImageFile" class="hidden" accept="image/*" onchange="handleCoverImageUpload(this)">
+                    <button type="button" class="btn-secondary flex-1 flex items-center justify-center gap-2" onclick="document.getElementById('coverImageFile').click()">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                      </svg>
+                      Upload
+                    </button>
+                    <input type="text" id="coverImageUrl" class="input-field flex-1" placeholder="Ou cole URL">
                   </div>
-                  <input type="hidden" id="coverImageUrl">
+                  <p class="text-xs text-gray-500 mt-1">Upload ou link direto</p>
                 </div>
                 
                 <div class="space-y-3 bg-indigo-50 p-4 rounded-lg">
@@ -1248,7 +1214,7 @@
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Hora do Evento</label>
-                  <input type="time" id="editEventTime" class="input-field" value="${event.event_time ? event.event_time : ''}" required>
+                  <input type="time" id="editEventTime" class="input-field" value="${event.event_time ? event.event_time : ''}">
                 </div>
                 
                 <div>
@@ -1268,12 +1234,17 @@
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Capa</label>
-                  <input type="file" id="editCoverImageFile" class="input-field" accept="image/*" onchange="previewEditCoverImage()">
-                  <p class="text-xs text-gray-500 mt-1">Selecione uma imagem do seu dispositivo</p>
-                  <div id="editCoverPreview" class="mt-3 rounded-lg overflow-hidden hidden">
-                    <img id="editCoverPreviewImg" class="w-full h-48 object-cover" alt="Pré-visualização">
+                  <div class="flex gap-2">
+                    <input type="file" id="editCoverImageFile" class="hidden" accept="image/*" onchange="handleEditCoverImageUpload(this)">
+                    <button type="button" class="btn-secondary flex-1 flex items-center justify-center gap-2" onclick="document.getElementById('editCoverImageFile').click()">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                      </svg>
+                      Upload
+                    </button>
+                    <input type="text" id="editCoverImageUrl" class="input-field flex-1" placeholder="Ou cole URL">
                   </div>
-                  <input type="hidden" id="editCoverImageUrl">
+                  <p class="text-xs text-gray-500 mt-1">Upload ou link direto</p>
                 </div>
                 
                 <div class="space-y-3 bg-indigo-50 p-4 rounded-lg">
@@ -1451,154 +1422,150 @@
       const allowCompanions = event.allow_companions;
       
       return `
-        <div class="min-h-full flex flex-col bg-gray-50">
-          <div class="flex-1 p-4 relative z-10">
-            <div class="max-w-md mx-auto">
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
-              <div class="relative w-full h-48 bg-gradient-to-br from-indigo-400 to-indigo-600 overflow-hidden">
-                <div id="coverImageContainer">
-                  ${config.cover_image_url ? `
-                    <img src="${config.cover_image_url}" alt="Capa do evento" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; document.getElementById('coverImageContainer').style.backgroundImage='linear-gradient(135deg, #007f9f 0%, #005f7f 100%)'; this.parentElement.style.background='linear-gradient(135deg, #007f9f 0%, #005f7f 100%)';"/>
-                  ` : `
-                    <div style="background: linear-gradient(135deg, ${config.primary_color} 0%, ${config.secondary_color} 100%); width: 100%; height: 100%;"></div>
-                  `}
-                </div>
-              </div>
-              
-              <div class="px-6 pt-6">
-                <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
-                  <div class="flex justify-center gap-3" id="countdownContainer">
-                    <div class="countdown-item">
-                      <div class="countdown-number" id="countdown-days">0</div>
-                      <div class="countdown-label">Dias</div>
-                    </div>
-                    <div class="countdown-item">
-                      <div class="countdown-number" id="countdown-hours">0</div>
-                      <div class="countdown-label">Horas</div>
-                    </div>
-                    <div class="countdown-item">
-                      <div class="countdown-number" id="countdown-minutes">0</div>
-                      <div class="countdown-label">Min</div>
-                    </div>
-                    <div class="countdown-item">
-                      <div class="countdown-number" id="countdown-seconds">0</div>
-                      <div class="countdown-label">Seg</div>
-                    </div>
+        <div class="min-h-full flex flex-col bg-white">
+          ${event.cover_image_url ? `
+            <div class="w-full bg-gray-200 overflow-hidden" style="aspect-ratio: 16/9;">
+              <img src="${event.cover_image_url}" alt="${event.title}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
+            </div>
+          ` : ''}
+          
+          <div class="flex-1 flex flex-col items-center justify-center p-4 pb-8">
+            <div class="w-full max-w-md">
+              <div id="guestFormContainer" class="space-y-4">
+                <!-- Countdown Section -->
+                <div class="flex justify-center gap-2 mb-6">
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-days">${countdown.days}</div>
+                    <div class="countdown-label">dias</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-hours">${countdown.hours}</div>
+                    <div class="countdown-label">horas</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-minutes">${countdown.minutes}</div>
+                    <div class="countdown-label">min</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-seconds">${countdown.seconds}</div>
+                    <div class="countdown-label">seg</div>
                   </div>
                 </div>
                 
-                <h1 class="text-3xl font-display font-bold text-gray-900 mb-2">${event.title}</h1>
-                <p class="text-gray-600 text-lg mb-2">
-                  ${new Date(event.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-                ${event.event_time ? `<p class="text-gray-600 text-lg mb-2">⏰ ${event.event_time}</p>` : ''}
-                ${event.event_location ? `<p class="text-gray-600 text-lg mb-2">📍 ${event.event_location}</p>` : ''}
-                ${event.event_description ? `<p class="text-gray-600 mb-4">${event.event_description}</p>` : ''}
-                <p class="text-indigo-600 font-medium mb-6">
-                  Favor confirmar até ${new Date(event.confirm_until).toLocaleDateString('pt-BR')}
-                </p>
-              </div>
-            </div>
-              
-              <div id="guestFormContainer" class="card">
-                <form id="guestForm" class="space-y-5">
-                  <input type="hidden" id="guestEventId" value="${event.id}">
-                  <input type="hidden" id="guestEventType" value="${event.event_type}">
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Confirma Presença?</label>
-                    <div class="flex gap-3">
-                      <label class="radio-card flex-1" id="attendingYes">
-                        <input type="radio" name="attending" value="sim" required>
-                        <span class="radio-indicator"></span>
-                        <span>Sim</span>
-                      </label>
-                      <label class="radio-card flex-1" id="attendingNo">
-                        <input type="radio" name="attending" value="nao">
-                        <span class="radio-indicator"></span>
-                        <span>Não</span>
-                      </label>
-                    </div>
+                <!-- Main Card -->
+                <div class="card border-2" style="border-color: ${config.primary_color}; background: white;">
+                  <div class="text-center mb-6">
+                    <h1 class="text-2xl font-display font-bold" style="color: ${config.primary_color};">${event.title}</h1>
+                    <p class="text-gray-600 text-sm mt-2">
+                      ${new Date(event.event_date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      ${event.event_time ? ` às ${event.event_time}` : ''}
+                    </p>
+                    <div class="border-t my-4"></div>
+                    <p class="text-gray-700 text-sm font-medium">Favor confirmar até ${new Date(event.confirm_until).toLocaleDateString('pt-BR')}</p>
                   </div>
                   
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Convidado</label>
-                    <input type="text" id="guestName" class="input-field" placeholder="Digite seu nome completo" required>
-                  </div>
-                  
-                  ${event.event_type === 'casamento' ? `
+                  <form id="guestForm" class="space-y-6">
+                    <input type="hidden" id="guestEventId" value="${event.id}">
+                    <input type="hidden" id="guestEventType" value="${event.event_type}">
+                    
+                    <!-- Confirmation Question -->
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Você é convidado(a) do(a):</label>
+                      <label class="block text-sm font-semibold text-gray-900 mb-3 text-center">Confirma Presença?</label>
                       <div class="flex gap-3">
-                        <label class="radio-card flex-1" id="invitedByNoivo">
-                          <input type="radio" name="invitedBy" value="Noivo" required>
+                        <label class="radio-card flex-1" id="attendingYes">
+                          <input type="radio" name="attending" value="sim" required>
                           <span class="radio-indicator"></span>
-                          <span>Noivo</span>
+                          <span>Sim</span>
                         </label>
-                        <label class="radio-card flex-1" id="invitedByNoiva">
-                          <input type="radio" name="invitedBy" value="Noiva">
+                        <label class="radio-card flex-1" id="attendingNo">
+                          <input type="radio" name="attending" value="nao">
                           <span class="radio-indicator"></span>
-                          <span>Noiva</span>
+                          <span>Não</span>
                         </label>
                       </div>
                     </div>
-                  ` : `
-                    ${event.allow_children ? `
+                    
+                    <!-- Name Field -->
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-900 mb-2">Nome *</label>
+                      <input type="text" id="guestName" class="input-field" placeholder="Seu nome completo" required>
+                    </div>
+                    
+                    <!-- Invited By (Wedding Only) -->
+                    ${event.event_type === 'casamento' ? `
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantas crianças vão?</label>
-                        <input type="number" id="childrenCount" class="input-field" value="0" min="0" max="10">
+                        <label class="block text-sm font-semibold text-gray-900 mb-3">Você é convidado(a) do(a):</label>
+                        <div class="flex gap-3">
+                          <label class="radio-card flex-1" id="invitedByNoivo">
+                            <input type="radio" name="invitedBy" value="Noivo" required>
+                            <span class="radio-indicator"></span>
+                            <span>Noivo</span>
+                          </label>
+                          <label class="radio-card flex-1" id="invitedByNoiva">
+                            <input type="radio" name="invitedBy" value="Noiva">
+                            <span class="radio-indicator"></span>
+                            <span>Noiva</span>
+                          </label>
+                        </div>
+                      </div>
+                    ` : `
+                      ${event.allow_children ? `
+                        <div>
+                          <label class="block text-sm font-semibold text-gray-900 mb-2">Crianças que virão</label>
+                          <input type="number" id="childrenCount" class="input-field" value="0" min="0" max="10">
+                        </div>
+                      ` : ''}
+                    `}
+                    
+                    <!-- Companions -->
+                    ${allowCompanions ? `
+                      <div>
+                        <div class="flex items-center justify-between mb-3">
+                          <label class="block text-sm font-semibold text-gray-900">Acompanhantes</label>
+                          <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="text-sm px-3 py-1 rounded-lg" style="background-color: ${config.primary_color}; color: white; font-weight: 500;">
+                            + Incluir
+                          </button>
+                        </div>
+                        <div id="companionsList" class="space-y-2"></div>
                       </div>
                     ` : ''}
-                  `}
-                  
-                  ${allowCompanions ? `
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-3">Acompanhantes</label>
-                      <div id="companionsList" class="space-y-2"></div>
-                      <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="mt-3 text-indigo-600 hover:text-indigo-800 flex items-center gap-2 text-sm font-medium">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Incluir acompanhante
-                      </button>
-                    </div>
-                  ` : ''}
-                  
-                  ${event.gift_suggestions_enabled ? `
-                    <div class="border-t pt-5">
-                      <h3 class="font-semibold text-gray-900 mb-4">🎁 Sugestões de Presentes</h3>
-                      ${getGiftSuggestions(event.id).length === 0 ? `
-                        <p class="text-gray-500 text-center py-4">Nenhuma sugestão de presente disponível</p>
-                      ` : `
-                        <div class="space-y-3" id="giftsList">
-                          ${getGiftSuggestions(event.id).map(gift => {
-                            const claims = getGiftClaimsByGift(gift.id);
-                            const isUnavailable = !gift.allow_multiple && claims.length > 0;
-                            
-                            return `
-                              <label class="radio-card ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}" id="gift-${gift.id}">
-                                <input type="radio" name="giftSuggestion" value="${gift.id}" ${isUnavailable ? 'disabled' : ''} onchange="document.getElementById('selectedGiftId').value = '${gift.id}'">
-                                <span class="radio-indicator"></span>
-                                <div class="flex-1 text-sm">
-                                  <div class="font-medium">${gift.gift_name}</div>
-                                  ${claims.length > 0 ? `
-                                    <div class="text-xs text-gray-500">${claims.length} pessoa${claims.length > 1 ? 's' : ''} levarão ${isUnavailable ? '- INDISPONÍVEL' : ''}</div>
-                                  ` : ''}
-                                </div>
-                              </label>
-                            `;
-                          }).join('')}
-                        </div>
-                      `}
-                    </div>
-                  ` : ''}
-                  
-                  <input type="hidden" id="selectedGiftId" value="">
-                  
-                  <button type="submit" id="submitBtn" class="btn-primary w-full mt-6">
-                    Enviar Confirmação
-                  </button>
-                </form>
+                    
+                    <!-- Gifts -->
+                    ${event.gift_suggestions_enabled ? `
+                      <div class="border-t pt-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">🎁 Presentes</h3>
+                        ${getGiftSuggestions(event.id).length === 0 ? `
+                          <p class="text-gray-500 text-center py-3 text-sm">Nenhuma sugestão disponível</p>
+                        ` : `
+                          <div class="space-y-2" id="giftsList">
+                            ${getGiftSuggestions(event.id).map(gift => {
+                              const claims = getGiftClaimsByGift(gift.id);
+                              const isUnavailable = !gift.allow_multiple && claims.length > 0;
+                              
+                              return `
+                                <label class="radio-card ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}" id="gift-${gift.id}">
+                                  <input type="radio" name="giftSuggestion" value="${gift.id}" ${isUnavailable ? 'disabled' : ''} onchange="document.getElementById('selectedGiftId').value = '${gift.id}'">
+                                  <span class="radio-indicator"></span>
+                                  <div class="flex-1 text-sm">
+                                    <div class="font-medium">${gift.gift_name}</div>
+                                    ${isUnavailable ? `<div class="text-xs text-gray-400">✓ Já selecionado</div>` : ''}
+                                  </div>
+                                </label>
+                              `;
+                            }).join('')}
+                          </div>
+                        `}
+                      </div>
+                    ` : ''}
+                    
+                    <input type="hidden" id="selectedGiftId" value="">
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitBtn" class="w-full py-3 px-6 rounded-xl font-semibold text-lg text-white mt-6 transition-all hover:shadow-lg" style="background-color: ${config.primary_color};">
+                      Enviar
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
@@ -1775,16 +1742,15 @@
             ${event.gift_suggestions_enabled ? `
               <div class="card mb-6">
                 <h3 class="font-semibold text-gray-900 mb-4">Adicionar Presente</h3>
-                <form id="addGiftForm" class="space-y-4">
-                  <input type="hidden" id="giftEventId" value="${event.id}">
+                <form id="addGiftForm" onsubmit="handleAddGift(event, '${event.id}')" class="space-y-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Presente</label>
-                    <input type="text" id="giftName" class="input-field" placeholder="Ex: Toalha de banho" required>
+                    <input type="text" class="input-field" id="newGiftName" placeholder="Ex: Toalha de banho" required>
                   </div>
                   
                   <div class="flex items-center gap-4">
                     <label class="flex items-center gap-2 cursor-pointer flex-1">
-                      <input type="checkbox" id="giftMultiple" class="w-4 h-4 rounded">
+                      <input type="checkbox" id="newGiftMultiple" class="w-4 h-4 rounded">
                       <span class="text-sm text-gray-700">Permitir múltiplas pessoas levar o mesmo item?</span>
                     </label>
                   </div>
@@ -1803,7 +1769,7 @@
                     ${gifts.map(gift => {
                       const claims = getGiftClaimsByGift(gift.id);
                       return `
-                        <div class="p-4 bg-gray-50 rounded-xl flex items-start justify-between">
+                        <div class="p-4 bg-gray-50 rounded-xl flex items-start justify-between" data-gift-id="${gift.id}">
                           <div class="flex-1">
                             <div class="font-medium text-gray-900">${gift.gift_name}</div>
                             <div class="text-sm text-gray-500 mt-1">
@@ -1823,10 +1789,8 @@
                               </div>
                             ` : ''}
                           </div>
-                          <button onclick="deleteGift('${gift.id}')" class="text-red-500 hover:text-red-700 ml-4">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
+                          <button onclick="deleteGift('${gift.id}')" class="delete-gift-btn text-red-500 hover:text-red-700 ml-4 transition-colors" title="Clique uma vez para confirmar, depois clique novamente para eliminar">
+                            ✕
                           </button>
                         </div>
                       `;
@@ -2831,20 +2795,27 @@
       const gift = db.gift_suggestions.find(g => g.id === giftId);
       if (!gift) return;
       
-      const modal = document.createElement('div');
-      modal.className = 'modal-overlay';
-      modal.id = 'deleteGiftModal';
-      modal.innerHTML = `
-        <div class="modal-content p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Presente</h3>
-          <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar <strong>${gift.gift_name}</strong>? ${getGiftClaimsByGift(giftId).length > 0 ? 'Existem pessoas que já selecionaram este presente.' : ''}</p>
-          <div class="flex gap-3">
-            <button onclick="document.getElementById('deleteGiftModal').remove()" class="btn-secondary flex-1">Cancelar</button>
-            <button onclick="executeDeleteGift('${giftId}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
+      const giftElement = document.querySelector(`[data-gift-id="${giftId}"]`);
+      const deleteBtn = giftElement?.querySelector('.delete-gift-btn');
+      
+      if (deleteBtn && deleteBtn.dataset.confirmed !== 'true') {
+        // First click - show confirmation state
+        deleteBtn.dataset.confirmed = 'true';
+        deleteBtn.textContent = '✕ Confirmar exclusão';
+        deleteBtn.classList.add('text-red-700', 'font-semibold');
+        
+        // Reset after 3 seconds
+        setTimeout(() => {
+          if (deleteBtn.dataset.confirmed === 'true') {
+            deleteBtn.dataset.confirmed = 'false';
+            deleteBtn.textContent = '✕';
+            deleteBtn.classList.remove('text-red-700', 'font-semibold');
+          }
+        }, 3000);
+      } else if (deleteBtn && deleteBtn.dataset.confirmed === 'true') {
+        // Second click - execute deletion
+        executeDeleteGift(giftId);
+      }
     };
 
     window.removeGiftClaim = function(claimId) {
@@ -2864,98 +2835,33 @@
       });
     };
 
-    window.previewCoverImage = function() {
-      const file = document.getElementById('coverImageFile').files[0];
-      if (file) {
+    window.previewCoverImage = function() {};
+    window.previewEditCoverImage = function() {};
+
+    window.handleCoverImageUpload = function(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
         const reader = new FileReader();
+        
         reader.onload = function(e) {
-          showImageCropper(e.target.result, 'cover');
+          document.getElementById('coverImageUrl').value = e.target.result;
         };
+        
         reader.readAsDataURL(file);
       }
     };
 
-    window.previewEditCoverImage = function() {
-      const file = document.getElementById('editCoverImageFile').files[0];
-      if (file) {
+    window.handleEditCoverImageUpload = function(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
         const reader = new FileReader();
+        
         reader.onload = function(e) {
-          showImageCropper(e.target.result, 'editCover');
+          document.getElementById('editCoverImageUrl').value = e.target.result;
         };
+        
         reader.readAsDataURL(file);
       }
-    };
-
-    function showImageCropper(imageSource, mode) {
-      const modal = document.createElement('div');
-      modal.className = 'cropper-modal';
-      modal.id = 'cropperModal';
-      modal.innerHTML = `
-        <div class="cropper-container-box">
-          <div class="cropper-header">Cortar Imagem</div>
-          <div class="cropper-body">
-            <img id="cropperImage" src="${imageSource}" alt="Para cortar" class="cropper-image" style="display: block; max-width: 100%;">
-          </div>
-          <div class="cropper-footer">
-            <button class="cancel-btn" onclick="closeCropper()">Cancelar</button>
-            <button class="crop-btn" onclick="applyCrop('${mode}')">Aplicar</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-      
-      // Initialize Cropper
-      const image = document.getElementById('cropperImage');
-      window.currentCropper = new Cropper(image, {
-        aspectRatio: 16 / 9,
-        viewMode: 1,
-        autoCropArea: 0.8,
-        responsive: true,
-        restore: true,
-        guides: true,
-        center: true,
-        highlight: true,
-        cropBoxMovable: true,
-        cropBoxResizable: true,
-        toggleDragModeOnDblclick: true,
-      });
-    }
-
-    window.closeCropper = function() {
-      if (window.currentCropper) {
-        window.currentCropper.destroy();
-        window.currentCropper = null;
-      }
-      const modal = document.getElementById('cropperModal');
-      if (modal) modal.remove();
-    };
-
-    window.applyCrop = function(mode) {
-      if (!window.currentCropper) return;
-      
-      const canvas = window.currentCropper.getCroppedCanvas({
-        maxWidth: 1920,
-        maxHeight: 1080,
-        fillColor: '#fff',
-        imageSmoothingEnabled: true,
-        imageSmoothingQuality: 'high',
-      });
-      
-      // Comprimir imagem (qualidade: 0.75 = 75%)
-      const compressedImage = canvas.toDataURL('image/jpeg', 0.75);
-      
-      if (mode === 'cover') {
-        document.getElementById('coverImageUrl').value = compressedImage;
-        document.getElementById('coverPreviewImg').src = compressedImage;
-        document.getElementById('coverPreview').classList.remove('hidden');
-      } else if (mode === 'editCover') {
-        document.getElementById('editCoverImageUrl').value = compressedImage;
-        document.getElementById('editCoverPreviewImg').src = compressedImage;
-        document.getElementById('editCoverPreview').classList.remove('hidden');
-      }
-      
-      closeCropper();
-      showToast('Imagem cortada e comprimida com sucesso!');
     };
 
     window.toggleGiftSystem = function(eventId, enabled) {
@@ -2982,20 +2888,27 @@
       const gift = db.gift_suggestions.find(g => g.id === giftId);
       if (!gift) return;
       
-      const modal = document.createElement('div');
-      modal.className = 'modal-overlay';
-      modal.id = 'deleteGiftModal';
-      modal.innerHTML = `
-        <div class="modal-content p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Presente</h3>
-          <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar <strong>${gift.gift_name}</strong>? ${getGiftClaimsByGift(giftId).length > 0 ? 'Existem pessoas que já selecionaram este presente.' : ''}</p>
-          <div class="flex gap-3">
-            <button onclick="document.getElementById('deleteGiftModal').remove()" class="btn-secondary flex-1">Cancelar</button>
-            <button onclick="executeDeleteGift('${giftId}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
+      const giftElement = document.querySelector(`[data-gift-id="${giftId}"]`);
+      const deleteBtn = giftElement?.querySelector('.delete-gift-btn');
+      
+      if (deleteBtn && deleteBtn.dataset.confirmed !== 'true') {
+        // First click - show confirmation state
+        deleteBtn.dataset.confirmed = 'true';
+        deleteBtn.textContent = '✕ Confirmar exclusão';
+        deleteBtn.classList.add('text-red-700', 'font-semibold');
+        
+        // Reset after 3 seconds
+        setTimeout(() => {
+          if (deleteBtn.dataset.confirmed === 'true') {
+            deleteBtn.dataset.confirmed = 'false';
+            deleteBtn.textContent = '✕';
+            deleteBtn.classList.remove('text-red-700', 'font-semibold');
+          }
+        }, 3000);
+      } else if (deleteBtn && deleteBtn.dataset.confirmed === 'true') {
+        // Second click - execute deletion
+        executeDeleteGift(giftId);
+      }
     };
 
     window.executeDeleteGift = function(giftId) {
@@ -3039,41 +2952,37 @@
       });
     };
 
-    // Handle gift form submission
-    document.addEventListener('submit', (e) => {
-      if (e.target.id === 'addGiftForm') {
-        e.preventDefault();
-        const eventId = document.getElementById('giftEventId').value;
-        const giftName = sanitizeInput(document.getElementById('giftName').value);
-        const allowMultiple = document.getElementById('giftMultiple').checked;
-        
-        const newGift = {
-          id: generateId(),
-          event_id: eventId,
-          gift_name: giftName,
-          allow_multiple: allowMultiple
-        };
-        
-        isLoading = true;
-        supabaseClient.from('gift_suggestions').insert([newGift]).then(result => {
-          if (result.error) {
-            showToast('Erro ao adicionar presente: ' + (result.error?.message || 'Erro desconhecido'), 'error');
-          } else {
-            db.gift_suggestions.push(newGift);
-            showToast('Presente adicionado com sucesso!');
-            document.getElementById('addGiftForm').reset();
-            render();
-          }
-          isLoading = false;
-        }).catch(err => {
-          showToast('Erro ao adicionar presente', 'error');
-          isLoading = false;
-        });
-      }
-    });
+    // Handle add gift
+    window.handleAddGift = function(e, eventId) {
+      e.preventDefault();
+      const giftName = sanitizeInput(document.getElementById('newGiftName').value);
+      const allowMultiple = document.getElementById('newGiftMultiple').checked;
+      
+      const newGift = {
+        id: generateId(),
+        event_id: eventId,
+        gift_name: giftName,
+        allow_multiple: allowMultiple
+      };
+      
+      isLoading = true;
+      supabaseClient.from('gift_suggestions').insert([newGift]).then(result => {
+        if (result.error) {
+          showToast('Erro ao adicionar presente: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          db.gift_suggestions.push(newGift);
+          showToast('Presente adicionado com sucesso!');
+          render();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao adicionar presente', 'error');
+        isLoading = false;
+      });
+    };
 
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8f8df694ff070c',t:'MTc3Mjk0ODk0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8fdd5cf1cd070c',t:'MTc3Mjk1MjE5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
