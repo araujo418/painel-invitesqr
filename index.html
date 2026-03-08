@@ -1279,6 +1279,64 @@
       const savedConfirmation = JSON.parse(localStorage.getItem(sessionKey));
       const isEditingExisting = !!savedConfirmation;
       
+      // If there's a saved confirmation AND we're not explicitly in edit mode, show success screen
+      // This works both on direct navigation and page refresh
+      if (isEditingExisting && viewParams.showSuccessScreen !== false) {
+        const countdown = getCountdown(event.event_date);
+        return `
+          <div class="min-h-full flex flex-col bg-white">
+            ${event.cover_image_url ? `
+              <div class="w-full bg-gray-200 overflow-hidden" style="aspect-ratio: 16/9;">
+                <img src="${event.cover_image_url}" alt="${event.title}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">
+              </div>
+            ` : ''}
+            
+            <div class="flex-1 flex flex-col items-center justify-center p-4 pb-8">
+              <div class="w-full max-w-md">
+                <div class="flex justify-center gap-2 mb-6">
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-days">${countdown.days}</div>
+                    <div class="countdown-label">dias</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-hours">${countdown.hours}</div>
+                    <div class="countdown-label">horas</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-minutes">${countdown.minutes}</div>
+                    <div class="countdown-label">min</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-seconds">${countdown.seconds}</div>
+                    <div class="countdown-label">seg</div>
+                  </div>
+                </div>
+                
+                <div class="text-center py-12">
+                  <div class="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Alterações Guardadas!</h2>
+                  <p class="text-gray-600 mb-6">Sua resposta foi atualizada com sucesso.</p>
+                  <button onclick="window.editGuestResponse('${viewParams.eventId}')" class="btn-primary">
+                    Editar Resposta
+                  </button>
+                </div>
+                
+                ${event.messages_enabled ? `
+                  <div class="mt-8 border-t pt-8">
+                    ${renderAllMessages(viewParams.eventId)}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+            ${renderFooter()}
+          </div>
+        `;
+      }
+      
       const countdown = getCountdown(event.event_date);
       const allowCompanions = event.allow_companions;
       
@@ -3314,18 +3372,8 @@
     };
 
     window.editGuestResponse = function(eventId) {
-      // Get the saved confirmation from localStorage
-      const sessionKey = `guest_confirmation_${eventId}`;
-      const savedConfirmation = JSON.parse(localStorage.getItem(sessionKey));
-      
-      if (savedConfirmation) {
-        // Show the form again by scrolling to it and clearing the success message
-        const formContainer = document.getElementById('guestFormContainer');
-        if (formContainer) {
-          // Re-render the guest form with the saved data
-          navigateTo('guest-form', { eventId: eventId });
-        }
-      }
+      // Navigate to guest form with flag to show the form, not the success screen
+      navigateTo('guest-form', { eventId: eventId, showSuccessScreen: false });
     };
 
     window.toggleMessagesSystem = function(eventId, enabled) {
@@ -3351,5 +3399,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90482a53c1070c',t:'MTc3Mjk1NjU3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d904e7716d9070c',t:'MTc3Mjk1NjgyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
