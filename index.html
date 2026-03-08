@@ -325,6 +325,9 @@
       // If no admin exists, show setup screen
       if (!adminCreated) {
         currentView = 'setup-admin';
+      } else {
+        // Try to load current session from localStorage
+        loadCurrentSession();
       }
       
       // Check URL on load
@@ -411,6 +414,34 @@
       }
     }
 
+    // Load current session from localStorage
+    function loadCurrentSession() {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          const userInDb = getUserById(user.id);
+          if (userInDb && userInDb.password === user.password) {
+            currentUser = userInDb;
+            return true;
+          }
+        } catch (err) {
+          localStorage.removeItem('currentUser');
+        }
+      }
+      return false;
+    }
+
+    // Save current session to localStorage
+    function saveCurrentSession() {
+      if (currentUser) {
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: currentUser.id,
+          password: currentUser.password
+        }));
+      }
+    }
+
     // ========== UTILITY FUNCTIONS ==========
     function generateId() {
       return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -484,6 +515,7 @@
       currentUser = null;
       navigationHistory = [];
       unsavedChanges = false;
+      localStorage.removeItem('currentUser');
       navigateTo('landing');
     }
 
@@ -1077,18 +1109,18 @@
               <form id="createEventForm" class="space-y-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Evento</label>
-                  <div class="flex gap-3">
-                    <label class="radio-card flex-1" id="eventTypeWedding">
-                      <input type="radio" name="eventType" value="casamento" checked>
-                      <span class="radio-indicator"></span>
-                      <span>Casamento</span>
-                    </label>
-                    <label class="radio-card flex-1" id="eventTypeBirthday">
-                      <input type="radio" name="eventType" value="aniversario">
-                      <span class="radio-indicator"></span>
-                      <span>Aniversário</span>
-                    </label>
-                  </div>
+                  <select id="eventType" class="input-field" required>
+                    <option value="">Selecione o tipo</option>
+                    <option value="casamento">Casamento</option>
+                    <option value="aniversario_infantil">Aniversário Infantil</option>
+                    <option value="aniversario_adulto">Aniversário Adulto</option>
+                    <option value="cha_panela">Chá de Panela</option>
+                    <option value="cha_bebe">Chá de Bebé</option>
+                    <option value="despedida_solteira">Despedida de Solteira</option>
+                    <option value="formatura">Formatura</option>
+                    <option value="confraternizacao">Confraternização</option>
+                    <option value="outro">Outro</option>
+                  </select>
                 </div>
                 
                 <div>
@@ -1183,18 +1215,18 @@
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Evento</label>
-                  <div class="flex gap-3">
-                    <label class="radio-card flex-1 ${event.event_type === 'casamento' ? 'selected' : ''}" id="editEventTypeWedding">
-                      <input type="radio" name="editEventType" value="casamento" ${event.event_type === 'casamento' ? 'checked' : ''}>
-                      <span class="radio-indicator"></span>
-                      <span>Casamento</span>
-                    </label>
-                    <label class="radio-card flex-1 ${event.event_type === 'aniversario' ? 'selected' : ''}" id="editEventTypeBirthday">
-                      <input type="radio" name="editEventType" value="aniversario" ${event.event_type === 'aniversario' ? 'checked' : ''}>
-                      <span class="radio-indicator"></span>
-                      <span>Aniversário</span>
-                    </label>
-                  </div>
+                  <select id="editEventType" class="input-field" required>
+                    <option value="">Selecione o tipo</option>
+                    <option value="casamento" ${event.event_type === 'casamento' ? 'selected' : ''}>Casamento</option>
+                    <option value="aniversario_infantil" ${event.event_type === 'aniversario_infantil' ? 'selected' : ''}>Aniversário Infantil</option>
+                    <option value="aniversario_adulto" ${event.event_type === 'aniversario_adulto' ? 'selected' : ''}>Aniversário Adulto</option>
+                    <option value="cha_panela" ${event.event_type === 'cha_panela' ? 'selected' : ''}>Chá de Panela</option>
+                    <option value="cha_bebe" ${event.event_type === 'cha_bebe' ? 'selected' : ''}>Chá de Bebé</option>
+                    <option value="despedida_solteira" ${event.event_type === 'despedida_solteira' ? 'selected' : ''}>Despedida de Solteira</option>
+                    <option value="formatura" ${event.event_type === 'formatura' ? 'selected' : ''}>Formatura</option>
+                    <option value="confraternizacao" ${event.event_type === 'confraternizacao' ? 'selected' : ''}>Confraternização</option>
+                    <option value="outro" ${event.event_type === 'outro' ? 'selected' : ''}>Outro</option>
+                  </select>
                 </div>
                 
                 <div>
@@ -1431,6 +1463,12 @@
           
           <div class="flex-1 flex flex-col items-center justify-center p-4 pb-8">
             <div class="w-full max-w-md">
+              ${currentUser ? `
+                <div class="mb-4 text-center text-sm text-gray-600 p-3 bg-blue-50 rounded-lg">
+                  Logado como <strong>${currentUser.username}</strong>
+                </div>
+              ` : ''}
+              
               <div id="guestFormContainer" class="space-y-4">
                 <!-- Countdown Section -->
                 <div class="flex justify-center gap-2 mb-6">
@@ -1903,13 +1941,11 @@
       const createEventForm = document.getElementById('createEventForm');
       if (createEventForm) {
         createEventForm.addEventListener('submit', handleCreateEvent);
-        setupRadioCards('eventTypeWedding', 'eventTypeBirthday');
       }
       
       const editEventForm = document.getElementById('editEventForm');
       if (editEventForm) {
         editEventForm.addEventListener('submit', handleEditEvent);
-        setupRadioCards('editEventTypeWedding', 'editEventTypeBirthday');
       }
       
       const guestForm = document.getElementById('guestForm');
@@ -2027,6 +2063,9 @@
       
       if (user && user.status === 'active') {
         currentUser = user;
+        
+        // Save session to localStorage
+        saveCurrentSession();
         
         // Salvar sessão se marcado
         if (rememberSession) {
@@ -2984,5 +3023,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8fdd5cf1cd070c',t:'MTc3Mjk1MjE5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8ff0a075ba070c',t:'MTc3Mjk1Mjk4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
