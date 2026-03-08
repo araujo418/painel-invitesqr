@@ -1284,7 +1284,7 @@
                         <div class="flex items-start justify-between mb-2">
                           <div>
                             <div class="font-medium text-gray-900">${conf.guest_name}</div>
-                            ${companions.length > 0 ? `
+                            ${companions && companions.length > 0 ? `
                               <div class="text-sm text-gray-500">Acompanhantes: ${companions.join(', ')}</div>
                             ` : ''}
                           </div>
@@ -1520,7 +1520,7 @@
                           </button>
                         </div>
                         <div id="companionsList" class="space-y-2">
-                          ${savedConfirmation?.companions ? savedConfirmation.companions.map((name, idx) => `
+                          ${savedConfirmation?.companions && Array.isArray(savedConfirmation.companions) && savedConfirmation.companions.length > 0 ? savedConfirmation.companions.map((name, idx) => `
                             <div class="companion-item">
                               <input type="text" class="input-field flex-1 companion-input" value="${name}" placeholder="Nome do acompanhante">
                               <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
@@ -2387,12 +2387,16 @@
       const attending = document.querySelector('input[name="attending"]:checked')?.value;
       const guestName = sanitizeInput(document.getElementById('guestName').value);
       
+      // Collect companions - ensure we get ALL values
       const companions = [];
       document.querySelectorAll('#companionsList .companion-input').forEach(input => {
-        if (input.value.trim()) {
-          companions.push(input.value.trim());
+        const companionName = input.value.trim();
+        if (companionName) {
+          companions.push(companionName);
         }
       });
+      
+      console.log('🎯 ACOMPANHANTES RECOLHIDOS:', companions);
       
       const selectedGiftId = document.querySelector('input[name="giftSuggestion"]:checked')?.value || '';
       
@@ -2422,8 +2426,10 @@
         // NEW CONFIRMATION - Save to database
         isLoading = true;
         
-        // Ensure companions is always a valid JSON string
+        // IMPORTANT: companions MUST be stored as JSON string in Supabase
         const companionsJSON = JSON.stringify(companions);
+        console.log('💾 GUARDANDO NO SUPABASE:', { companions: companionsJSON, companions_array: companions });
+        
         const confirmationToInsert = {
           id: confirmationData.id,
           event_id: eventId,
@@ -3595,5 +3601,5 @@
       startRealtimeListener();
     }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90b4a72778070c',t:'MTc3Mjk2MTAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90bc2fa060070c',t:'MTc3Mjk2MTMyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
