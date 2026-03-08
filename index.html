@@ -372,6 +372,14 @@
       checkUrlParams();
       window.addEventListener('hashchange', checkUrlParams);
       
+      // Handle GitHub Pages redirect
+      if (window.location.pathname.includes('event/')) {
+        const eventId = window.location.pathname.split('event/')[1]?.split('/')[0];
+        if (eventId) {
+          window.location.hash = `event/${eventId}`;
+        }
+      }
+      
       render();
     }
 
@@ -403,13 +411,24 @@
 
     function checkUrlParams() {
       try {
-        const search = window.location.search;
-        
         let eventId = null;
         let token = null;
         
-        // Check query string (?event=ID)
-        if (search) {
+        // Check hash (#event/ID or #event/ID?token=xyz)
+        const hash = window.location.hash;
+        if (hash.includes('#event/')) {
+          const hashParts = hash.split('#event/')[1];
+          eventId = hashParts?.split('?')[0];
+          
+          // Check for token in query string after hash
+          if (hashParts?.includes('?token=')) {
+            token = new URLSearchParams(hashParts.split('?')[1]).get('token');
+          }
+        }
+        
+        // Fallback: Check query string (?event=ID)
+        const search = window.location.search;
+        if (!eventId && search) {
           const params = new URLSearchParams(search);
           eventId = params.get('event');
           token = params.get('token');
@@ -3064,5 +3083,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8f34998653070c',t:'MTc3Mjk0NTI4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8f44fd9298070c',t:'MTc3Mjk0NTk1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
