@@ -1537,12 +1537,20 @@
                       <div>
                         <div class="flex items-center justify-between mb-3">
                           <label class="block text-sm font-semibold text-gray-900">Acompanhantes</label>
-                          <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="text-sm px-3 py-1 rounded-lg" style="background-color: ${config.primary_color}; color: white; font-weight: 500;">
-                            + Incluir
-                          </button>
+                          ${isEditingExisting && savedConfirmation?.companions && Array.isArray(savedConfirmation.companions) && savedConfirmation.companions.length > 0 ? `
+                            ${savedConfirmation.companions.length < (event.max_companions || 1) ? `
+                              <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="text-sm px-3 py-1 rounded-lg" style="background-color: ${config.primary_color}; color: white; font-weight: 500;">
+                                + Adicionar
+                              </button>
+                            ` : ''}
+                          ` : `
+                            <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="text-sm px-3 py-1 rounded-lg" style="background-color: ${config.primary_color}; color: white; font-weight: 500;">
+                              + Incluir
+                            </button>
+                          `}
                         </div>
                         <div id="companionsList" class="space-y-2">
-                          ${savedConfirmation?.companions && Array.isArray(savedConfirmation.companions) && savedConfirmation.companions.length > 0 ? savedConfirmation.companions.map((name, idx) => `
+                          ${isEditingExisting && savedConfirmation?.companions && Array.isArray(savedConfirmation.companions) && savedConfirmation.companions.length > 0 ? savedConfirmation.companions.map((name, idx) => `
                             <div class="companion-item">
                               <input type="text" class="input-field flex-1 companion-input" value="${name}" placeholder="Nome do acompanhante">
                               <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
@@ -2398,6 +2406,19 @@
       }
     }
 
+    function parseCompanions(companionsData) {
+      if (!companionsData) return [];
+      if (Array.isArray(companionsData)) return companionsData;
+      if (typeof companionsData === 'string') {
+        try {
+          return JSON.parse(companionsData);
+        } catch (e) {
+          return [];
+        }
+      }
+      return [];
+    }
+
     function handleGuestSubmit(e) {
       e.preventDefault();
       const eventId = document.getElementById('guestEventId').value;
@@ -2413,9 +2434,6 @@
           companions.push(sanitizeInput(companionName));
         }
       });
-      
-      console.log('🎯 ACOMPANHANTES RECOLHIDOS:', companions);
-      console.log('📊 TOTAL DE ACOMPANHANTES:', companions.length);
       
       const selectedGiftId = document.querySelector('input[name="giftSuggestion"]:checked')?.value || '';
       
@@ -2445,18 +2463,15 @@
         // NEW CONFIRMATION - Save to database
         isLoading = true;
         
-        // IMPORTANT: companions MUST be stored as JSON string in Supabase
-        const companionsJSON = JSON.stringify(companions);
-        console.log('💾 GUARDANDO NO SUPABASE:', { companions: companionsJSON, companions_array: companions });
-        
         const confirmationToInsert = {
           id: confirmationData.id,
           event_id: eventId,
           guest_name: guestName,
           attending: attending,
-          companions: companionsJSON,
+          companions: JSON.stringify(companions),
           children_count: confirmationData.children_count,
           invited_by: confirmationData.invited_by,
+          selected_gift_id: selectedGiftId || null,
           created_at: new Date().toISOString()
         };
         
@@ -2483,6 +2498,8 @@
               if (!claimResult.error) {
                 db.gift_claims.push(giftClaim);
               }
+            }).catch(err => {
+              console.error('Erro ao guardar escolha de presente:', err);
             });
           }
           
@@ -2546,13 +2563,14 @@
           // Remove from local db
           db.gift_claims = db.gift_claims.filter(c => !(oldGiftClaims.find(oc => oc.id === c.id)));
           
-          // Update the confirmation with proper companions JSON
+          // Update the confirmation with proper companions JSON and gift selection
           supabaseClient.from('confirmations').update({
             guest_name: guestName,
             attending: attending,
             companions: JSON.stringify(companions),
             children_count: confirmationData.children_count,
-            invited_by: confirmationData.invited_by
+            invited_by: confirmationData.invited_by,
+            selected_gift_id: selectedGiftId || null
           }).eq('id', existingConfirmation.id).eq('event_id', eventId).then(result => {
             if (result.error) {
               showToast('Erro ao atualizar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
@@ -2586,6 +2604,8 @@
                 if (!claimResult.error) {
                   db.gift_claims.push(giftClaim);
                 }
+              }).catch(err => {
+                console.error('Erro ao guardar escolha de presente:', err);
               });
             }
             
@@ -3620,5 +3640,5 @@
       startRealtimeListener();
     }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90cb62d5a5070c',t:'MTc3Mjk2MTk0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90d66f21cb070c',t:'MTc3Mjk2MjM5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
