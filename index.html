@@ -1232,7 +1232,7 @@
                           </span>
                         </div>
                         <div class="flex gap-2 mt-3">
-                          <button onclick="deleteConfirmation('${conf.id}')" class="text-sm text-red-600 hover:text-red-800">Eliminar</button>
+                          <button type="button" class="text-sm text-red-600 hover:text-red-800 delete-conf-btn" data-conf-id="${conf.id}" data-event-id="${event.id}">Eliminar</button>
                         </div>
                       </div>
                     `;
@@ -2049,6 +2049,11 @@
           const userId = e.target.dataset.userId;
           deleteUser(userId);
         }
+        if (e.target.classList.contains('delete-conf-btn')) {
+          const confId = e.target.dataset.confId;
+          const eventId = e.target.dataset.eventId;
+          deleteConfirmation(confId, eventId);
+        }
         if (e.target.classList.contains('toggle-password-btn')) {
           e.preventDefault();
           const targetId = e.target.closest('button').dataset.target;
@@ -2859,8 +2864,8 @@
       }
     }
 
-    function deleteConfirmation(index) {
-      const confirmation = db.confirmations[index];
+    function deleteConfirmation(confId, eventId) {
+      const confirmation = db.confirmations.find(c => c.id === confId && c.event_id === eventId);
       if (confirmation) {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
@@ -2868,10 +2873,10 @@
         modal.innerHTML = `
           <div class="modal-content p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Confirmação</h3>
-            <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar esta confirmação?</p>
+            <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar a confirmação de <strong>${confirmation.guest_name}</strong>?</p>
             <div class="flex gap-3">
               <button class="btn-secondary flex-1 cancel-modal-btn">Cancelar</button>
-              <button onclick="executeDeleteConfirmation('${confirmation.__backendId || index}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
+              <button onclick="executeDeleteConfirmation('${confId}', '${eventId}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
             </div>
           </div>
         `;
@@ -2887,16 +2892,17 @@
       }
     }
 
-    function executeDeleteConfirmation(confirmationId) {
-      const confirmation = db.confirmations.find(c => c.id === confirmationId);
+    function executeDeleteConfirmation(confirmationId, eventId) {
+      const confirmation = db.confirmations.find(c => c.id === confirmationId && c.event_id === eventId);
       if (confirmation) {
         isLoading = true;
-        supabaseClient.from('confirmations').delete().eq('id', confirmationId).then(result => {
+        supabaseClient.from('confirmations').delete().eq('id', confirmationId).eq('event_id', eventId).then(result => {
           if (result.error) {
             showToast('Erro ao eliminar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
           } else {
-            document.getElementById('deleteConfirmationModal').remove();
-            db.confirmations = db.confirmations.filter(c => c.id !== confirmationId);
+            const modal = document.getElementById('deleteConfirmationModal');
+            if (modal) modal.remove();
+            db.confirmations = db.confirmations.filter(c => !(c.id === confirmationId && c.event_id === eventId));
             showToast('Confirmação eliminada!');
             render();
           }
@@ -3399,5 +3405,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90564a06ca070c',t:'MTc3Mjk1NzE1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d905b3d156d070c',t:'MTc3Mjk1NzM1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
