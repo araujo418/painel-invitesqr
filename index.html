@@ -69,23 +69,6 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvZ3Nsa3pxZGh0cHBvZnR6aWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MDU3ODAsImV4cCI6MjA4ODI4MTc4MH0.s5WynZLrhiA6lhCzP1iead5yciOu_ajaglIHF3IIYBs';
     
     let supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // Initialize database schema if needed
-    async function initializeDatabase() {
-      try {
-        // Check if tables exist, if not create them
-        const tables = ['users', 'events', 'confirmations', 'messages', 'event_links', 'gift_suggestions', 'gift_claims'];
-        
-        for (const table of tables) {
-          const { data, error } = await supabaseClient.from(table).select('count()', { count: 'exact', head: true });
-          if (error && error.code === 'PGRST116') {
-            console.log(`Table ${table} doesn't exist yet`);
-          }
-        }
-      } catch (err) {
-        console.log('Database check:', err.message);
-      }
-    }
 
     // ========== STATE MANAGEMENT ==========
     let db = { users: [], events: [], confirmations: [], messages: [], event_links: [], notifications: [], gift_suggestions: [], gift_claims: [] };
@@ -165,7 +148,7 @@
     async function loadAllData() {
       try {
         const [usersRes, eventsRes, confirmationsRes, messagesRes, linksRes, giftsRes, giftClaimsRes] = await Promise.all([
-          supabaseClient.from('users').select('*'),
+          supabaseClient.from('users').select('id, username, password, role, status, max_events, created_at'),
           supabaseClient.from('events').select('*'),
           supabaseClient.from('confirmations').select('*'),
           supabaseClient.from('messages').select('*'),
@@ -174,7 +157,15 @@
           supabaseClient.from('gift_claims').select('*')
         ]);
 
-        if (!usersRes.error) db.users = usersRes.data || [];
+        if (!usersRes.error) db.users = (usersRes.data || []).map(u => ({
+          id: u.id,
+          username: u.username,
+          password: u.password,
+          role: u.role || 'user',
+          status: u.status || 'active',
+          max_events: u.max_events || 1,
+          created_at: u.created_at
+        }));
         if (!eventsRes.error) db.events = eventsRes.data || [];
         if (!confirmationsRes.error) db.confirmations = confirmationsRes.data || [];
         if (!messagesRes.error) db.messages = messagesRes.data || [];
@@ -2283,7 +2274,7 @@
         companions: companions,
         children_count: parseInt(document.getElementById('childrenCount')?.value || '0'),
         invited_by: document.querySelector('input[name="invitedBy"]:checked')?.value || '',
-        selected_gift_id: selectedGiftId,
+        selected_gift_id: selectedGiftId || null,
         created_at: existingConfirmation?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -2295,17 +2286,19 @@
       if (!isEditing) {
         // NEW CONFIRMATION - Save to database
         isLoading = true;
-        supabaseClient.from('confirmations').insert([{
+        
+        // Build confirmation data - NO gift_id field (completely optional)
+        const confirmationToInsert = {
           id: confirmationData.id,
           event_id: eventId,
           guest_name: guestName,
           attending: attending,
           companions: JSON.stringify(companions),
           children_count: confirmationData.children_count,
-          invited_by: confirmationData.invited_by,
-          selected_gift_id: selectedGiftId,
-          created_at: confirmationData.created_at
-        }]).then(result => {
+          invited_by: confirmationData.invited_by
+        };
+        
+        supabaseClient.from('confirmations').insert([confirmationToInsert]).then(result => {
           if (result.error) {
             showToast('Erro ao enviar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
             isLoading = false;
@@ -3338,5 +3331,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d902e9b8111070c',t:'MTc3Mjk1NTUyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d903cd2e27e070c',t:'MTc3Mjk1NjEwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
