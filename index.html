@@ -71,7 +71,7 @@
     let supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ========== STATE MANAGEMENT ==========
-    let db = { users: [], events: [], confirmations: [], messages: [], event_links: [], notifications: [], gift_suggestions: [], gift_claims: [] };
+    let db = { users: [], events: [], confirmations: [], companions: [], messages: [], event_links: [], notifications: [], gift_suggestions: [], gift_claims: [] };
     let currentUser = null;
     let currentView = 'landing';
     let viewParams = {};
@@ -189,6 +189,15 @@
         
         if (!confirmationsError && confirmationsData) {
           db.confirmations = confirmationsData;
+        }
+        
+        // Load companions (NEW TABLE)
+        const { data: companionsData, error: companionsError } = await supabaseClient
+          .from('companions')
+          .select('*');
+        
+        if (!companionsError && companionsData) {
+          db.companions = companionsData;
         }
         
         // Load messages
@@ -1289,8 +1298,8 @@
                         <div class="flex items-start justify-between mb-2">
                           <div>
                             <div class="font-medium text-gray-900">${conf.guest_name}</div>
-                            ${companions && companions.length > 0 ? `
-                              <div class="text-sm text-gray-500">Acompanhantes: ${companions.join(', ')}</div>
+                            ${getCompanionsByConfirmation(conf.id).length > 0 ? `
+                              <div class="text-sm text-gray-500">Acompanhantes: ${getCompanionsByConfirmation(conf.id).map(c => c.companion_name).join(', ')}</div>
                             ` : ''}
                           </div>
                           <span class="badge ${conf.attending === 'sim' ? 'badge-green' : 'badge-red'}">
@@ -1537,22 +1546,22 @@
                       <div>
                         <div class="flex items-center justify-between mb-3">
                           <label class="block text-sm font-semibold text-gray-900">Acompanhantes</label>
-                          ${isEditingExisting && savedConfirmation?.companions && Array.isArray(savedConfirmation.companions) && savedConfirmation.companions.length > 0 ? `
-                            ${savedConfirmation.companions.length < (event.max_companions || 1) ? `
+                          ${isEditingExisting && savedConfirmation?.id ? (
+                            getCompanionsByConfirmation(savedConfirmation.id).length < (event.max_companions || 1) ? `
                               <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="text-sm px-3 py-1 rounded-lg" style="background-color: ${config.primary_color}; color: white; font-weight: 500;">
                                 + Adicionar
                               </button>
-                            ` : ''}
-                          ` : `
+                            ` : ''
+                          ) : `
                             <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="text-sm px-3 py-1 rounded-lg" style="background-color: ${config.primary_color}; color: white; font-weight: 500;">
                               + Incluir
                             </button>
                           `}
                         </div>
                         <div id="companionsList" class="space-y-2">
-                          ${isEditingExisting && savedConfirmation?.companions && Array.isArray(savedConfirmation.companions) && savedConfirmation.companions.length > 0 ? savedConfirmation.companions.map((name, idx) => `
+                          ${isEditingExisting && getCompanionsByConfirmation(savedConfirmation?.id || '').length > 0 ? getCompanionsByConfirmation(savedConfirmation.id).map((comp) => `
                             <div class="companion-item">
-                              <input type="text" class="input-field flex-1 companion-input" value="${name}" placeholder="Nome do acompanhante">
+                              <input type="text" class="input-field flex-1 companion-input" value="${comp.companion_name}" placeholder="Nome do acompanhante">
                               <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -2419,6 +2428,10 @@
       return [];
     }
 
+    function getCompanionsByConfirmation(confirmationId) {
+      return db.companions.filter(c => c.confirmation_id === confirmationId);
+    }
+
     function handleGuestSubmit(e) {
       e.preventDefault();
       const eventId = document.getElementById('guestEventId').value;
@@ -2427,11 +2440,11 @@
       const guestName = sanitizeInput(document.getElementById('guestName').value);
       
       // Collect companions - ensure we get ALL values and they are NOT empty
-      const companions = [];
+      const companionNames = [];
       document.querySelectorAll('#companionsList .companion-input').forEach(input => {
         const companionName = input.value.trim();
         if (companionName && companionName.length > 0) {
-          companions.push(sanitizeInput(companionName));
+          companionNames.push(sanitizeInput(companionName));
         }
       });
       
@@ -2447,7 +2460,6 @@
         event_id: eventId,
         guest_name: guestName,
         attending: attending,
-        companions: companions,
         children_count: parseInt(document.getElementById('childrenCount')?.value || '0'),
         invited_by: document.querySelector('input[name="invitedBy"]:checked')?.value || '',
         selected_gift_id: selectedGiftId || null,
@@ -2468,7 +2480,6 @@
           event_id: eventId,
           guest_name: guestName,
           attending: attending,
-          companions: JSON.stringify(companions),
           children_count: confirmationData.children_count,
           invited_by: confirmationData.invited_by,
           selected_gift_id: selectedGiftId || null,
@@ -2484,121 +2495,36 @@
           
           db.confirmations.push(confirmationData);
           
-          // If a gift was selected, record the claim
-          if (selectedGiftId && attending === 'sim') {
-            const giftClaim = {
+          // Save companions to NEW companions table
+          const companionPromises = companionNames.map(name => 
+            supabaseClient.from('companions').insert([{
               id: generateId(),
-              gift_id: selectedGiftId,
-              guest_name: guestName,
               confirmation_id: confirmationData.id,
-              event_id: eventId
-            };
-            
-            supabaseClient.from('gift_claims').insert([giftClaim]).then(claimResult => {
-              if (!claimResult.error) {
-                db.gift_claims.push(giftClaim);
-              }
-            }).catch(err => {
-              console.error('Erro ao guardar escolha de presente:', err);
-            });
-          }
+              event_id: eventId,
+              companion_name: name,
+              created_at: new Date().toISOString()
+            }])
+          );
           
-          showToast('Confirmação enviada com sucesso!');
-          
-          // Hide form and show messages/success message
-          const formContainer = document.getElementById('guestFormContainer');
-          if (formContainer) {
-            const successHTML = `
-              <div class="text-center py-8">
-                <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                  </svg>
-                </div>
-                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Resposta Guardada!</h2>
-                <p class="text-gray-600 mb-6">Sua resposta foi enviada com sucesso.</p>
-                <button onclick="window.editGuestResponse('${eventId}')" class="btn-primary">
-                  Editar Resposta
-                </button>
-              </div>
-            `;
-            
-            const messagesHTML = getEventById(eventId)?.messages_enabled ? renderMessagesAfterConfirmation(eventId, confirmationData.id) : '';
-            formContainer.innerHTML = successHTML + messagesHTML;
-            
-            // Attach message form listener if messages are enabled
-            if (getEventById(eventId)?.messages_enabled) {
-              setTimeout(() => {
-                const guestMessageForm = document.getElementById('guestMessageForm');
-                if (guestMessageForm) {
-                  guestMessageForm.addEventListener('submit', handleGuestMessage);
-                  const textarea = document.getElementById('messageText');
-                  if (textarea) {
-                    textarea.addEventListener('input', function() {
-                      document.getElementById('charCount').textContent = this.value.length;
-                    });
-                  }
-                }
-              }, 100);
-            }
-          }
-          isLoading = false;
-        }).catch(err => {
-          showToast('Erro ao enviar confirmação', 'error');
-          isLoading = false;
-        });
-      } else {
-        // EDITING EXISTING - Update only this confirmation
-        isLoading = true;
-        
-        // Remove old gift claims ONLY for this guest and this event
-        const oldGiftClaims = db.gift_claims.filter(c => c.confirmation_id === existingConfirmation.id && c.event_id === eventId);
-        
-        // Delete old claims from this guest/event
-        const deleteClaimsPromises = oldGiftClaims.map(claim => 
-          supabaseClient.from('gift_claims').delete().eq('id', claim.id)
-        );
-        
-        Promise.all(deleteClaimsPromises).then(() => {
-          // Remove from local db
-          db.gift_claims = db.gift_claims.filter(c => !(oldGiftClaims.find(oc => oc.id === c.id)));
-          
-          // Update the confirmation with proper companions JSON (CRITICAL FIX)
-          const updatePayload = {
-            guest_name: guestName,
-            attending: attending,
-            companions: JSON.stringify(companions),
-            children_count: confirmationData.children_count,
-            invited_by: confirmationData.invited_by,
-            selected_gift_id: selectedGiftId || null
-          };
-          
-          supabaseClient.from('confirmations').update(updatePayload).eq('id', existingConfirmation.id).eq('event_id', eventId).then(result => {
-            if (result.error) {
-              showToast('Erro ao atualizar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
-              isLoading = false;
-              return;
+          Promise.all(companionPromises).then(results => {
+            const errors = results.filter(r => r.error);
+            if (errors.length === 0) {
+              companionNames.forEach(name => {
+                db.companions.push({
+                  confirmation_id: confirmationData.id,
+                  event_id: eventId,
+                  companion_name: name
+                });
+              });
             }
             
-            // Update local db
-            const localConfirmation = db.confirmations.find(c => c.id === existingConfirmation.id && c.event_id === eventId);
-            if (localConfirmation) {
-              localConfirmation.guest_name = guestName;
-              localConfirmation.attending = attending;
-              localConfirmation.companions = companions;
-              localConfirmation.children_count = confirmationData.children_count;
-              localConfirmation.invited_by = confirmationData.invited_by;
-              localConfirmation.selected_gift_id = selectedGiftId;
-              localConfirmation.updated_at = confirmationData.updated_at;
-            }
-            
-            // Add new gift claim if selected
+            // If a gift was selected, record the claim
             if (selectedGiftId && attending === 'sim') {
               const giftClaim = {
                 id: generateId(),
                 gift_id: selectedGiftId,
                 guest_name: guestName,
-                confirmation_id: existingConfirmation.id,
+                confirmation_id: confirmationData.id,
                 event_id: eventId
               };
               
@@ -2611,27 +2537,27 @@
               });
             }
             
-            showToast('Alterações guardadas com sucesso!');
+            showToast('Confirmação enviada com sucesso!');
             
-            // Show success message
+            // Hide form and show messages/success message
             const formContainer = document.getElementById('guestFormContainer');
             if (formContainer) {
               const successHTML = `
                 <div class="text-center py-8">
-                  <div class="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
                   </div>
-                  <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Alterações Guardadas!</h2>
-                  <p class="text-gray-600 mb-6">Sua resposta foi atualizada com sucesso.</p>
+                  <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Resposta Guardada!</h2>
+                  <p class="text-gray-600 mb-6">Sua resposta foi enviada com sucesso.</p>
                   <button onclick="window.editGuestResponse('${eventId}')" class="btn-primary">
                     Editar Resposta
                   </button>
                 </div>
               `;
               
-              const messagesHTML = getEventById(eventId)?.messages_enabled ? renderMessagesAfterConfirmation(eventId, existingConfirmation.id) : '';
+              const messagesHTML = getEventById(eventId)?.messages_enabled ? renderMessagesAfterConfirmation(eventId, confirmationData.id) : '';
               formContainer.innerHTML = successHTML + messagesHTML;
               
               // Attach message form listener if messages are enabled
@@ -2651,6 +2577,142 @@
               }
             }
             isLoading = false;
+          });
+        }).catch(err => {
+          showToast('Erro ao enviar confirmação', 'error');
+          isLoading = false;
+        });
+      } else {
+        // EDITING EXISTING - Update confirmation and companions
+        isLoading = true;
+        
+        // Delete old companions for this confirmation
+        const oldCompanions = db.companions.filter(c => c.confirmation_id === existingConfirmation.id);
+        const deleteCompanionPromises = oldCompanions.map(comp => 
+          supabaseClient.from('companions').delete().eq('id', comp.id)
+        );
+        
+        // Remove old gift claims for this guest/event
+        const oldGiftClaims = db.gift_claims.filter(c => c.confirmation_id === existingConfirmation.id && c.event_id === eventId);
+        const deleteClaimsPromises = oldGiftClaims.map(claim => 
+          supabaseClient.from('gift_claims').delete().eq('id', claim.id)
+        );
+        
+        Promise.all([...deleteCompanionPromises, ...deleteClaimsPromises]).then(() => {
+          // Remove from local db
+          db.companions = db.companions.filter(c => !oldCompanions.find(oc => oc.id === c.id));
+          db.gift_claims = db.gift_claims.filter(c => !(oldGiftClaims.find(oc => oc.id === c.id)));
+          
+          // Update the confirmation
+          const updatePayload = {
+            guest_name: guestName,
+            attending: attending,
+            children_count: confirmationData.children_count,
+            invited_by: confirmationData.invited_by,
+            selected_gift_id: selectedGiftId || null
+          };
+          
+          supabaseClient.from('confirmations').update(updatePayload).eq('id', existingConfirmation.id).eq('event_id', eventId).then(result => {
+            if (result.error) {
+              showToast('Erro ao atualizar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+              isLoading = false;
+              return;
+            }
+            
+            // Update local db
+            const localConfirmation = db.confirmations.find(c => c.id === existingConfirmation.id && c.event_id === eventId);
+            if (localConfirmation) {
+              localConfirmation.guest_name = guestName;
+              localConfirmation.attending = attending;
+              localConfirmation.children_count = confirmationData.children_count;
+              localConfirmation.invited_by = confirmationData.invited_by;
+              localConfirmation.selected_gift_id = selectedGiftId;
+              localConfirmation.updated_at = confirmationData.updated_at;
+            }
+            
+            // Save NEW companions to companions table
+            const newCompanionPromises = companionNames.map(name => 
+              supabaseClient.from('companions').insert([{
+                id: generateId(),
+                confirmation_id: existingConfirmation.id,
+                event_id: eventId,
+                companion_name: name,
+                created_at: new Date().toISOString()
+              }])
+            );
+            
+            Promise.all(newCompanionPromises).then(results => {
+              const errors = results.filter(r => r.error);
+              if (errors.length === 0) {
+                companionNames.forEach(name => {
+                  db.companions.push({
+                    confirmation_id: existingConfirmation.id,
+                    event_id: eventId,
+                    companion_name: name
+                  });
+                });
+              }
+              
+              // Add new gift claim if selected
+              if (selectedGiftId && attending === 'sim') {
+                const giftClaim = {
+                  id: generateId(),
+                  gift_id: selectedGiftId,
+                  guest_name: guestName,
+                  confirmation_id: existingConfirmation.id,
+                  event_id: eventId
+                };
+                
+                supabaseClient.from('gift_claims').insert([giftClaim]).then(claimResult => {
+                  if (!claimResult.error) {
+                    db.gift_claims.push(giftClaim);
+                  }
+                }).catch(err => {
+                  console.error('Erro ao guardar escolha de presente:', err);
+                });
+              }
+              
+              showToast('Alterações guardadas com sucesso!');
+              
+              // Show success message
+              const formContainer = document.getElementById('guestFormContainer');
+              if (formContainer) {
+                const successHTML = `
+                  <div class="text-center py-8">
+                    <div class="w-20 h-20 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                    <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Alterações Guardadas!</h2>
+                    <p class="text-gray-600 mb-6">Sua resposta foi atualizada com sucesso.</p>
+                    <button onclick="window.editGuestResponse('${eventId}')" class="btn-primary">
+                      Editar Resposta
+                    </button>
+                  </div>
+                `;
+                
+                const messagesHTML = getEventById(eventId)?.messages_enabled ? renderMessagesAfterConfirmation(eventId, existingConfirmation.id) : '';
+                formContainer.innerHTML = successHTML + messagesHTML;
+                
+                // Attach message form listener if messages are enabled
+                if (getEventById(eventId)?.messages_enabled) {
+                  setTimeout(() => {
+                    const guestMessageForm = document.getElementById('guestMessageForm');
+                    if (guestMessageForm) {
+                      guestMessageForm.addEventListener('submit', handleGuestMessage);
+                      const textarea = document.getElementById('messageText');
+                      if (textarea) {
+                        textarea.addEventListener('input', function() {
+                          document.getElementById('charCount').textContent = this.value.length;
+                        });
+                      }
+                    }
+                  }, 100);
+                }
+              }
+              isLoading = false;
+            });
           }).catch(err => {
             showToast('Erro ao atualizar confirmação', 'error');
             isLoading = false;
@@ -3307,6 +3369,7 @@
     window.getConfirmations = getConfirmations;
     window.getGiftSuggestions = getGiftSuggestions;
     window.getGiftClaimsByGift = getGiftClaimsByGift;
+    window.getCompanionsByConfirmation = getCompanionsByConfirmation;
     window.startCountdown = startCountdown;
     window.showPreviewSubmitMessage = showPreviewSubmitMessage;
     window.handleSidebarAction = handleSidebarAction;
@@ -3642,5 +3705,5 @@
       startRealtimeListener();
     }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90df355022070c',t:'MTc3Mjk2Mjc1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90ea2aa006070c',t:'MTc3Mjk2MzIwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
