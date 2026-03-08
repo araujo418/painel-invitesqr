@@ -147,31 +147,80 @@
     // ========== SUPABASE DATA LOADING ==========
     async function loadAllData() {
       try {
-        const [usersRes, eventsRes, confirmationsRes, messagesRes, linksRes, giftsRes, giftClaimsRes] = await Promise.all([
-          supabaseClient.from('users').select('id, username, password, role, status, max_events, created_at'),
-          supabaseClient.from('events').select('*'),
-          supabaseClient.from('confirmations').select('*'),
-          supabaseClient.from('messages').select('*'),
-          supabaseClient.from('event_links').select('*'),
-          supabaseClient.from('gift_suggestions').select('*'),
-          supabaseClient.from('gift_claims').select('*')
-        ]);
-
-        if (!usersRes.error) db.users = (usersRes.data || []).map(u => ({
-          id: u.id,
-          username: u.username,
-          password: u.password,
-          role: u.role || 'user',
-          status: u.status || 'active',
-          max_events: u.max_events || 1,
-          created_at: u.created_at
-        }));
-        if (!eventsRes.error) db.events = eventsRes.data || [];
-        if (!confirmationsRes.error) db.confirmations = confirmationsRes.data || [];
-        if (!messagesRes.error) db.messages = messagesRes.data || [];
-        if (!linksRes.error) db.event_links = linksRes.data || [];
-        if (!giftsRes.error) db.gift_suggestions = giftsRes.data || [];
-        if (!giftClaimsRes.error) db.gift_claims = giftClaimsRes.data || [];
+        // Load users
+        const { data: usersData, error: usersError } = await supabaseClient
+          .from('users')
+          .select('*');
+        
+        console.log('🔍 Dados brutos da tabela users:', usersData);
+        console.log('❌ Erro (se houver):', usersError);
+        console.log('📊 Total de utilizadores na BD:', usersData?.length || 0);
+        
+        if (!usersError && usersData) {
+          db.users = usersData.map(u => ({
+            id: u.id,
+            username: u.username,
+            password: u.password,
+            role: u.role || 'user',
+            status: u.status || 'active',
+            max_events: u.max_events || 1,
+            created_at: u.created_at
+          }));
+        }
+        
+        // Load events
+        const { data: eventsData, error: eventsError } = await supabaseClient
+          .from('events')
+          .select('*');
+        
+        if (!eventsError && eventsData) {
+          db.events = eventsData;
+        }
+        
+        // Load confirmations
+        const { data: confirmationsData, error: confirmationsError } = await supabaseClient
+          .from('confirmations')
+          .select('*');
+        
+        if (!confirmationsError && confirmationsData) {
+          db.confirmations = confirmationsData;
+        }
+        
+        // Load messages
+        const { data: messagesData, error: messagesError } = await supabaseClient
+          .from('messages')
+          .select('*');
+        
+        if (!messagesError && messagesData) {
+          db.messages = (messagesData || []).map(msg => mapMessageFromDB(msg));
+        }
+        
+        // Load event links
+        const { data: linksData, error: linksError } = await supabaseClient
+          .from('event_links')
+          .select('*');
+        
+        if (!linksError && linksData) {
+          db.event_links = linksData;
+        }
+        
+        // Load gift suggestions
+        const { data: giftsData, error: giftsError } = await supabaseClient
+          .from('gift_suggestions')
+          .select('*');
+        
+        if (!giftsError && giftsData) {
+          db.gift_suggestions = giftsData;
+        }
+        
+        // Load gift claims
+        const { data: claimsData, error: claimsError } = await supabaseClient
+          .from('gift_claims')
+          .select('*');
+        
+        if (!claimsError && claimsData) {
+          db.gift_claims = claimsData;
+        }
         
         // Auto-enable gift system if gifts exist for an event
         if (db.events.length > 0 && db.gift_suggestions.length > 0) {
@@ -367,6 +416,18 @@
 
     function getMessages(eventId) {
       return db.messages.filter(m => (!m.type || m.type === 'message') && m.event_id === eventId);
+    }
+
+    function mapMessageFromDB(msg) {
+      // Map database columns to internal format
+      return {
+        id: msg.id,
+        event_id: msg.event_id,
+        guest_name: msg.message_author,
+        message_text: msg.message_text,
+        created_at: msg.message_created_at,
+        confirmation_id: msg.confirmation_id || null
+      };
     }
 
     function getEventLinks(eventId) {
@@ -2563,12 +2624,11 @@
       
       const messageData = {
         id: generateId(),
-        type: 'message',
         event_id: eventId,
-        confirmation_id: confirmationId,
-        guest_name: guestName,
+        message_author: guestName,
         message_text: messageText,
-        created_at: new Date().toISOString()
+        message_created_at: new Date().toISOString(),
+        confirmation_id: confirmationId
       };
       
       isLoading = true;
@@ -2576,7 +2636,8 @@
         if (result.error) {
           showToast('Erro ao enviar recado: ' + (result.error?.message || 'Erro desconhecido'), 'error');
         } else {
-          db.messages.push(messageData);
+          // Map to internal format and add to db
+          db.messages.push(mapMessageFromDB(messageData));
           showToast('Recado enviado com sucesso!');
           document.getElementById('messageText').value = '';
           document.getElementById('charCount').textContent = '0';
@@ -2705,8 +2766,40 @@
           doc.addPage();
           y = 20;
         }
+        
+        // Guest name
         doc.text(conf.guest_name, 25, y);
-        y += 7;
+        y += 6;
+        
+        // Companions if any
+        let companions = [];
+        if (conf.companions) {
+          if (Array.isArray(conf.companions)) {
+            companions = conf.companions;
+          } else if (typeof conf.companions === 'string') {
+            try {
+              companions = JSON.parse(conf.companions);
+            } catch (e) {
+              companions = [];
+            }
+          }
+        }
+        
+        if (companions && companions.length > 0) {
+          doc.setFontSize(10);
+          companions.forEach(companion => {
+            if (y > 270) {
+              doc.addPage();
+              y = 20;
+            }
+            if (companion && companion.trim()) {
+              doc.text(`  └─ ${companion}`, 25, y);
+              y += 5;
+            }
+          });
+          doc.setFontSize(11);
+          y += 2;
+        }
       });
       
       if (notAttending.length > 0) {
@@ -3424,11 +3517,7 @@
         
         supabaseClient.from('events').update({ messages_enabled: enabled }).eq('id', eventId).then(result => {
           if (result.error) {
-            if (result.error.code === '42703' || result.error.message.includes('messages_enabled')) {
-              showToast('⚠️ Coluna de recados não existe. Execute o SQL no Supabase para criar as colunas necessárias.', 'error');
-            } else {
-              showToast('Erro ao atualizar: ' + (result.error?.message || 'Erro desconhecido'), 'error');
-            }
+            showToast('Erro ao ativar recados. Verifique se a coluna messages_enabled existe na tabela events.', 'error');
           } else {
             showToast(enabled ? '✓ Recados ativados' : '✓ Recados desativados');
             render();
@@ -3444,5 +3533,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90639ec149070c',t:'MTc3Mjk1NzY5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90a91b9047070c',t:'MTc3Mjk2MDU0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
