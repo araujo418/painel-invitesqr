@@ -1,0 +1,3068 @@
+<!doctype html>
+<html lang="pt" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmação de Presença</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css">
+  <style>
+    * { font-family: 'Poppins', sans-serif; }
+    .font-display { font-family: 'Poppins', sans-serif; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      color: white;
+      z-index: 1000;
+      animation: slideUp 0.3s ease;
+    }
+    .toast-success { background: #10b981; }
+    .toast-error { background: #ef4444; }
+    .toast-warning { background: #f59e0b; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 250px;
+      height: 100%;
+      background: #1f2937;
+      color: white;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 99;
+      overflow-y: auto;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 98;
+    }
+    .sidebar-overlay.open { display: block; }
+    .sidebar-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.1); }
+    .sidebar-item.active { background: #007f9f; }
+    .btn-primary {
+      background: linear-gradient(135deg, #007f9f 0%, #005f7f 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 127, 159, 0.4);
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 127, 159, 0.5);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      background: #fafafa;
+      font-family: inherit;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #007f9f;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(0, 127, 159, 0.1);
+    }
+    .radio-card {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+    }
+    .radio-card:hover { border-color: #007f9f; background: #fafaff; }
+    .radio-card.selected {
+      border-color: #007f9f;
+      background: linear-gradient(135deg, rgba(0, 127, 159, 0.1) 0%, rgba(0, 95, 127, 0.1) 100%);
+    }
+    .radio-card input { display: none; }
+    .radio-indicator {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #d1d5db;
+      border-radius: 50%;
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .radio-card.selected .radio-indicator {
+      border-color: #007f9f;
+      background: #007f9f;
+    }
+    .radio-card.selected .radio-indicator::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #007f9f 0%, #005f7f 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 16px;
+      text-align: center;
+    }
+    .stat-number { font-size: 2.5rem; font-weight: 700; }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90%;
+      overflow-y: auto;
+    }
+    .countdown-item {
+      text-align: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 12px;
+      min-width: 70px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .countdown-number {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #007f9f 0%, #005f7f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .countdown-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; }
+    .companion-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .cropper-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 101;
+      padding: 20px;
+    }
+    .cropper-container-box {
+      background: white;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .cropper-header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+      font-weight: 600;
+      text-align: center;
+    }
+    .cropper-body {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+    .cropper-image {
+      max-width: 100%;
+      max-height: 400px;
+    }
+    .cropper-footer {
+      padding: 16px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 8px;
+    }
+    .cropper-footer button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .cropper-footer .cancel-btn {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .cropper-footer .crop-btn {
+      background: linear-gradient(135deg, #007f9f 0%, #005f7f 100%);
+      color: white;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    body { box-sizing: border-box; }
+    html { height: 100%; }
+  </style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-gray-50">
+  <div id="sidebar" class="sidebar"></div>
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+  <div id="app" class="h-full overflow-auto"></div>
+  <script>
+    // ========== SUPABASE INITIALIZATION ==========
+    const SUPABASE_URL = 'https://aogslkzqdhtppoftzilf.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvZ3Nsa3pxZGh0cHBvZnR6aWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MDU3ODAsImV4cCI6MjA4ODI4MTc4MH0.s5WynZLrhiA6lhCzP1iead5yciOu_ajaglIHF3IIYBs';
+    
+    let supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ========== STATE MANAGEMENT ==========
+    let db = { users: [], events: [], confirmations: [], messages: [], event_links: [], notifications: [], gift_suggestions: [], gift_claims: [] };
+    let currentUser = null;
+    let currentView = 'landing';
+    let viewParams = {};
+    let navigationHistory = [];
+    let unsavedChanges = false;
+    let sidebarOpen = false;
+    let isLoading = false;
+    let adminCreated = false;
+    let lastConfirmationCount = 0;
+
+    const defaultConfig = {
+      main_title: 'Confirmação de Presença',
+      footer_text: '© 2026 AdKira. Todos os direitos reservados.',
+      primary_color: '#007f9f',
+      secondary_color: '#005f7f',
+      text_color: '#1f2937',
+      bg_color: '#f9fafb',
+      card_color: '#ffffff',
+      cover_image_url: ''
+    };
+
+    let config = { ...defaultConfig };
+
+    // ========== INITIALIZATION ==========
+    async function initApp() {
+      // Initialize Element SDK only if it exists (inside Canva)
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (newConfig) => {
+            config = { ...defaultConfig, ...newConfig };
+            render();
+          },
+          mapToCapabilities: (cfg) => ({
+            recolorables: [
+              { get: () => cfg.primary_color || defaultConfig.primary_color, set: (v) => window.elementSdk.setConfig({ primary_color: v }) },
+              { get: () => cfg.bg_color || defaultConfig.bg_color, set: (v) => window.elementSdk.setConfig({ bg_color: v }) },
+              { get: () => cfg.text_color || defaultConfig.text_color, set: (v) => window.elementSdk.setConfig({ text_color: v }) },
+              { get: () => cfg.card_color || defaultConfig.card_color, set: (v) => window.elementSdk.setConfig({ card_color: v }) }
+            ],
+            borderables: [],
+            fontEditable: { get: () => cfg.font_family || 'Poppins', set: (v) => window.elementSdk.setConfig({ font_family: v }) },
+            fontSizeable: { get: () => cfg.font_size || 16, set: (v) => window.elementSdk.setConfig({ font_size: v }) }
+          }),
+          mapToEditPanelValues: (cfg) => new Map([
+            ['main_title', cfg.main_title || defaultConfig.main_title],
+            ['footer_text', cfg.footer_text || defaultConfig.footer_text]
+          ])
+        });
+      }
+
+      // Load initial data from Supabase
+      await loadAllData();
+      
+      // Check if admin exists
+      adminCreated = db.users.some(u => u.role === 'admin');
+      
+      // If no admin exists, show setup screen
+      if (!adminCreated) {
+        currentView = 'setup-admin';
+      }
+      
+      // Check URL on load
+      checkUrlParams();
+      window.addEventListener('hashchange', checkUrlParams);
+      
+      render();
+    }
+
+    // ========== SUPABASE DATA LOADING ==========
+    async function loadAllData() {
+      try {
+        const [usersRes, eventsRes, confirmationsRes, messagesRes, linksRes, giftsRes, giftClaimsRes] = await Promise.all([
+          supabaseClient.from('users').select('*'),
+          supabaseClient.from('events').select('*'),
+          supabaseClient.from('confirmations').select('*'),
+          supabaseClient.from('messages').select('*'),
+          supabaseClient.from('event_links').select('*'),
+          supabaseClient.from('gift_suggestions').select('*'),
+          supabaseClient.from('gift_claims').select('*')
+        ]);
+
+        if (!usersRes.error) db.users = usersRes.data || [];
+        if (!eventsRes.error) db.events = eventsRes.data || [];
+        if (!confirmationsRes.error) db.confirmations = confirmationsRes.data || [];
+        if (!messagesRes.error) db.messages = messagesRes.data || [];
+        if (!linksRes.error) db.event_links = linksRes.data || [];
+        if (!giftsRes.error) db.gift_suggestions = giftsRes.data || [];
+        if (!giftClaimsRes.error) db.gift_claims = giftClaimsRes.data || [];
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+        showToast('Erro ao conectar com servidor', 'error');
+      }
+    }
+
+    function checkUrlParams() {
+      try {
+        const search = window.location.search;
+        
+        let eventId = null;
+        let token = null;
+        
+        // Check query string (?event=ID)
+        if (search) {
+          const params = new URLSearchParams(search);
+          eventId = params.get('event');
+          token = params.get('token');
+        }
+        
+        // Navigate to guest form if we have an eventId
+        if (eventId) {
+          // Verify event exists
+          const event = db.events.find(e => e.id === eventId);
+          if (event && currentView !== 'guest-form') {
+            performNavigation('guest-form', { eventId: eventId, token: token || '' });
+          }
+        }
+        
+      } catch (err) {
+        console.error('Erro ao processar URL:', err);
+      }
+    }
+
+    // ========== UTILITY FUNCTIONS ==========
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    }
+
+    function showToast(message, type = 'success') {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function sanitizeInput(input) {
+      if (typeof input !== 'string') return '';
+      return input.replace(/[<>\"']/g, '').trim().substring(0, 500);
+    }
+
+    // ========== NAVIGATION ==========
+    function navigateTo(view, params = {}) {
+      if (unsavedChanges) {
+        showUnsavedWarning(() => {
+          unsavedChanges = false;
+          performNavigation(view, params);
+        });
+      } else {
+        performNavigation(view, params);
+      }
+    }
+
+    function performNavigation(view, params = {}) {
+      if (currentView !== 'landing') {
+        navigationHistory.push({ view: currentView, params: viewParams });
+      }
+      currentView = view;
+      viewParams = params;
+      unsavedChanges = false;
+      sidebarOpen = false;
+      render();
+    }
+
+    function goBack() {
+      if (unsavedChanges) {
+        showUnsavedWarning(() => {
+          unsavedChanges = false;
+          performGoBack();
+        });
+      } else {
+        performGoBack();
+      }
+    }
+
+    function performGoBack() {
+      if (navigationHistory.length > 0) {
+        const prev = navigationHistory.pop();
+        currentView = prev.view;
+        viewParams = prev.params;
+      } else {
+        currentView = currentUser ? (currentUser.role === 'admin' ? 'admin-dashboard' : 'user-dashboard') : 'landing';
+        viewParams = {};
+      }
+      unsavedChanges = false;
+      sidebarOpen = false;
+      render();
+    }
+
+    function logout() {
+      currentUser = null;
+      navigationHistory = [];
+      unsavedChanges = false;
+      navigateTo('landing');
+    }
+
+    function loginAsUser(userId) {
+      const user = getUserById(userId);
+      if (user) {
+        currentUser = user;
+        showToast(`Entrou como ${user.username}`);
+        navigateTo(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
+      }
+    }
+
+    // ========== DATA HELPERS ==========
+    function getEventById(eventId) {
+      const event = db.events.find(e => e.id === eventId && (!e.type || e.type === 'event'));
+      // Verify owner for non-guests
+      if (event && currentUser && currentUser.role !== 'admin' && currentView !== 'guest-form' && currentView !== 'guest-preview') {
+        if (event.owner_id !== currentUser.id) return null;
+      }
+      return event;
+    }
+
+    function getUserById(userId) {
+      return db.users.find(u => (!u.type || u.type === 'user') && u.id === userId);
+    }
+
+    function getUserEvents(userId) {
+      return db.events.filter(e => (!e.type || e.type === 'event') && e.owner_id === userId);
+    }
+
+    function getConfirmations(eventId) {
+      return db.confirmations.filter(c => (!c.type || c.type === 'confirmation') && c.event_id === eventId);
+    }
+
+    function getMessages(eventId) {
+      return db.messages.filter(m => (!m.type || m.type === 'message') && m.event_id === eventId);
+    }
+
+    function getEventLinks(eventId) {
+      return db.event_links.filter(l => l.event_id === eventId);
+    }
+
+    function getGiftSuggestions(eventId) {
+      return db.gift_suggestions.filter(g => g.event_id === eventId);
+    }
+
+    function getGiftClaim(giftId, guestName) {
+      return db.gift_claims.find(c => c.gift_id === giftId && c.guest_name === guestName);
+    }
+
+    function getGiftClaimsByGift(giftId) {
+      return db.gift_claims.filter(c => c.gift_id === giftId);
+    }
+
+    // ========== COUNTDOWN ==========
+    function getCountdown(dateStr) {
+      const target = new Date(dateStr);
+      const now = new Date();
+      const diff = target - now;
+      
+      if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      
+      return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000)
+      };
+    }
+
+    // ========== RENDER FUNCTIONS ==========
+    function render() {
+      const app = document.getElementById('app');
+      
+      switch(currentView) {
+        case 'setup-admin':
+          app.innerHTML = renderSetupAdmin();
+          break;
+        case 'landing':
+          app.innerHTML = renderLanding();
+          break;
+        case 'login':
+          app.innerHTML = renderLogin();
+          break;
+        case 'admin-dashboard':
+          app.innerHTML = renderAdminDashboard();
+          break;
+        case 'admin-users':
+          app.innerHTML = renderAdminUsers();
+          break;
+        case 'admin-create-user':
+          app.innerHTML = renderAdminCreateUser();
+          break;
+        case 'admin-edit-user':
+          app.innerHTML = renderAdminEditUser();
+          break;
+        case 'user-dashboard':
+          app.innerHTML = renderUserDashboard();
+          break;
+        case 'create-event':
+          app.innerHTML = renderCreateEvent();
+          break;
+        case 'edit-event':
+          app.innerHTML = renderEditEvent();
+          break;
+        case 'event-details':
+          app.innerHTML = renderEventDetails();
+          break;
+        case 'guest-form':
+          app.innerHTML = renderGuestForm();
+          break;
+        case 'guest-preview':
+          app.innerHTML = renderGuestPreview();
+          break;
+        case 'guest-messages':
+          app.innerHTML = renderGuestMessages();
+          break;
+        case 'notifications':
+          app.innerHTML = renderNotifications();
+          break;
+        case 'edit-confirmation':
+          app.innerHTML = renderEditConfirmation();
+          break;
+        case 'gift-suggestions':
+          app.innerHTML = renderGiftSuggestions();
+          break;
+        case 'manage-gifts':
+          app.innerHTML = renderManageGifts();
+          break;
+        default:
+          app.innerHTML = renderLanding();
+      }
+      
+      renderSidebar();
+      attachEventListeners();
+      
+      if (currentView === 'guest-form' || currentView === 'guest-preview') {
+        startCountdown();
+      }
+    }
+
+    function renderFooter() {
+      return `<footer class="text-center py-6 text-gray-500 text-sm mt-auto">${config.footer_text}</footer>`;
+    }
+
+    function renderSetupAdmin() {
+      return `
+        <div class="min-h-full flex flex-col bg-white">
+          <div class="flex-1 flex items-center justify-center p-6">
+            <div class="max-w-md mx-auto text-center">
+              <div class="mb-8">
+                <div class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, ${config.primary_color} 0%, ${config.secondary_color} 100%);">
+                  <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m-6-14v14a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2zm6-8h4a2 2 0 012 2v4H2V5a2 2 0 012-2h4v4z"/>
+                  </svg>
+                </div>
+                <h1 class="text-3xl font-display font-bold text-gray-900 mb-4">Primeira Configuração</h1>
+                <p class="text-gray-600 text-base mb-6">Crie a sua conta de administrador</p>
+              </div>
+              
+              <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4">ℹ️ Detalhes do Evento</h3>
+                <div class="space-y-3 text-sm">
+                  ${event.event_time ? `<div><strong>Hora:</strong> ${event.event_time}</div>` : ''}
+                  ${event.event_location ? `<div><strong>Local:</strong> ${event.event_location}</div>` : ''}
+                  ${event.organizer_contact ? `<div><strong>Contacto:</strong> ${event.organizer_contact}</div>` : ''}
+                  ${event.event_description ? `<div><strong>Descrição:</strong> ${event.event_description}</div>` : ''}
+                </div>
+              </div>
+              
+              <div class="card">
+                <form id="setupAdminForm" class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome de Utilizador (Telefone ou ID)</label>
+                    <input type="text" id="setupUsername" class="input-field" placeholder="Ex: 923456789" required>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <input type="password" id="setupPassword" class="input-field" placeholder="Crie uma senha forte" required>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Senha</label>
+                    <input type="password" id="setupPasswordConfirm" class="input-field" placeholder="Confirme a senha" required>
+                  </div>
+                  
+                  <button type="submit" class="w-full py-3 px-8 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all text-white btn-primary">
+                    Criar Administrador
+                  </button>
+                </form>
+              </div>
+              
+              <p class="text-gray-500 text-sm mt-6">Após criar o administrador, ninguém mais poderá fazer esta configuração.</p>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderBackButton() {
+      return `
+        <button onclick="goBack()" class="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Voltar
+        </button>
+      `;
+    }
+
+    function renderLanding() {
+      return `
+        <div class="min-h-full flex flex-col bg-white">
+          <div class="flex-1 flex items-center justify-center p-6">
+            <div class="max-w-md mx-auto text-center">
+              <div class="mb-8">
+                <div class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, ${config.primary_color} 0%, ${config.secondary_color} 100%);">
+                  <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <h1 class="text-4xl font-display font-bold text-gray-900 mb-4">${config.main_title}</h1>
+                <p class="text-gray-600 text-lg">Crie e gerencie seus eventos facilmente</p>
+              </div>
+              
+              <button onclick="navigateTo('login')" class="w-full py-4 px-8 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all text-white btn-primary">
+                Entrar
+              </button>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderLogin() {
+      const savedSession = JSON.parse(localStorage.getItem('savedSession') || 'null');
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="flex-1 p-6">
+            <div class="max-w-md mx-auto">
+              ${renderBackButton()}
+              
+              <div class="card mt-8">
+                <div class="text-center mb-8">
+                  <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                  </div>
+                  <h2 class="text-2xl font-display font-bold text-gray-900">Entrar</h2>
+                  <p class="text-gray-500 mt-2">Acesse seu painel de eventos</p>
+                </div>
+                
+                <form id="loginForm" class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Telefone ou ID</label>
+                    <input type="text" id="loginUsername" class="input-field" placeholder="Digite seu telefone ou ID" value="${savedSession?.username || ''}" required>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <div class="relative">
+                      <input type="password" id="loginPassword" class="input-field pr-12" placeholder="Digite sua senha" value="${savedSession?.password || ''}" required>
+                      <button type="button" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-900" onclick="window.togglePasswordVisibility('loginPassword')">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="rememberSession" class="w-4 h-4 text-indigo-600 rounded" ${savedSession ? 'checked' : ''}>
+                    <span class="text-sm text-gray-700">Manter sessão</span>
+                  </label>
+                  
+                  <button type="submit" class="btn-primary w-full mt-6">
+                    Entrar
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderAdminDashboard() {
+      const activeUsers = db.users.filter(u => u.status === 'active');
+      const adminUsers = db.users.filter(u => u.role === 'admin');
+      const hasDuplicateAdmins = adminUsers.length > 1;
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+              <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 mr-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              </button>
+              <h1 class="text-xl font-bold text-gray-900">Painel Admin</h1>
+              <div></div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-4xl mx-auto w-full">
+            ${hasDuplicateAdmins ? `
+              <div class="card mb-6 bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500">
+                <h3 class="font-semibold text-gray-900 mb-2">Contas Admin Duplicadas</h3>
+                <p class="text-sm text-gray-600 mb-4">Existem ${adminUsers.length} contas de administrador. Mantenha apenas uma.</p>
+                <button onclick="cleanupDuplicateAdmins()" class="text-sm text-red-600 hover:text-red-800 font-medium">
+                  Eliminar duplicadas
+                </button>
+              </div>
+            ` : ''}
+            
+            <div class="grid grid-cols-3 gap-4 mb-8">
+              <div class="stat-card">
+                <div class="stat-number">${db.users.length}</div>
+                <div class="text-white/80 text-sm">Total Contas</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number">${activeUsers.length}</div>
+                <div class="text-white/80 text-sm">Activas</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number">${db.events.length}</div>
+                <div class="text-white/80 text-sm">Eventos</div>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
+              <button onclick="navigateTo('admin-users')" class="card w-full text-left flex items-center justify-between hover:shadow-lg transition-shadow">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13-3.803a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-900">Gerenciar Utilizadores</div>
+                    <div class="text-sm text-gray-500">${db.users.length} utilizadores registados</div>
+                  </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+              
+              <button onclick="navigateTo('admin-create-user')" class="card w-full text-left flex items-center justify-between hover:shadow-lg transition-shadow">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-gray-900">Criar Nova Conta</div>
+                    <div class="text-sm text-gray-500">Adicionar novo utilizador</div>
+                  </div>
+                </div>
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderAdminUsers() {
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+              <div class="flex items-center gap-3 mb-4">
+                <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                  </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900">Utilizadores</h1>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-4xl mx-auto w-full">
+            ${db.users.length === 0 ? `
+              <div class="text-center py-12">
+                <p class="text-gray-500">Nenhum utilizador registado</p>
+              </div>
+            ` : `
+              <div class="space-y-3">
+                ${db.users.map(user => `
+                  <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4">ℹ️ Detalhes do Evento</h3>
+                <div class="space-y-3 text-sm">
+                  ${event.event_time ? `<div><strong>Hora:</strong> ${event.event_time}</div>` : ''}
+                  ${event.event_location ? `<div><strong>Local:</strong> ${event.event_location}</div>` : ''}
+                  ${event.organizer_contact ? `<div><strong>Contacto:</strong> ${event.organizer_contact}</div>` : ''}
+                  ${event.event_description ? `<div><strong>Descrição:</strong> ${event.event_description}</div>` : ''}
+                </div>
+              </div>
+              
+              <div class="card">
+                    <div class="flex items-start justify-between mb-3">
+                      <div>
+                        <div class="font-semibold text-gray-900">${user.username}</div>
+                        <div class="text-sm text-gray-500">ID: ${user.id}</div>
+                      </div>
+                      <span class="badge ${user.status === 'active' ? 'badge-green' : 'badge-red'}">
+                        ${user.status === 'active' ? 'Activa' : 'Desactivada'}
+                      </span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class="btn-secondary text-sm edit-user-btn" data-user-id="${user.id}">Editar</button>
+                      <button type="button" class="btn-secondary text-sm login-user-btn" data-user-id="${user.id}">Entrar como</button>
+                      <button type="button" class="btn-secondary text-sm copy-btn" data-text="ID: ${user.id} | Senha: ${user.password}">Copiar dados</button>
+                      ${user.role !== 'admin' ? `
+                        <button type="button" class="btn-secondary text-sm text-red-600 delete-user-btn" data-user-id="${user.id}">Eliminar</button>
+                      ` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderAdminCreateUser() {
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="flex-1 p-4 max-w-md mx-auto w-full">
+            ${renderBackButton()}
+            
+            <div class="card">
+              <h2 class="text-xl font-bold text-gray-900 mb-6">Criar Nova Conta</h2>
+              
+              <form id="createUserForm" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Telefone ou ID</label>
+                  <input type="text" id="newUsername" class="input-field" placeholder="Ex: 923456789" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                  <input type="text" id="newPassword" class="input-field" placeholder="Criar senha" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Máximo de Eventos (0-4)</label>
+                  <select id="maxEvents" class="input-field">
+                    <option value="0">0 eventos</option>
+                    <option value="1" selected>1 evento</option>
+                    <option value="2">2 eventos</option>
+                    <option value="3">3 eventos</option>
+                    <option value="4">4 eventos</option>
+                  </select>
+                </div>
+                
+                <button type="submit" class="btn-primary w-full mt-6">Criar Conta</button>
+              </form>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderAdminEditUser() {
+      const user = getUserById(viewParams.userId);
+      if (!user) return renderAdminUsers();
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="flex-1 p-4 max-w-md mx-auto w-full">
+            ${renderBackButton()}
+            
+            <div class="card">
+              <h2 class="text-xl font-bold text-gray-900 mb-6">Editar Utilizador</h2>
+              
+              <form id="editUserForm" class="space-y-4">
+                <input type="hidden" id="editUserId" value="${user.id}">
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Telefone ou ID</label>
+                  <input type="text" id="editUsername" class="input-field" value="${user.username}" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                  <input type="text" id="editPassword" class="input-field" value="${user.password}" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Máximo de Eventos (0-4)</label>
+                  <select id="editMaxEvents" class="input-field">
+                    ${[0,1,2,3,4].map(n => `<option value="${n}" ${(user.max_events || 1) == n ? 'selected' : ''}>${n} eventos</option>`).join('')}
+                  </select>
+                </div>
+                
+                <button type="submit" class="btn-primary w-full mt-6">Guardar Alterações</button>
+              </form>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderUserDashboard() {
+      const events = getUserEvents(currentUser.id);
+      const maxEvents = currentUser.max_events || 1;
+      const canCreate = events.length < maxEvents;
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+              <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              </button>
+              <h1 class="text-xl font-bold text-gray-900">Meus Eventos</h1>
+              <div></div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-4xl mx-auto w-full">
+            <div class="mb-6 p-4 bg-indigo-50 rounded-xl">
+              <p class="text-sm text-indigo-700">
+                Você pode criar até <strong>${maxEvents}</strong> evento(s). Criados: <strong>${events.length}</strong>
+                ${events.length >= maxEvents ? '<span class="ml-2 text-red-600 font-medium">Limite atingido</span>' : ''}
+              </p>
+            </div>
+            
+            ${canCreate ? `
+              <button onclick="navigateTo('create-event')" class="btn-primary w-full mb-6 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Criar Novo Evento
+              </button>
+            ` : ''}
+            
+            ${events.length === 0 ? `
+              <div class="text-center py-12">
+                <p class="text-gray-500">Nenhum evento criado ainda</p>
+              </div>
+            ` : `
+              <div class="space-y-4">
+                ${events.map(event => {
+                  const confirmations = getConfirmations(event.id);
+                  const attending = confirmations.filter(c => c.attending === 'sim').length;
+                  
+                  return `
+                    <div class="card cursor-pointer hover:shadow-lg transition-shadow" onclick="navigateTo('event-details', { eventId: '${event.id}' })">
+                      <div class="flex items-start justify-between">
+                        <div>
+                          <h3 class="font-semibold text-gray-900">${event.title}</h3>
+                          <p class="text-sm text-gray-500">${new Date(event.event_date).toLocaleDateString('pt-BR')} às ${event.event_time || 'N/A'}</p>
+                          <p class="text-sm text-gray-500 mt-1">${event.event_location || 'Local não especificado'}</p>
+                          <p class="text-sm text-gray-500">${attending} confirmação(ões)</p>
+                        </div>
+                        <span class="badge badge-blue">
+                          ${event.event_type === 'casamento' ? 'Casamento' : 'Aniversário'}
+                        </span>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderCreateEvent() {
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="flex-1 p-4 max-w-md mx-auto w-full">
+            ${renderBackButton()}
+            
+            <div class="card">
+              <h2 class="text-xl font-bold text-gray-900 mb-6">Criar Evento</h2>
+              
+              <form id="createEventForm" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Evento</label>
+                  <div class="flex gap-3">
+                    <label class="radio-card flex-1" id="eventTypeWedding">
+                      <input type="radio" name="eventType" value="casamento" checked>
+                      <span class="radio-indicator"></span>
+                      <span>Casamento</span>
+                    </label>
+                    <label class="radio-card flex-1" id="eventTypeBirthday">
+                      <input type="radio" name="eventType" value="aniversario">
+                      <span class="radio-indicator"></span>
+                      <span>Aniversário</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Título do Evento</label>
+                  <input type="text" id="eventTitle" class="input-field" placeholder="Ex: Casamento João e Maria" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Data do Evento</label>
+                  <input type="date" id="eventDate" class="input-field" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar até</label>
+                  <input type="date" id="confirmUntil" class="input-field" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Hora do Evento</label>
+                  <input type="time" id="eventTime" class="input-field" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Local / Endereço</label>
+                  <input type="text" id="eventLocation" class="input-field" placeholder="Ex: Salão XXXX, Rua ABC, Lisboa" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Descrição / Detalhes</label>
+                  <textarea id="eventDescription" class="input-field" rows="3" placeholder="Detalhes adicionais sobre o evento..." style="resize: vertical;"></textarea>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Contacto do Organizador</label>
+                  <input type="text" id="organizerContact" class="input-field" placeholder="Telefone ou Email">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Capa</label>
+                  <input type="file" id="coverImageFile" class="input-field" accept="image/*" onchange="previewCoverImage()">
+                  <p class="text-xs text-gray-500 mt-1">Selecione uma imagem do seu dispositivo</p>
+                  <div id="coverPreview" class="mt-3 rounded-lg overflow-hidden hidden">
+                    <img id="coverPreviewImg" class="w-full h-48 object-cover" alt="Pré-visualização">
+                  </div>
+                  <input type="hidden" id="coverImageUrl">
+                </div>
+                
+                <div class="space-y-3 bg-indigo-50 p-4 rounded-lg">
+                  <p class="text-sm font-medium text-gray-700">Permitir aos convidados:</p>
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="allowCompanions" class="w-4 h-4 text-indigo-600 rounded" onchange="toggleCompanionLimit()">
+                    <span class="text-sm text-gray-700">Trazer acompanhantes</span>
+                  </label>
+                  <div id="companionLimitContainer" class="hidden ml-7">
+                    <label class="text-sm text-gray-600 mb-2 block">Máximo de acompanhantes por convidado:</label>
+                    <input type="number" id="maxCompanions" class="input-field w-full" value="1" min="1" max="10">
+                  </div>
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="allowChildren" class="w-4 h-4 text-indigo-600 rounded">
+                    <span class="text-sm text-gray-700">Trazer crianças</span>
+                  </label>
+                </div>
+                
+                <button type="submit" class="btn-primary w-full mt-6">Criar Evento</button>
+              </form>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderEditEvent() {
+      const event = getEventById(viewParams.eventId);
+      if (!event) return renderUserDashboard();
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="flex-1 p-4 max-w-md mx-auto w-full">
+            ${renderBackButton()}
+            
+            <div class="card">
+              <h2 class="text-xl font-bold text-gray-900 mb-6">Editar Evento</h2>
+              
+              <form id="editEventForm" class="space-y-4">
+                <input type="hidden" id="editEventId" value="${event.id}">
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Evento</label>
+                  <div class="flex gap-3">
+                    <label class="radio-card flex-1 ${event.event_type === 'casamento' ? 'selected' : ''}" id="editEventTypeWedding">
+                      <input type="radio" name="editEventType" value="casamento" ${event.event_type === 'casamento' ? 'checked' : ''}>
+                      <span class="radio-indicator"></span>
+                      <span>Casamento</span>
+                    </label>
+                    <label class="radio-card flex-1 ${event.event_type === 'aniversario' ? 'selected' : ''}" id="editEventTypeBirthday">
+                      <input type="radio" name="editEventType" value="aniversario" ${event.event_type === 'aniversario' ? 'checked' : ''}>
+                      <span class="radio-indicator"></span>
+                      <span>Aniversário</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Título do Evento</label>
+                  <input type="text" id="editEventTitle" class="input-field" value="${event.title || ''}" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Data do Evento</label>
+                  <input type="date" id="editEventDate" class="input-field" value="${event.event_date || ''}" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar até</label>
+                  <input type="date" id="editConfirmUntil" class="input-field" value="${event.confirm_until || ''}" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Hora do Evento</label>
+                  <input type="time" id="editEventTime" class="input-field" value="${event.event_time ? event.event_time : ''}" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Local / Endereço</label>
+                  <input type="text" id="editEventLocation" class="input-field" value="${event.event_location ? event.event_location : ''}" placeholder="Ex: Salão XXXX, Rua ABC, Lisboa" required>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Descrição / Detalhes</label>
+                  <textarea id="editEventDescription" class="input-field" rows="3" placeholder="Detalhes adicionais sobre o evento..." style="resize: vertical;">${event.event_description ? event.event_description : ''}</textarea>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Contacto do Organizador</label>
+                  <input type="text" id="editOrganizerContact" class="input-field" value="${event.organizer_contact ? event.organizer_contact : ''}" placeholder="Telefone ou Email">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Capa</label>
+                  <input type="file" id="editCoverImageFile" class="input-field" accept="image/*" onchange="previewEditCoverImage()">
+                  <p class="text-xs text-gray-500 mt-1">Selecione uma imagem do seu dispositivo</p>
+                  <div id="editCoverPreview" class="mt-3 rounded-lg overflow-hidden hidden">
+                    <img id="editCoverPreviewImg" class="w-full h-48 object-cover" alt="Pré-visualização">
+                  </div>
+                  <input type="hidden" id="editCoverImageUrl">
+                </div>
+                
+                <div class="space-y-3 bg-indigo-50 p-4 rounded-lg">
+                  <p class="text-sm font-medium text-gray-700">Permitir aos convidados:</p>
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="editAllowCompanions" class="w-4 h-4 text-indigo-600 rounded" onchange="toggleEditCompanionLimit()" ${event.allow_companions ? 'checked' : ''}>
+                    <span class="text-sm text-gray-700">Trazer acompanhantes</span>
+                  </label>
+                  <div id="editCompanionLimitContainer" class="${event.allow_companions ? '' : 'hidden'} ml-7">
+                    <label class="text-sm text-gray-600 mb-2 block">Máximo de acompanhantes:</label>
+                    <input type="number" id="editMaxCompanions" class="input-field w-full" value="${event.max_companions || 1}" min="1" max="10">
+                  </div>
+                  <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="editAllowChildren" class="w-4 h-4 text-indigo-600 rounded" ${event.allow_children ? 'checked' : ''}>
+                    <span class="text-sm text-gray-700">Trazer crianças</span>
+                  </label>
+                </div>
+                
+                <button type="submit" class="btn-primary w-full mt-6">Guardar Alterações</button>
+              </form>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderEventDetails() {
+      const event = getEventById(viewParams.eventId);
+      if (!event) return renderUserDashboard();
+      
+      const confirmations = getConfirmations(event.id);
+      const attending = confirmations.filter(c => c.attending === 'sim');
+      const notAttending = confirmations.filter(c => c.attending === 'nao');
+      
+      const baseUrl = window.location.origin;
+      const eventLink = `${baseUrl}/#event/${event.id}`;
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+              <div class="flex items-center gap-3 mb-4">
+                <button onclick="goBack()" class="text-gray-600 hover:text-gray-900">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900">${event.title}</h1>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-4xl mx-auto w-full">
+            <div class="grid grid-cols-2 gap-3 mb-6">
+              <button onclick="navigateTo('edit-event', { eventId: '${event.id}' })" class="btn-secondary flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Editar
+              </button>
+              <button onclick="navigateTo('manage-gifts', { eventId: '${event.id}' })" class="btn-secondary flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0H9m3 0h3m-6 4h12a2 2 0 012 2v6a2 2 0 01-2 2H3a2 2 0 01-2-2v-6a2 2 0 012-2z"/>
+                </svg>
+                Presentes
+              </button>
+              <button onclick="copyToClipboard('${eventLink}')" class="btn-secondary flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                Copiar Link
+              </button>
+              <button onclick="generatePDF(getEventById('${event.id}'), getConfirmations('${event.id}'))" class="btn-secondary flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Baixar PDF
+              </button>
+              <button onclick="navigateTo('guest-preview', { eventId: '${event.id}' })" class="btn-secondary flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Pré-visualizar
+              </button>
+              <button onclick="showDeleteEventModal('${event.id}')" class="btn-secondary flex items-center justify-center gap-2 text-red-600 hover:text-red-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Eliminar
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-3 mb-6">
+              <div class="card text-center p-4">
+                <div class="text-2xl font-bold text-gray-900">${confirmations.length}</div>
+                <div class="text-sm text-gray-500">Total</div>
+              </div>
+              <div class="card text-center p-4">
+                <div class="text-2xl font-bold text-green-600">${attending.length}</div>
+                <div class="text-sm text-gray-500">Confirmados</div>
+              </div>
+              <div class="card text-center p-4">
+                <div class="text-2xl font-bold text-red-600">${notAttending.length}</div>
+                <div class="text-sm text-gray-500">Recusados</div>
+              </div>
+            </div>
+            
+            <div class="card">
+              <h3 class="font-semibold text-gray-900 mb-4">Lista de Confirmações</h3>
+              
+              ${confirmations.length === 0 ? `
+                <p class="text-gray-500 text-center py-8">Nenhuma confirmação ainda</p>
+              ` : `
+                <div class="space-y-3">
+                  ${confirmations.map(conf => {
+                    const companions = conf.companions ? JSON.parse(conf.companions) : [];
+                    return `
+                      <div class="p-4 bg-gray-50 rounded-xl">
+                        <div class="flex items-start justify-between mb-2">
+                          <div>
+                            <div class="font-medium text-gray-900">${conf.guest_name}</div>
+                            ${companions.length > 0 ? `
+                              <div class="text-sm text-gray-500">Acompanhantes: ${companions.join(', ')}</div>
+                            ` : ''}
+                          </div>
+                          <span class="badge ${conf.attending === 'sim' ? 'badge-green' : 'badge-red'}">
+                            ${conf.attending === 'sim' ? 'Confirmado' : 'Não vai'}
+                          </span>
+                        </div>
+                        <div class="flex gap-2 mt-3">
+                          <button onclick="deleteConfirmation('${confirmations.indexOf(conf)}')" class="text-sm text-red-600 hover:text-red-800">Eliminar</button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderGuestForm() {
+      const eventToken = viewParams.token;
+      let event = getEventById(viewParams.eventId);
+      
+      if (!event) {
+        return `
+          <div class="min-h-full flex flex-col items-center justify-center p-6 bg-gray-50">
+            <div class="text-center">
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">Evento não encontrado</h2>
+            </div>
+            ${renderFooter()}
+          </div>
+        `;
+      }
+
+      // Check if deadline passed
+      if (new Date(event.confirm_until) < new Date()) {
+        return `
+          <div class="min-h-full flex flex-col items-center justify-center p-6 bg-gray-50">
+            <div class="text-center">
+              <h2 class="text-xl font-semibold text-gray-900 mb-2">Prazo Expirado</h2>
+              <p class="text-gray-500">O prazo para confirmar foi até ${new Date(event.confirm_until).toLocaleDateString('pt-BR')}</p>
+            </div>
+            ${renderFooter()}
+          </div>
+        `;
+      }
+      
+      const countdown = getCountdown(event.event_date);
+      const allowCompanions = event.allow_companions;
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="flex-1 p-4 relative z-10">
+            <div class="max-w-md mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+              <div class="relative w-full h-48 bg-gradient-to-br from-indigo-400 to-indigo-600 overflow-hidden">
+                <div id="coverImageContainer">
+                  ${config.cover_image_url ? `
+                    <img src="${config.cover_image_url}" alt="Capa do evento" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; document.getElementById('coverImageContainer').style.backgroundImage='linear-gradient(135deg, #007f9f 0%, #005f7f 100%)'; this.parentElement.style.background='linear-gradient(135deg, #007f9f 0%, #005f7f 100%)';"/>
+                  ` : `
+                    <div style="background: linear-gradient(135deg, ${config.primary_color} 0%, ${config.secondary_color} 100%); width: 100%; height: 100%;"></div>
+                  `}
+                </div>
+              </div>
+              
+              <div class="px-6 pt-6">
+                <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+                  <div class="flex justify-center gap-3" id="countdownContainer">
+                    <div class="countdown-item">
+                      <div class="countdown-number" id="countdown-days">0</div>
+                      <div class="countdown-label">Dias</div>
+                    </div>
+                    <div class="countdown-item">
+                      <div class="countdown-number" id="countdown-hours">0</div>
+                      <div class="countdown-label">Horas</div>
+                    </div>
+                    <div class="countdown-item">
+                      <div class="countdown-number" id="countdown-minutes">0</div>
+                      <div class="countdown-label">Min</div>
+                    </div>
+                    <div class="countdown-item">
+                      <div class="countdown-number" id="countdown-seconds">0</div>
+                      <div class="countdown-label">Seg</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <h1 class="text-3xl font-display font-bold text-gray-900 mb-2">${event.title}</h1>
+                <p class="text-gray-600 text-lg mb-2">
+                  ${new Date(event.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+                ${event.event_time ? `<p class="text-gray-600 text-lg mb-2">⏰ ${event.event_time}</p>` : ''}
+                ${event.event_location ? `<p class="text-gray-600 text-lg mb-2">📍 ${event.event_location}</p>` : ''}
+                ${event.event_description ? `<p class="text-gray-600 mb-4">${event.event_description}</p>` : ''}
+                <p class="text-indigo-600 font-medium mb-6">
+                  Favor confirmar até ${new Date(event.confirm_until).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            </div>
+              
+              <div id="guestFormContainer" class="card">
+                <form id="guestForm" class="space-y-5">
+                  <input type="hidden" id="guestEventId" value="${event.id}">
+                  <input type="hidden" id="guestEventType" value="${event.event_type}">
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Confirma Presença?</label>
+                    <div class="flex gap-3">
+                      <label class="radio-card flex-1" id="attendingYes">
+                        <input type="radio" name="attending" value="sim" required>
+                        <span class="radio-indicator"></span>
+                        <span>Sim</span>
+                      </label>
+                      <label class="radio-card flex-1" id="attendingNo">
+                        <input type="radio" name="attending" value="nao">
+                        <span class="radio-indicator"></span>
+                        <span>Não</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Convidado</label>
+                    <input type="text" id="guestName" class="input-field" placeholder="Digite seu nome completo" required>
+                  </div>
+                  
+                  ${event.event_type === 'casamento' ? `
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Você é convidado(a) do(a):</label>
+                      <div class="flex gap-3">
+                        <label class="radio-card flex-1" id="invitedByNoivo">
+                          <input type="radio" name="invitedBy" value="Noivo" required>
+                          <span class="radio-indicator"></span>
+                          <span>Noivo</span>
+                        </label>
+                        <label class="radio-card flex-1" id="invitedByNoiva">
+                          <input type="radio" name="invitedBy" value="Noiva">
+                          <span class="radio-indicator"></span>
+                          <span>Noiva</span>
+                        </label>
+                      </div>
+                    </div>
+                  ` : `
+                    ${event.allow_children ? `
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantas crianças vão?</label>
+                        <input type="number" id="childrenCount" class="input-field" value="0" min="0" max="10">
+                      </div>
+                    ` : ''}
+                  `}
+                  
+                  ${allowCompanions ? `
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-3">Acompanhantes</label>
+                      <div id="companionsList" class="space-y-2"></div>
+                      <button type="button" onclick="addCompanion(${event.max_companions || 1})" class="mt-3 text-indigo-600 hover:text-indigo-800 flex items-center gap-2 text-sm font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Incluir acompanhante
+                      </button>
+                    </div>
+                  ` : ''}
+                  
+                  ${event.gift_suggestions_enabled ? `
+                    <div class="border-t pt-5">
+                      <h3 class="font-semibold text-gray-900 mb-4">🎁 Sugestões de Presentes</h3>
+                      ${getGiftSuggestions(event.id).length === 0 ? `
+                        <p class="text-gray-500 text-center py-4">Nenhuma sugestão de presente disponível</p>
+                      ` : `
+                        <div class="space-y-3" id="giftsList">
+                          ${getGiftSuggestions(event.id).map(gift => {
+                            const claims = getGiftClaimsByGift(gift.id);
+                            const isUnavailable = !gift.allow_multiple && claims.length > 0;
+                            
+                            return `
+                              <label class="radio-card ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}" id="gift-${gift.id}">
+                                <input type="radio" name="giftSuggestion" value="${gift.id}" ${isUnavailable ? 'disabled' : ''} onchange="document.getElementById('selectedGiftId').value = '${gift.id}'">
+                                <span class="radio-indicator"></span>
+                                <div class="flex-1 text-sm">
+                                  <div class="font-medium">${gift.gift_name}</div>
+                                  ${claims.length > 0 ? `
+                                    <div class="text-xs text-gray-500">${claims.length} pessoa${claims.length > 1 ? 's' : ''} levarão ${isUnavailable ? '- INDISPONÍVEL' : ''}</div>
+                                  ` : ''}
+                                </div>
+                              </label>
+                            `;
+                          }).join('')}
+                        </div>
+                      `}
+                    </div>
+                  ` : ''}
+                  
+                  <input type="hidden" id="selectedGiftId" value="">
+                  
+                  <button type="submit" id="submitBtn" class="btn-primary w-full mt-6">
+                    Enviar Confirmação
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderGuestPreview() {
+      const event = getEventById(viewParams.eventId);
+      if (!event) return goBack();
+      
+      const countdown = getCountdown(event.event_date);
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-yellow-500 text-yellow-900 text-center py-2 px-4 text-sm font-medium sticky top-0 z-20">
+            Modo de pré-visualização - <button onclick="goBack()" class="underline">Voltar ao painel</button>
+          </div>
+          
+          <div class="flex-1 p-4 relative z-10">
+            <div class="max-w-md mx-auto">
+              <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <h1 class="text-3xl font-display font-bold text-gray-900 mb-2">${event.title}</h1>
+                <p class="text-gray-600 text-lg">
+                  ${new Date(event.event_date).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              
+              <div class="bg-white rounded-2xl shadow-lg p-4 mb-6">
+                <div class="flex justify-center gap-3" id="countdownContainer">
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-days">${countdown.days}</div>
+                    <div class="countdown-label">Dias</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-hours">${countdown.hours}</div>
+                    <div class="countdown-label">Horas</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-minutes">${countdown.minutes}</div>
+                    <div class="countdown-label">Min</div>
+                  </div>
+                  <div class="countdown-item">
+                    <div class="countdown-number" id="countdown-seconds">${countdown.seconds}</div>
+                    <div class="countdown-label">Seg</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4">ℹ️ Detalhes do Evento</h3>
+                <div class="space-y-3 text-sm">
+                  ${event.event_time ? `<div><strong>Hora:</strong> ${event.event_time}</div>` : ''}
+                  ${event.event_location ? `<div><strong>Local:</strong> ${event.event_location}</div>` : ''}
+                  ${event.organizer_contact ? `<div><strong>Contacto:</strong> ${event.organizer_contact}</div>` : ''}
+                  ${event.event_description ? `<div><strong>Descrição:</strong> ${event.event_description}</div>` : ''}
+                </div>
+              </div>
+              
+              <div class="card">
+                <button type="button" class="btn-primary w-full" onclick="showPreviewSubmitMessage()">
+                  Enviar Confirmação
+                </button>
+                <div id="previewSubmitMessage" class="hidden text-center py-8 mt-6 border-t pt-6">
+                  <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirmação Enviada!</h3>
+                  <p class="text-sm text-gray-600">Esta é uma pré-visualização.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderGuestMessages() {
+      const event = getEventById(viewParams.eventId);
+      if (!event) return `<div class="p-6 text-center"><p class="text-gray-500">Evento não encontrado</p></div>`;
+      
+      const messages = getMessages(event.id);
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-md mx-auto px-4 py-4">
+              <div class="flex items-center gap-3">
+                <button onclick="goBack()" class="text-gray-600 hover:text-gray-900">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900">Recados - ${event.title}</h1>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-md mx-auto w-full">
+            ${messages.length === 0 ? `
+              <div class="card text-center py-12">
+                <p class="text-gray-500">Nenhum recado ainda</p>
+              </div>
+            ` : `
+              <div class="space-y-4">
+                ${messages.map(msg => `
+                  <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4">ℹ️ Detalhes do Evento</h3>
+                <div class="space-y-3 text-sm">
+                  ${event.event_time ? `<div><strong>Hora:</strong> ${event.event_time}</div>` : ''}
+                  ${event.event_location ? `<div><strong>Local:</strong> ${event.event_location}</div>` : ''}
+                  ${event.organizer_contact ? `<div><strong>Contacto:</strong> ${event.organizer_contact}</div>` : ''}
+                  ${event.event_description ? `<div><strong>Descrição:</strong> ${event.event_description}</div>` : ''}
+                </div>
+              </div>
+              
+              <div class="card">
+                    <div class="flex items-start justify-between mb-2">
+                      <div class="font-semibold text-gray-900">${msg.message_author}</div>
+                      <div class="text-xs text-gray-500">${new Date(msg.message_created_at).toLocaleDateString('pt-BR')}</div>
+                    </div>
+                    <p class="text-gray-600 text-sm">${msg.message_text}</p>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderEditConfirmation() {
+      return `<div class="p-6 text-center"><p>Funcionalidade em desenvolvimento</p></div>`;
+    }
+
+    function renderManageGifts() {
+      const event = getEventById(viewParams.eventId);
+      if (!event) return renderUserDashboard();
+      
+      const gifts = getGiftSuggestions(event.id);
+      
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+              <div class="flex items-center gap-3 mb-4">
+                <button onclick="goBack()" class="text-gray-600 hover:text-gray-900">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900">🎁 Presentes - ${event.title}</h1>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-4xl mx-auto w-full">
+            <div class="card mb-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-900">Sistema de Presentes</h3>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" ${event.gift_suggestions_enabled ? 'checked' : ''} onchange="toggleGiftSystem('${event.id}', this.checked)" class="w-4 h-4 rounded">
+                  <span class="text-sm text-gray-700">${event.gift_suggestions_enabled ? 'Ativado' : 'Desativado'}</span>
+                </label>
+              </div>
+              <p class="text-sm text-gray-600">Ative para permitir que convidados escolham presentes da sua lista</p>
+            </div>
+            
+            ${event.gift_suggestions_enabled ? `
+              <div class="card mb-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Adicionar Presente</h3>
+                <form id="addGiftForm" class="space-y-4">
+                  <input type="hidden" id="giftEventId" value="${event.id}">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Presente</label>
+                    <input type="text" id="giftName" class="input-field" placeholder="Ex: Toalha de banho" required>
+                  </div>
+                  
+                  <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer flex-1">
+                      <input type="checkbox" id="giftMultiple" class="w-4 h-4 rounded">
+                      <span class="text-sm text-gray-700">Permitir múltiplas pessoas levar o mesmo item?</span>
+                    </label>
+                  </div>
+                  
+                  <button type="submit" class="btn-primary w-full">Adicionar Presente</button>
+                </form>
+              </div>
+              
+              <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4">Lista de Presentes (${gifts.length})</h3>
+                
+                ${gifts.length === 0 ? `
+                  <p class="text-gray-500 text-center py-8">Nenhum presente adicionado ainda</p>
+                ` : `
+                  <div class="space-y-3">
+                    ${gifts.map(gift => {
+                      const claims = getGiftClaimsByGift(gift.id);
+                      return `
+                        <div class="p-4 bg-gray-50 rounded-xl flex items-start justify-between">
+                          <div class="flex-1">
+                            <div class="font-medium text-gray-900">${gift.gift_name}</div>
+                            <div class="text-sm text-gray-500 mt-1">
+                              ${gift.allow_multiple ? '✓ Múltiplas pessoas podem levar' : '⚠️ Apenas uma pessoa pode levar'}
+                            </div>
+                            ${claims.length > 0 ? `
+                              <div class="mt-2">
+                                <div class="text-xs font-medium text-gray-600 mb-1">${claims.length} pessoa${claims.length > 1 ? 's' : ''} vai${claims.length > 1 ? 'ão' : ''} levar:</div>
+                                <div class="space-y-1">
+                                  ${claims.map(claim => `
+                                    <div class="text-xs text-gray-600 flex items-center justify-between">
+                                      <span>${claim.guest_name}</span>
+                                      <button onclick="removeGiftClaim('${claim.id}')" class="text-red-500 hover:text-red-700">✕</button>
+                                    </div>
+                                  `).join('')}
+                                </div>
+                              </div>
+                            ` : ''}
+                          </div>
+                          <button onclick="deleteGift('${gift.id}')" class="text-red-500 hover:text-red-700 ml-4">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                          </button>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
+              </div>
+            ` : `
+              <div class="card text-center py-12">
+                <p class="text-gray-500 mb-4">Ative o sistema de presentes para começar</p>
+              </div>
+            `}
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    function renderGiftSuggestions() {
+      return `<div class="p-6 text-center"><p>Página de sugestões em desenvolvimento</p></div>`;
+    }
+
+    function renderNotifications() {
+      const userEvents = currentUser.role === 'admin' ? db.events : getUserEvents(currentUser.id);
+      const notifications = [];
+
+      userEvents.forEach(event => {
+        const confirmations = getConfirmations(event.id);
+        confirmations.forEach(conf => {
+          notifications.push({
+            id: `${conf.id}-${event.id}`,
+            eventTitle: event.title,
+            guestName: conf.guest_name,
+            attending: conf.attending,
+            timestamp: conf.created_at || new Date().toISOString(),
+            eventId: event.id
+          });
+        });
+      });
+
+      // Sort by timestamp descending
+      notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      return `
+        <div class="min-h-full flex flex-col bg-gray-50">
+          <div class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+              <div class="flex items-center gap-3 mb-2">
+                <button onclick="goBack()" class="text-gray-600 hover:text-gray-900">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900">🔔 Notificações</h1>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 max-w-4xl mx-auto w-full">
+            ${notifications.length === 0 ? `
+              <div class="card text-center py-12">
+                <p class="text-gray-500">Nenhuma notificação ainda</p>
+              </div>
+            ` : `
+              <div class="space-y-3">
+                ${notifications.map(notif => `
+                  <div class="card border-l-4 ${notif.attending === 'sim' ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}">
+                    <div class="flex items-start justify-between">
+                      <div>
+                        <div class="font-semibold text-gray-900">${notif.guestName}</div>
+                        <div class="text-sm text-gray-600">${notif.eventTitle}</div>
+                        <div class="text-xs text-gray-500 mt-1">${new Date(notif.timestamp).toLocaleDateString('pt-BR')} às ${new Date(notif.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                      <span class="badge ${notif.attending === 'sim' ? 'badge-green' : 'badge-red'}">
+                        ${notif.attending === 'sim' ? '✓ Confirmou' : '✗ Recusou'}
+                      </span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+          ${renderFooter()}
+        </div>
+      `;
+    }
+
+    // ========== EVENT HANDLERS ==========
+    function attachEventListeners() {
+      const setupAdminForm = document.getElementById('setupAdminForm');
+      if (setupAdminForm) {
+        setupAdminForm.addEventListener('submit', handleSetupAdmin);
+      }
+      
+      const loginForm = document.getElementById('loginForm');
+      if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+      }
+      
+      const createUserForm = document.getElementById('createUserForm');
+      if (createUserForm) {
+        createUserForm.addEventListener('submit', handleCreateUser);
+      }
+      
+      const editUserForm = document.getElementById('editUserForm');
+      if (editUserForm) {
+        editUserForm.addEventListener('submit', handleEditUser);
+      }
+      
+      const createEventForm = document.getElementById('createEventForm');
+      if (createEventForm) {
+        createEventForm.addEventListener('submit', handleCreateEvent);
+        setupRadioCards('eventTypeWedding', 'eventTypeBirthday');
+      }
+      
+      const editEventForm = document.getElementById('editEventForm');
+      if (editEventForm) {
+        editEventForm.addEventListener('submit', handleEditEvent);
+        setupRadioCards('editEventTypeWedding', 'editEventTypeBirthday');
+      }
+      
+      const guestForm = document.getElementById('guestForm');
+      if (guestForm) {
+        guestForm.addEventListener('submit', handleGuestSubmit);
+        setupRadioCards('attendingYes', 'attendingNo');
+        if (document.getElementById('invitedByNoivo')) {
+          setupRadioCards('invitedByNoivo', 'invitedByNoiva');
+        }
+      }
+
+      // Event delegation for buttons
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-user-btn')) {
+          const userId = e.target.dataset.userId;
+          navigateTo('admin-edit-user', { userId: userId });
+        }
+        if (e.target.classList.contains('login-user-btn')) {
+          const userId = e.target.dataset.userId;
+          loginAsUser(userId);
+        }
+        if (e.target.classList.contains('copy-btn')) {
+          const text = e.target.dataset.text;
+          copyToClipboard(text);
+        }
+        if (e.target.classList.contains('delete-user-btn')) {
+          const userId = e.target.dataset.userId;
+          deleteUser(userId);
+        }
+        if (e.target.classList.contains('toggle-password-btn')) {
+          e.preventDefault();
+          const targetId = e.target.closest('button').dataset.target;
+          window.togglePasswordVisibility(targetId);
+        }
+      });
+    }
+
+    function setupRadioCards(...ids) {
+      ids.forEach(id => {
+        const card = document.getElementById(id);
+        if (card) {
+          const input = card.querySelector('input[type="radio"]');
+          input.addEventListener('change', () => {
+            document.querySelectorAll(`input[name="${input.name}"]`).forEach(radio => {
+              radio.closest('.radio-card').classList.remove('selected');
+            });
+            card.classList.add('selected');
+          });
+          if (input.checked) {
+            card.classList.add('selected');
+          }
+        }
+      });
+    }
+
+    // ========== FORM HANDLERS ==========
+    function handleSetupAdmin(e) {
+      e.preventDefault();
+      const username = sanitizeInput(document.getElementById('setupUsername').value);
+      const password = document.getElementById('setupPassword').value;
+      const passwordConfirm = document.getElementById('setupPasswordConfirm').value;
+      
+      // Check if admin already exists
+      const adminExists = db.users.some(u => u.role === 'admin');
+      if (adminExists) {
+        showToast('Um administrador já foi criado', 'error');
+        navigateTo('landing');
+        return;
+      }
+      
+      if (password !== passwordConfirm) {
+        showToast('As senhas não coincidem', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showToast('A senha deve ter pelo menos 6 caracteres', 'error');
+        return;
+      }
+      
+      const adminUser = {
+        id: generateId(),
+        username: username,
+        password: password,
+        role: 'admin',
+        status: 'active',
+        max_events: 999
+      };
+      
+      isLoading = true;
+      supabaseClient.from('users').insert([adminUser]).then(result => {
+        if (result.error) {
+          showToast('Erro ao criar administrador: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          adminCreated = true;
+          currentUser = adminUser;
+          db.users.push(adminUser);
+          showToast('Administrador criado com sucesso!');
+          navigateTo('admin-dashboard');
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao criar administrador', 'error');
+        isLoading = false;
+      });
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const username = sanitizeInput(document.getElementById('loginUsername').value);
+      const password = document.getElementById('loginPassword').value;
+      const rememberSession = document.getElementById('rememberSession')?.checked;
+      
+      const user = db.users.find(u => (u.username === username || u.id === username) && u.password === password);
+      
+      if (user && user.status === 'active') {
+        currentUser = user;
+        
+        // Salvar sessão se marcado
+        if (rememberSession) {
+          localStorage.setItem('savedSession', JSON.stringify({
+            username: username,
+            password: password
+          }));
+        } else {
+          localStorage.removeItem('savedSession');
+        }
+        
+        showToast('Login realizado com sucesso!');
+        navigateTo(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
+      } else {
+        showToast('Credenciais inválidas', 'error');
+      }
+    }
+
+    function handleCreateUser(e) {
+      e.preventDefault();
+      const username = sanitizeInput(document.getElementById('newUsername').value);
+      const password = sanitizeInput(document.getElementById('newPassword').value);
+      const maxEvents = parseInt(document.getElementById('maxEvents').value);
+      
+      if (db.users.find(u => u.username === username)) {
+        showToast('Este telefone/ID já está em uso', 'error');
+        return;
+      }
+      
+      const newUser = {
+        id: generateId(),
+        username: username,
+        password: password,
+        role: 'user',
+        status: 'active',
+        max_events: maxEvents
+      };
+      
+      isLoading = true;
+      supabaseClient.from('users').insert([newUser]).then(result => {
+        if (result.error) {
+          showToast('Erro ao criar conta: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          db.users.push(newUser);
+          showToast('Conta criada com sucesso!');
+          goBack();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao criar conta', 'error');
+        isLoading = false;
+      });
+    }
+
+    function handleEditUser(e) {
+      e.preventDefault();
+      const userId = document.getElementById('editUserId').value;
+      const user = getUserById(userId);
+      
+      if (user) {
+        user.username = sanitizeInput(document.getElementById('editUsername').value);
+        user.password = sanitizeInput(document.getElementById('editPassword').value);
+        user.max_events = parseInt(document.getElementById('editMaxEvents').value);
+        
+        isLoading = true;
+        supabaseClient.from('users').update(user).eq('id', userId).then(result => {
+          if (result.error) {
+            showToast('Erro ao atualizar utilizador: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            showToast('Utilizador atualizado!');
+            goBack();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao atualizar utilizador', 'error');
+          isLoading = false;
+        });
+      }
+    }
+
+    function handleCreateEvent(e) {
+      e.preventDefault();
+      const eventType = document.querySelector('input[name="eventType"]:checked').value;
+      const title = sanitizeInput(document.getElementById('eventTitle').value);
+      const eventDate = document.getElementById('eventDate').value;
+      const confirmUntil = document.getElementById('confirmUntil').value;
+      
+      const userEvents = getUserEvents(currentUser.id);
+      if (userEvents.length >= (currentUser.max_events || 1)) {
+        showToast('Atingiu o limite de eventos permitidos', 'error');
+        return;
+      }
+      
+      const newEvent = {
+        id: generateId(),
+        type: 'event',
+        owner_id: currentUser.id,
+        event_type: eventType,
+        title: title,
+        event_date: eventDate,
+        event_time: document.getElementById('eventTime').value,
+        event_location: sanitizeInput(document.getElementById('eventLocation').value),
+        event_description: sanitizeInput(document.getElementById('eventDescription').value),
+        organizer_contact: sanitizeInput(document.getElementById('organizerContact').value),
+        confirm_until: confirmUntil,
+        cover_image_url: document.getElementById('coverImageUrl').value || '',
+        allow_companions: document.getElementById('allowCompanions')?.checked || false,
+        max_companions: parseInt(document.getElementById('maxCompanions')?.value || '1'),
+        allow_children: document.getElementById('allowChildren')?.checked || false
+      };
+      
+      isLoading = true;
+      supabaseClient.from('events').insert([newEvent]).then(result => {
+        if (result.error) {
+          showToast('Erro ao criar evento: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          db.events.push(newEvent);
+          showToast('Evento criado com sucesso!');
+          goBack();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao criar evento', 'error');
+        isLoading = false;
+      });
+    }
+
+    function handleEditEvent(e) {
+      e.preventDefault();
+      const eventId = document.getElementById('editEventId').value;
+      const event = getEventById(eventId);
+      
+      if (event) {
+        event.type = 'event';
+        event.event_type = document.querySelector('input[name="editEventType"]:checked').value;
+        event.title = sanitizeInput(document.getElementById('editEventTitle').value);
+        event.event_date = document.getElementById('editEventDate').value;
+        event.event_time = document.getElementById('editEventTime').value;
+        event.event_location = sanitizeInput(document.getElementById('editEventLocation').value);
+        event.event_description = sanitizeInput(document.getElementById('editEventDescription').value);
+        event.organizer_contact = sanitizeInput(document.getElementById('editOrganizerContact').value);
+        event.confirm_until = document.getElementById('editConfirmUntil').value;
+        event.cover_image_url = document.getElementById('editCoverImageUrl').value || '';
+        event.allow_companions = document.getElementById('editAllowCompanions')?.checked || false;
+        event.max_companions = parseInt(document.getElementById('editMaxCompanions')?.value || '1');
+        event.allow_children = document.getElementById('editAllowChildren')?.checked || false;
+        
+        isLoading = true;
+        supabaseClient.from('events').update(event).eq('id', eventId).then(result => {
+          if (result.error) {
+            showToast('Erro ao atualizar evento: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            showToast('Evento atualizado!');
+            goBack();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao atualizar evento', 'error');
+          isLoading = false;
+        });
+      }
+    }
+
+    function handleGuestSubmit(e) {
+      e.preventDefault();
+      const eventId = document.getElementById('guestEventId').value;
+      const eventType = document.getElementById('guestEventType').value;
+      const attending = document.querySelector('input[name="attending"]:checked')?.value;
+      const guestName = sanitizeInput(document.getElementById('guestName').value);
+      
+      const companions = [];
+      document.querySelectorAll('#companionsList input').forEach(input => {
+        if (input.value.trim()) {
+          companions.push(input.value.trim());
+        }
+      });
+      
+      const confirmationData = {
+        id: generateId(),
+        type: 'confirmation',
+        event_id: eventId,
+        guest_name: guestName,
+        attending: attending,
+        companions: JSON.stringify(companions),
+        children_count: parseInt(document.getElementById('childrenCount')?.value || '0'),
+        invited_by: document.querySelector('input[name="invitedBy"]:checked')?.value || '',
+        gift_id: document.getElementById('selectedGiftId')?.value || ''
+      };
+      
+      isLoading = true;
+      supabaseClient.from('confirmations').insert([confirmationData]).then(result => {
+        if (result.error) {
+          showToast('Erro ao enviar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          db.confirmations.push(confirmationData);
+          
+          // If a gift was selected, record the claim
+          const selectedGiftId = document.getElementById('selectedGiftId')?.value;
+          if (selectedGiftId && attending === 'sim') {
+            const giftClaim = {
+              id: generateId(),
+              gift_id: selectedGiftId,
+              guest_name: guestName,
+              confirmation_id: confirmationData.id
+            };
+            
+            supabaseClient.from('gift_claims').insert([giftClaim]).then(claimResult => {
+              if (!claimResult.error) {
+                db.gift_claims.push(giftClaim);
+              }
+            });
+          }
+          
+          showToast('Confirmação enviada com sucesso!');
+          document.getElementById('guestFormContainer').innerHTML = `
+            <div class="text-center py-8">
+              <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Obrigado!</h2>
+              <p class="text-gray-600">Sua confirmação foi enviada com sucesso.</p>
+            </div>
+          `;
+          // Show toast notification to event organizer
+          const event = getEventById(eventId);
+          if (event) {
+            showToast(`Nova confirmação: ${guestName} ${attending === 'sim' ? 'confirmou' : 'recusou'}`, 'success');
+          }
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao enviar confirmação', 'error');
+        isLoading = false;
+      });
+    }
+
+    // ========== UTILITIES ==========
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Copiado!');
+        });
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('Copiado!');
+      }
+    }
+
+    function generatePDF(event, confirmations) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFontSize(20);
+      doc.text(event.title, 105, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.text(`Data: ${new Date(event.event_date).toLocaleDateString('pt-BR')}`, 105, 30, { align: 'center' });
+      
+      let y = 55;
+      doc.setFontSize(14);
+      doc.text('Lista de Confirmações', 20, y);
+      y += 10;
+      
+      const attending = confirmations.filter(c => c.attending === 'sim');
+      const notAttending = confirmations.filter(c => c.attending === 'nao');
+      
+      doc.setFontSize(12);
+      doc.text(`Total confirmado: ${attending.length}`, 20, y);
+      y += 7;
+      doc.text(`Total recusado: ${notAttending.length}`, 20, y);
+      
+      y += 15;
+      doc.setFontSize(14);
+      doc.text('Confirmados:', 20, y);
+      y += 10;
+      
+      doc.setFontSize(11);
+      attending.forEach((conf) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(conf.guest_name, 25, y);
+        y += 7;
+      });
+      
+      if (notAttending.length > 0) {
+        y += 10;
+        doc.setFontSize(14);
+        doc.text('Não confirmados:', 20, y);
+        y += 10;
+        
+        doc.setFontSize(11);
+        notAttending.forEach((conf) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(conf.guest_name, 25, y);
+          y += 7;
+        });
+      }
+      
+      doc.save(`${event.title.replace(/\s+/g, '_')}_confirmacoes.pdf`);
+      showToast('PDF gerado com sucesso!');
+    }
+
+    function addCompanion(maxCompanions = 1) {
+      const list = document.getElementById('companionsList');
+      const count = list.querySelectorAll('.companion-item').length;
+      
+      if (count >= maxCompanions) {
+        showToast(`Máximo atingido`, 'error');
+        return;
+      }
+      
+      const div = document.createElement('div');
+      div.className = 'companion-item';
+      div.innerHTML = `
+        <input type="text" class="input-field flex-1" placeholder="Nome do acompanhante">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      `;
+      list.appendChild(div);
+      div.querySelector('input').focus();
+    }
+
+    // ========== SIDEBAR ==========
+    function toggleSidebar() {
+      sidebarOpen = !sidebarOpen;
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (sidebarOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+      } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+      }
+    }
+
+    function renderSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      if (!currentUser) {
+        sidebar.innerHTML = '';
+        return;
+      }
+
+      let items = [];
+      if (currentUser.role === 'admin') {
+        items = [
+          { label: 'Painel Admin', action: 'admin-dashboard' },
+          { label: 'Utilizadores', action: 'admin-users' },
+          { label: 'Notificações', action: 'notifications', icon: '🔔' },
+          { label: 'Sair', action: 'logout' }
+        ];
+      } else {
+        items = [
+          { label: 'Meus Eventos', action: 'user-dashboard' },
+          { label: 'Notificações', action: 'notifications', icon: '🔔' },
+          { label: 'Sair', action: 'logout' }
+        ];
+      }
+
+      sidebar.innerHTML = items.map(item => `
+        <div class="sidebar-item" onclick="handleSidebarAction('${item.action}')">
+          ${item.icon || ''} ${item.label}
+        </div>
+      `).join('');
+    }
+
+    function handleSidebarAction(action) {
+      sidebarOpen = false;
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('open');
+      
+      if (action === 'logout') {
+        logout();
+      } else {
+        navigateTo(action);
+      }
+    }
+
+    function showUnsavedWarning(onContinue) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'unsavedModal';
+      modal.innerHTML = `
+        <div class="modal-content p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Alterações não guardadas</h3>
+          <p class="text-gray-600 mb-6">Tem alterações por guardar. Tem certeza que deseja sair sem guardar?</p>
+          <div class="flex gap-3">
+            <button onclick="document.getElementById('unsavedModal').remove()" class="btn-secondary flex-1">Cancelar</button>
+            <button onclick="document.getElementById('unsavedModal').remove(); (window.pendingNav || function(){})();" class="btn-primary flex-1">Sair sem guardar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      window.pendingNav = onContinue;
+    }
+
+    function deleteUser(userId) {
+      const existingModal = document.getElementById('deleteUserModal');
+      if (existingModal) existingModal.remove();
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'deleteUserModal';
+      modal.innerHTML = `
+        <div class="modal-content p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Utilizador</h3>
+          <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar este utilizador?</p>
+          <div class="flex gap-3">
+            <button type="button" class="btn-secondary flex-1" onclick="document.getElementById('deleteUserModal').remove()">Cancelar</button>
+            <button type="button" class="btn-primary flex-1 bg-red-600" onclick="executeDeleteUser('${userId}')">Eliminar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          e.stopPropagation();
+          modal.remove();
+        }
+      });
+    }
+
+    function executeDeleteUser(userId) {
+      const user = getUserById(userId);
+      if (user) {
+        isLoading = true;
+        supabaseClient.from('users').delete().eq('id', userId).then(result => {
+          if (result.error) {
+            showToast('Erro ao eliminar utilizador: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            document.getElementById('deleteUserModal').remove();
+            db.users = db.users.filter(u => u.id !== userId);
+            showToast('Utilizador eliminado!');
+            render();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao eliminar utilizador', 'error');
+          isLoading = false;
+        });
+      }
+    }
+
+    function deleteConfirmation(index) {
+      const confirmation = db.confirmations[index];
+      if (confirmation) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'deleteConfirmationModal';
+        modal.innerHTML = `
+          <div class="modal-content p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Confirmação</h3>
+            <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar esta confirmação?</p>
+            <div class="flex gap-3">
+              <button class="btn-secondary flex-1 cancel-modal-btn">Cancelar</button>
+              <button onclick="executeDeleteConfirmation('${confirmation.__backendId || index}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.remove();
+        });
+        
+        modal.querySelector('.cancel-modal-btn').addEventListener('click', () => {
+          modal.remove();
+        });
+      }
+    }
+
+    function executeDeleteConfirmation(confirmationId) {
+      const confirmation = db.confirmations.find(c => c.id === confirmationId);
+      if (confirmation) {
+        isLoading = true;
+        supabaseClient.from('confirmations').delete().eq('id', confirmationId).then(result => {
+          if (result.error) {
+            showToast('Erro ao eliminar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            document.getElementById('deleteConfirmationModal').remove();
+            db.confirmations = db.confirmations.filter(c => c.id !== confirmationId);
+            showToast('Confirmação eliminada!');
+            render();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao eliminar confirmação', 'error');
+          isLoading = false;
+        });
+      }
+    }
+
+    function executeDuplicateCleanup() {
+      const adminUsers = db.users.filter(u => u.role === 'admin').sort((a, b) => 
+        new Date(a.created_at || 0) - new Date(b.created_at || 0)
+      );
+      
+      const toDelete = adminUsers.slice(1);
+      
+      if (toDelete.length === 0) {
+        showToast('Nenhuma duplicata para eliminar', 'warning');
+        return;
+      }
+      
+      isLoading = true;
+      const deletePromises = toDelete.map(user => 
+        supabaseClient.from('users').delete().eq('id', user.id)
+      );
+      
+      Promise.all(deletePromises).then(results => {
+        const errors = results.filter(r => r.error);
+        if (errors.length > 0) {
+          showToast(`Erro ao eliminar: ${errors[0].error?.message || 'Erro desconhecido'}`, 'error');
+        } else {
+          const modal = document.getElementById('cleanupModal');
+          if (modal) modal.remove();
+          db.users = db.users.filter(u => !toDelete.find(d => d.id === u.id));
+          showToast('Duplicatas eliminadas com sucesso!');
+          render();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao eliminar duplicatas', 'error');
+        isLoading = false;
+      });
+    }
+
+    function cleanupDuplicateAdmins() {
+      const adminUsers = db.users.filter(u => u.role === 'admin').sort((a, b) => 
+        new Date(a.created_at || 0) - new Date(b.created_at || 0)
+      );
+      
+      if (adminUsers.length <= 1) {
+        showToast('Nenhuma duplicata para eliminar', 'warning');
+        return;
+      }
+      
+      const toDelete = adminUsers.slice(1);
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'cleanupModal';
+      modal.innerHTML = `
+        <div class="modal-content p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">Eliminar Duplicatas de Admin</h3>
+          <p class="text-gray-600 mb-4">Será eliminado(a)(s) <strong>${toDelete.length}</strong> conta(s).</p>
+          <div class="flex gap-3">
+            <button class="btn-secondary flex-1 cancel-modal-btn">Cancelar</button>
+            <button onclick="executeDuplicateCleanup()" class="btn-primary flex-1 bg-red-600">Eliminar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+      
+      modal.querySelector('.cancel-modal-btn').addEventListener('click', () => {
+        modal.remove();
+      });
+    }
+
+    function showDeleteEventModal(eventId) {
+      const event = getEventById(eventId);
+      if (!event) return;
+
+      // Generate a random 4-digit code
+      const deleteCode = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'deleteEventModal';
+      modal.innerHTML = `
+        <div class="modal-content p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Evento</h3>
+          <p class="text-gray-600 mb-4">Tem certeza que deseja eliminar <strong>${event.title}</strong>? Esta ação é permanente.</p>
+          
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <p class="text-sm text-yellow-800 font-medium">Para confirmar, digite o código:</p>
+            <div class="text-2xl font-bold text-yellow-900 text-center my-3">${deleteCode}</div>
+          </div>
+          
+          <div class="mb-4">
+            <input type="text" id="deleteEventCode" class="input-field" placeholder="Digite o código" maxlength="4">
+          </div>
+          
+          <div class="flex gap-3">
+            <button class="btn-secondary flex-1 cancel-modal-btn">Cancelar</button>
+            <button onclick="executeDeleteEvent('${eventId}', '${deleteCode}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+      
+      modal.querySelector('.cancel-modal-btn').addEventListener('click', () => {
+        modal.remove();
+      });
+      
+      // Focus on input
+      setTimeout(() => document.getElementById('deleteEventCode').focus(), 100);
+    }
+
+    function executeDeleteEvent(eventId, correctCode) {
+      const inputCode = document.getElementById('deleteEventCode').value;
+      
+      if (inputCode !== correctCode) {
+        showToast('Código incorreto!', 'error');
+        document.getElementById('deleteEventCode').value = '';
+        document.getElementById('deleteEventCode').focus();
+        return;
+      }
+      
+      const event = getEventById(eventId);
+      if (event) {
+        isLoading = true;
+        supabaseClient.from('events').delete().eq('id', eventId).then(result => {
+          if (result.error) {
+            showToast('Erro ao eliminar evento: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            document.getElementById('deleteEventModal').remove();
+            db.events = db.events.filter(e => e.id !== eventId);
+            // Also delete related confirmations
+            db.confirmations = db.confirmations.filter(c => c.event_id !== eventId);
+            showToast('Evento eliminado com sucesso!');
+            navigateTo('user-dashboard');
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao eliminar evento', 'error');
+          isLoading = false;
+        });
+      }
+    }
+
+    function toggleCompanionLimit() {
+      const checkbox = document.getElementById('allowCompanions');
+      const container = document.getElementById('companionLimitContainer');
+      container.classList.toggle('hidden', !checkbox.checked);
+    }
+
+    function toggleEditCompanionLimit() {
+      const checkbox = document.getElementById('editAllowCompanions');
+      const container = document.getElementById('editCompanionLimitContainer');
+      container.classList.toggle('hidden', !checkbox.checked);
+    }
+
+    function startCountdown() {
+      const event = getEventById(viewParams.eventId);
+      if (!event) return;
+      
+      const updateCountdown = () => {
+        const countdown = getCountdown(event.event_date);
+        const days = document.getElementById('countdown-days');
+        const hours = document.getElementById('countdown-hours');
+        const minutes = document.getElementById('countdown-minutes');
+        const seconds = document.getElementById('countdown-seconds');
+        
+        if (days) days.textContent = countdown.days;
+        if (hours) hours.textContent = countdown.hours;
+        if (minutes) minutes.textContent = countdown.minutes;
+        if (seconds) seconds.textContent = countdown.seconds;
+      };
+      
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+
+    function showPreviewSubmitMessage() {
+      const form = document.getElementById('previewGuestForm');
+      const message = document.getElementById('previewSubmitMessage');
+      form.style.display = 'none';
+      message.classList.remove('hidden');
+    }
+
+    function getEventById(eventId) {
+      return db.events.find(e => e.id === eventId);
+    }
+
+    function getConfirmations(eventId) {
+      return db.confirmations.filter(c => c.event_id === eventId);
+    }
+
+    // Make globals
+    window.navigateTo = navigateTo;
+    window.goBack = goBack;
+    window.logout = logout;
+    window.toggleSidebar = toggleSidebar;
+    window.toggleCompanionLimit = toggleCompanionLimit;
+    window.toggleEditCompanionLimit = toggleEditCompanionLimit;
+    window.addCompanion = addCompanion;
+    window.loginAsUser = loginAsUser;
+    window.deleteUser = deleteUser;
+    window.executeDeleteUser = executeDeleteUser;
+    window.deleteConfirmation = deleteConfirmation;
+    window.executeDeleteConfirmation = executeDeleteConfirmation;
+    window.cleanupDuplicateAdmins = cleanupDuplicateAdmins;
+    window.executeDuplicateCleanup = executeDuplicateCleanup;
+    window.showDeleteEventModal = showDeleteEventModal;
+    window.executeDeleteEvent = executeDeleteEvent;
+    window.copyToClipboard = copyToClipboard;
+    window.generatePDF = generatePDF;
+    window.getEventById = getEventById;
+    window.getConfirmations = getConfirmations;
+    window.getGiftSuggestions = getGiftSuggestions;
+    window.getGiftClaimsByGift = getGiftClaimsByGift;
+    window.startCountdown = startCountdown;
+    window.showPreviewSubmitMessage = showPreviewSubmitMessage;
+    window.handleSidebarAction = handleSidebarAction;
+    window.markUnsavedChanges = function() { unsavedChanges = true; };
+    window.handleSetupAdmin = handleSetupAdmin;
+    window.togglePasswordVisibility = function(targetId) {
+      const input = document.getElementById(targetId);
+      const btn = event.currentTarget;
+      if (!input) return;
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>';
+      } else {
+        input.type = 'password';
+        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
+      }
+    };
+
+    window.toggleGiftSystem = function(eventId, enabled) {
+      const event = getEventById(eventId);
+      if (event) {
+        event.gift_suggestions_enabled = enabled;
+        isLoading = true;
+        supabaseClient.from('events').update({ gift_suggestions_enabled: enabled }).eq('id', eventId).then(result => {
+          if (result.error) {
+            showToast('Erro ao atualizar: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            showToast(enabled ? 'Sistema de presentes ativado' : 'Sistema de presentes desativado');
+            render();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao atualizar', 'error');
+          isLoading = false;
+        });
+      }
+    };
+
+    window.deleteGift = function(giftId) {
+      const gift = db.gift_suggestions.find(g => g.id === giftId);
+      if (!gift) return;
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'deleteGiftModal';
+      modal.innerHTML = `
+        <div class="modal-content p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Presente</h3>
+          <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar <strong>${gift.gift_name}</strong>? ${getGiftClaimsByGift(giftId).length > 0 ? 'Existem pessoas que já selecionaram este presente.' : ''}</p>
+          <div class="flex gap-3">
+            <button onclick="document.getElementById('deleteGiftModal').remove()" class="btn-secondary flex-1">Cancelar</button>
+            <button onclick="executeDeleteGift('${giftId}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    };
+
+    window.removeGiftClaim = function(claimId) {
+      isLoading = true;
+      supabaseClient.from('gift_claims').delete().eq('id', claimId).then(result => {
+        if (result.error) {
+          showToast('Erro ao remover: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          db.gift_claims = db.gift_claims.filter(c => c.id !== claimId);
+          showToast('Seleção removida!');
+          render();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao remover', 'error');
+        isLoading = false;
+      });
+    };
+
+    window.previewCoverImage = function() {
+      const file = document.getElementById('coverImageFile').files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          showImageCropper(e.target.result, 'cover');
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    window.previewEditCoverImage = function() {
+      const file = document.getElementById('editCoverImageFile').files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          showImageCropper(e.target.result, 'editCover');
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    function showImageCropper(imageSource, mode) {
+      const modal = document.createElement('div');
+      modal.className = 'cropper-modal';
+      modal.id = 'cropperModal';
+      modal.innerHTML = `
+        <div class="cropper-container-box">
+          <div class="cropper-header">Cortar Imagem</div>
+          <div class="cropper-body">
+            <img id="cropperImage" src="${imageSource}" alt="Para cortar" class="cropper-image" style="display: block; max-width: 100%;">
+          </div>
+          <div class="cropper-footer">
+            <button class="cancel-btn" onclick="closeCropper()">Cancelar</button>
+            <button class="crop-btn" onclick="applyCrop('${mode}')">Aplicar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Initialize Cropper
+      const image = document.getElementById('cropperImage');
+      window.currentCropper = new Cropper(image, {
+        aspectRatio: 16 / 9,
+        viewMode: 1,
+        autoCropArea: 0.8,
+        responsive: true,
+        restore: true,
+        guides: true,
+        center: true,
+        highlight: true,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: true,
+      });
+    }
+
+    window.closeCropper = function() {
+      if (window.currentCropper) {
+        window.currentCropper.destroy();
+        window.currentCropper = null;
+      }
+      const modal = document.getElementById('cropperModal');
+      if (modal) modal.remove();
+    };
+
+    window.applyCrop = function(mode) {
+      if (!window.currentCropper) return;
+      
+      const canvas = window.currentCropper.getCroppedCanvas({
+        maxWidth: 1920,
+        maxHeight: 1080,
+        fillColor: '#fff',
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      });
+      
+      // Comprimir imagem (qualidade: 0.75 = 75%)
+      const compressedImage = canvas.toDataURL('image/jpeg', 0.75);
+      
+      if (mode === 'cover') {
+        document.getElementById('coverImageUrl').value = compressedImage;
+        document.getElementById('coverPreviewImg').src = compressedImage;
+        document.getElementById('coverPreview').classList.remove('hidden');
+      } else if (mode === 'editCover') {
+        document.getElementById('editCoverImageUrl').value = compressedImage;
+        document.getElementById('editCoverPreviewImg').src = compressedImage;
+        document.getElementById('editCoverPreview').classList.remove('hidden');
+      }
+      
+      closeCropper();
+      showToast('Imagem cortada e comprimida com sucesso!');
+    };
+
+    window.toggleGiftSystem = function(eventId, enabled) {
+      const event = getEventById(eventId);
+      if (event) {
+        event.gift_suggestions_enabled = enabled;
+        isLoading = true;
+        supabaseClient.from('events').update({ gift_suggestions_enabled: enabled }).eq('id', eventId).then(result => {
+          if (result.error) {
+            showToast('Erro ao atualizar: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            showToast(enabled ? 'Sistema de presentes ativado' : 'Sistema de presentes desativado');
+            render();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao atualizar', 'error');
+          isLoading = false;
+        });
+      }
+    };
+
+    window.deleteGift = function(giftId) {
+      const gift = db.gift_suggestions.find(g => g.id === giftId);
+      if (!gift) return;
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'deleteGiftModal';
+      modal.innerHTML = `
+        <div class="modal-content p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Eliminar Presente</h3>
+          <p class="text-gray-600 mb-6">Tem certeza que deseja eliminar <strong>${gift.gift_name}</strong>? ${getGiftClaimsByGift(giftId).length > 0 ? 'Existem pessoas que já selecionaram este presente.' : ''}</p>
+          <div class="flex gap-3">
+            <button onclick="document.getElementById('deleteGiftModal').remove()" class="btn-secondary flex-1">Cancelar</button>
+            <button onclick="executeDeleteGift('${giftId}')" class="btn-primary flex-1 bg-red-600">Eliminar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    };
+
+    window.executeDeleteGift = function(giftId) {
+      isLoading = true;
+      supabaseClient.from('gift_suggestions').delete().eq('id', giftId).then(result => {
+        if (result.error) {
+          showToast('Erro ao eliminar: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          document.getElementById('deleteGiftModal').remove();
+          db.gift_suggestions = db.gift_suggestions.filter(g => g.id !== giftId);
+          // Also delete related claims
+          const claimsToDelete = db.gift_claims.filter(c => c.gift_id === giftId);
+          claimsToDelete.forEach(claim => {
+            supabaseClient.from('gift_claims').delete().eq('id', claim.id);
+          });
+          db.gift_claims = db.gift_claims.filter(c => c.gift_id !== giftId);
+          showToast('Presente eliminado!');
+          render();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao eliminar', 'error');
+        isLoading = false;
+      });
+    };
+
+    window.removeGiftClaim = function(claimId) {
+      isLoading = true;
+      supabaseClient.from('gift_claims').delete().eq('id', claimId).then(result => {
+        if (result.error) {
+          showToast('Erro ao remover: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+        } else {
+          db.gift_claims = db.gift_claims.filter(c => c.id !== claimId);
+          showToast('Seleção removida!');
+          render();
+        }
+        isLoading = false;
+      }).catch(err => {
+        showToast('Erro ao remover', 'error');
+        isLoading = false;
+      });
+    };
+
+    // Handle gift form submission
+    document.addEventListener('submit', (e) => {
+      if (e.target.id === 'addGiftForm') {
+        e.preventDefault();
+        const eventId = document.getElementById('giftEventId').value;
+        const giftName = sanitizeInput(document.getElementById('giftName').value);
+        const allowMultiple = document.getElementById('giftMultiple').checked;
+        
+        const newGift = {
+          id: generateId(),
+          event_id: eventId,
+          gift_name: giftName,
+          allow_multiple: allowMultiple
+        };
+        
+        isLoading = true;
+        supabaseClient.from('gift_suggestions').insert([newGift]).then(result => {
+          if (result.error) {
+            showToast('Erro ao adicionar presente: ' + (result.error?.message || 'Erro desconhecido'), 'error');
+          } else {
+            db.gift_suggestions.push(newGift);
+            showToast('Presente adicionado com sucesso!');
+            document.getElementById('addGiftForm').reset();
+            render();
+          }
+          isLoading = false;
+        }).catch(err => {
+          showToast('Erro ao adicionar presente', 'error');
+          isLoading = false;
+        });
+      }
+    });
+
+    // Initialize the app when page loads
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d8f34998653070c',t:'MTc3Mjk0NTI4NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
