@@ -133,11 +133,16 @@
       if (!adminCreated) {
         currentView = 'setup-admin';
       } else {
-        // Try to load current session from localStorage
-        loadCurrentSession();
+        // Try to load current session from localStorage FIRST
+        const sessionLoaded = loadCurrentSession();
+        
+        // If no session found, stay on landing page
+        if (!sessionLoaded) {
+          currentView = 'landing';
+        }
       }
       
-      // Check URL on load
+      // Check URL on load (for guest forms with event parameter)
       checkUrlParams();
       window.addEventListener('hashchange', checkUrlParams);
       
@@ -1537,24 +1542,20 @@
                     <!-- Gifts -->
                     ${event.gift_suggestions_enabled ? `
                       <div class="border-t pt-4">
-                        <h3 class="font-semibold text-gray-900 mb-3">🎁 Presentes</h3>
+                        <h3 class="font-semibold text-gray-900 mb-4">🎁 Presentes</h3>
                         ${getGiftSuggestions(event.id).length === 0 ? `
                           <p class="text-gray-500 text-center py-3 text-sm">Nenhuma sugestão disponível</p>
                         ` : `
-                          <div class="space-y-2" id="giftsList">
+                          <div class="grid grid-cols-2 gap-3" id="giftsList">
                             ${getGiftSuggestions(event.id).map(gift => {
                               const claims = getGiftClaimsByGift(gift.id);
                               const currentGuestClaim = savedConfirmation ? claims.find(c => c.guest_name === savedConfirmation.guest_name) : null;
                               const isUnavailable = !gift.allow_multiple && claims.length > 0 && !currentGuestClaim;
                               
                               return `
-                                <label class="radio-card ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}" id="gift-${gift.id}">
-                                  <input type="radio" name="giftSuggestion" value="${gift.id}" ${isUnavailable ? 'disabled' : ''} ${currentGuestClaim ? 'checked' : ''} onchange="document.getElementById('selectedGiftId').value = '${gift.id}'">
-                                  <span class="radio-indicator"></span>
-                                  <div class="flex-1 text-sm">
-                                    <div class="font-medium">${gift.gift_name}</div>
-                                    ${currentGuestClaim ? `<div class="text-xs text-green-600">✓ Sua escolha</div>` : isUnavailable ? `<div class="text-xs text-gray-400">✓ Já selecionado</div>` : ''}
-                                  </div>
+                                <label class="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg cursor-pointer transition-all ${currentGuestClaim ? 'border-green-500 bg-green-50' : 'hover:border-gray-300'} ${isUnavailable ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}" id="gift-${gift.id}">
+                                  <input type="radio" name="giftSuggestion" value="${gift.id}" ${isUnavailable ? 'disabled' : ''} ${currentGuestClaim ? 'checked' : ''} onchange="document.getElementById('selectedGiftId').value = '${gift.id}'; this.closest('label').classList.add('border-green-500', 'bg-green-50'); document.querySelectorAll('#giftsList label').forEach(l => { if (l !== this.closest('label')) l.classList.remove('border-green-500', 'bg-green-50'); });" class="w-5 h-5">
+                                  <span class="text-sm font-medium text-gray-900">${gift.gift_name}</span>
                                 </label>
                               `;
                             }).join('')}
@@ -2387,16 +2388,17 @@
       const attending = document.querySelector('input[name="attending"]:checked')?.value;
       const guestName = sanitizeInput(document.getElementById('guestName').value);
       
-      // Collect companions - ensure we get ALL values
+      // Collect companions - ensure we get ALL values and they are NOT empty
       const companions = [];
       document.querySelectorAll('#companionsList .companion-input').forEach(input => {
         const companionName = input.value.trim();
-        if (companionName) {
-          companions.push(companionName);
+        if (companionName && companionName.length > 0) {
+          companions.push(sanitizeInput(companionName));
         }
       });
       
       console.log('🎯 ACOMPANHANTES RECOLHIDOS:', companions);
+      console.log('📊 TOTAL DE ACOMPANHANTES:', companions.length);
       
       const selectedGiftId = document.querySelector('input[name="giftSuggestion"]:checked')?.value || '';
       
@@ -3601,5 +3603,5 @@
       startRealtimeListener();
     }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90bc2fa060070c',t:'MTc3Mjk2MTMyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90c86284ee070c',t:'MTc3Mjk2MTgyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
