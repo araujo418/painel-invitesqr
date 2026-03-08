@@ -2336,8 +2336,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                   </svg>
                 </div>
-                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Obrigado!</h2>
-                <p class="text-gray-600">Sua confirmação foi enviada com sucesso.</p>
+                <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Resposta Guardada!</h2>
+                <p class="text-gray-600 mb-6">Sua resposta foi enviada com sucesso.</p>
+                <button onclick="window.editGuestResponse('${eventId}')" class="btn-primary">
+                  Editar Resposta
+                </button>
               </div>
             `;
             
@@ -2381,14 +2384,13 @@
           // Remove from local db
           db.gift_claims = db.gift_claims.filter(c => !(oldGiftClaims.find(oc => oc.id === c.id)));
           
-          // Update the confirmation
+          // Update the confirmation (without selected_gift_id - we use gift_claims table instead)
           supabaseClient.from('confirmations').update({
             guest_name: guestName,
             attending: attending,
             companions: JSON.stringify(companions),
             children_count: confirmationData.children_count,
-            invited_by: confirmationData.invited_by,
-            selected_gift_id: selectedGiftId
+            invited_by: confirmationData.invited_by
           }).eq('id', existingConfirmation.id).eq('event_id', eventId).then(result => {
             if (result.error) {
               showToast('Erro ao atualizar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
@@ -2438,7 +2440,10 @@
                     </svg>
                   </div>
                   <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Alterações Guardadas!</h2>
-                  <p class="text-gray-600">Sua resposta foi atualizada com sucesso.</p>
+                  <p class="text-gray-600 mb-6">Sua resposta foi atualizada com sucesso.</p>
+                  <button onclick="window.editGuestResponse('${eventId}')" class="btn-primary">
+                    Editar Resposta
+                  </button>
                 </div>
               `;
               
@@ -3308,6 +3313,21 @@
       });
     };
 
+    window.editGuestResponse = function(eventId) {
+      // Get the saved confirmation from localStorage
+      const sessionKey = `guest_confirmation_${eventId}`;
+      const savedConfirmation = JSON.parse(localStorage.getItem(sessionKey));
+      
+      if (savedConfirmation) {
+        // Show the form again by scrolling to it and clearing the success message
+        const formContainer = document.getElementById('guestFormContainer');
+        if (formContainer) {
+          // Re-render the guest form with the saved data
+          navigateTo('guest-form', { eventId: eventId });
+        }
+      }
+    };
+
     window.toggleMessagesSystem = function(eventId, enabled) {
       const event = getEventById(eventId);
       if (event) {
@@ -3331,5 +3351,5 @@
     // Initialize the app when page loads
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d903cd2e27e070c',t:'MTc3Mjk1NjEwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90482a53c1070c',t:'MTc3Mjk1NjU3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
