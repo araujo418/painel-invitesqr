@@ -2394,7 +2394,7 @@
         }
       });
       
-      const selectedGiftId = document.getElementById('selectedGiftId')?.value || '';
+      const selectedGiftId = document.querySelector('input[name="giftSuggestion"]:checked')?.value || '';
       
       // Get existing confirmation if editing
       const existingConfirmation = db.confirmations.find(c => c.event_id === eventId && c.guest_name === guestName);
@@ -2422,15 +2422,17 @@
         // NEW CONFIRMATION - Save to database
         isLoading = true;
         
-        // Build confirmation data - NO gift_id field (completely optional)
+        // Ensure companions is always a valid JSON string
+        const companionsJSON = JSON.stringify(companions);
         const confirmationToInsert = {
           id: confirmationData.id,
           event_id: eventId,
           guest_name: guestName,
           attending: attending,
-          companions: JSON.stringify(companions),
+          companions: companionsJSON,
           children_count: confirmationData.children_count,
-          invited_by: confirmationData.invited_by
+          invited_by: confirmationData.invited_by,
+          created_at: new Date().toISOString()
         };
         
         supabaseClient.from('confirmations').insert([confirmationToInsert]).then(result => {
@@ -2519,7 +2521,7 @@
           // Remove from local db
           db.gift_claims = db.gift_claims.filter(c => !(oldGiftClaims.find(oc => oc.id === c.id)));
           
-          // Update the confirmation (without selected_gift_id - we use gift_claims table instead)
+          // Update the confirmation with proper companions JSON
           supabaseClient.from('confirmations').update({
             guest_name: guestName,
             attending: attending,
@@ -3530,8 +3532,68 @@
       }
     };
 
+    // ========== REAL-TIME UPDATES ==========
+    function startRealtimeListener() {
+      if (!supabaseClient) return;
+      
+      // Listen for changes in confirmations
+      supabaseClient
+        .channel('public:confirmations')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'confirmations' },
+          (payload) => {
+            // Reload data when changes detected
+            loadAllData().then(() => {
+              // Only re-render if we're viewing event details or admin dashboard
+              if (currentView === 'event-details' || currentView === 'admin-dashboard') {
+                render();
+              }
+            });
+          }
+        )
+        .subscribe();
+      
+      // Listen for changes in messages
+      supabaseClient
+        .channel('public:messages')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'messages' },
+          (payload) => {
+            loadAllData().then(() => {
+              if (currentView === 'event-messages' || currentView === 'guest-messages') {
+                render();
+              }
+            });
+          }
+        )
+        .subscribe();
+      
+      // Listen for changes in gift claims
+      supabaseClient
+        .channel('public:gift_claims')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'gift_claims' },
+          (payload) => {
+            loadAllData().then(() => {
+              if (currentView === 'manage-gifts' || currentView === 'guest-form') {
+                render();
+              }
+            });
+          }
+        )
+        .subscribe();
+    }
+
     // Initialize the app when page loads
     initApp();
+    
+    // Start real-time listener after app is initialized
+    setTimeout(() => {
+      startRealtimeListener();
+    }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90a91b9047070c',t:'MTc3Mjk2MDU0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90b4a72778070c',t:'MTc3Mjk2MTAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
