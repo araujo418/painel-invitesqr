@@ -1028,8 +1028,8 @@
                 </div>
                 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Local / Endereço</label>
-                  <input type="text" id="eventLocation" class="input-field" placeholder="Ex: Salão XXXX, Rua ABC, Lisboa" required>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Local / Endereço (opcional)</label>
+                  <input type="text" id="eventLocation" class="input-field" placeholder="Ex: Salão XXXX, Rua ABC, Lisboa">
                 </div>
                 
                 <div>
@@ -1134,8 +1134,8 @@
                 </div>
                 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Local / Endereço</label>
-                  <input type="text" id="editEventLocation" class="input-field" value="${event.event_location ? event.event_location : ''}" placeholder="Ex: Salão XXXX, Rua ABC, Lisboa" required>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Local / Endereço (opcional)</label>
+                  <input type="text" id="editEventLocation" class="input-field" value="${event.event_location ? event.event_location : ''}" placeholder="Ex: Salão XXXX, Rua ABC, Lisboa">
                 </div>
                 
                 <div>
@@ -2563,15 +2563,17 @@
           // Remove from local db
           db.gift_claims = db.gift_claims.filter(c => !(oldGiftClaims.find(oc => oc.id === c.id)));
           
-          // Update the confirmation with proper companions JSON and gift selection
-          supabaseClient.from('confirmations').update({
+          // Update the confirmation with proper companions JSON (CRITICAL FIX)
+          const updatePayload = {
             guest_name: guestName,
             attending: attending,
             companions: JSON.stringify(companions),
             children_count: confirmationData.children_count,
             invited_by: confirmationData.invited_by,
             selected_gift_id: selectedGiftId || null
-          }).eq('id', existingConfirmation.id).eq('event_id', eventId).then(result => {
+          };
+          
+          supabaseClient.from('confirmations').update(updatePayload).eq('id', existingConfirmation.id).eq('event_id', eventId).then(result => {
             if (result.error) {
               showToast('Erro ao atualizar confirmação: ' + (result.error?.message || 'Erro desconhecido'), 'error');
               isLoading = false;
@@ -3640,5 +3642,5 @@
       startRealtimeListener();
     }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90d66f21cb070c',t:'MTc3Mjk2MjM5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d90df355022070c',t:'MTc3Mjk2Mjc1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
