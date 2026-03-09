@@ -4,386 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RSVP</title>
-  <script src="https://cdn.tailwindcss.com">
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script>
-  <script src="/_sdk/element_sdk.js">
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
   <style>
     body {
@@ -441,101 +65,7 @@ document.addEventListener("submit", function(e){
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript">
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full font-sans bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
   <div id="app" class="h-full w-full overflow-auto"><!-- Loading Screen -->
@@ -668,29 +198,11 @@ document.addEventListener("submit", function(e){
         </div>
        </div>
        <div id="max-companions-field" class="hidden"><label class="block text-sm font-medium text-gray-700 mb-2">Quantos acompanhantes por convidado?</label> <input type="number" id="max-companions" min="1" max="10" value="2" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none input-focus">
-       </div><div>
-<label class="block text-sm font-medium text-gray-700 mb-3">
-Mostrar opção "Você é convidado(a) do(a)?"
-</label>
-<div class="grid grid-cols-2 gap-3">
-<label class="radio-option cursor-pointer border-2 border-gray-200 rounded-xl p-4 text-center block">
-<input type="radio" name="show-guest-side" value="yes" class="sr-only" checked>
-<span class="font-medium text-gray-700">SIM</span>
-</label>
-<label class="radio-option cursor-pointer border-2 border-gray-200 rounded-xl p-4 text-center block">
-<input type="radio" name="show-guest-side" value="no" class="sr-only">
-<span class="font-medium text-gray-700">NÃO</span>
-</label>
-</div>
-</div>
-<button type="submit" id="create-event-btn" class="w-full text-white py-4 px-6 rounded-xl font-semibold text-lg btn-primary mt-6" style="background: #007f9f;"> Criar Evento </button>
+       </div><button type="submit" id="create-event-btn" class="w-full text-white py-4 px-6 rounded-xl font-semibold text-lg btn-primary mt-6" style="background: #007f9f;"> Criar Evento </button>
       </form>
      </div>
     </div>
-   </div>
-
-
-<!-- Event Details (Owner View) -->
+   </div><!-- Event Details (Owner View) -->
    <div id="event-details-view" class="hidden min-h-full p-4 md:p-8">
     <div class="max-w-2xl mx-auto pb-16"><button onclick="showView('dashboard-view')" class="mb-6 text-gray-500 hover:text-gray-700 flex items-center gap-2">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -939,8 +451,8 @@ Mostrar opção "Você é convidado(a) do(a)?"
   </div>
   <script>
     // Supabase Configuration
-    const SUPABASE_URL = 'https://aogslkzqdhtppoftzilf.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvZ3Nsa3pxZGh0cHBvZnR6aWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MDU3ODAsImV4cCI6MjA4ODI4MTc4MH0.s5WynZLrhiA6lhCzP1iead5yciOu_ajaglIHF3IIYBs';
+    const SUPABASE_URL = 'https://vvdbqzucsldhmsrymyab.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2ZGJxenVjc2xkaG1zcnlteWFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MDc5NTksImV4cCI6MjA4NDQ4Mzk1OX0.IiBrOiUmV3fCKIfd-rsg-0CUeOmztLfg1YB93k7sJRA';
     let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // State
@@ -956,22 +468,10 @@ Mostrar opção "Você é convidado(a) do(a)?"
     let editEventImageBase64 = '';
 
     // Admin credentials
-    
-async function loadEventById(eventId) {
-  const { data, error } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('event_id', eventId);
+    const ADMIN_USERNAME = 'Adkira2026';
+    const ADMIN_PASSWORD = 'Adkira2026@!!Ao';
 
-  if (error) {
-    alert("Erro ao carregar evento");
-    return null;
-  }
-
-  return data;
-}
-
-// Supabase Helper Functions
+    // Supabase Helper Functions
     async function loadAllData() {
       const { data, error } = await supabaseClient
         .from('rsvp_data')
@@ -979,7 +479,7 @@ async function loadEventById(eventId) {
         .order('created_at', { ascending: false });
       
       if (error) {
-        
+        console.error('Error loading data:', error);
         return [];
       }
       return data || [];
@@ -992,7 +492,7 @@ async function loadEventById(eventId) {
         .select();
       
       if (error) {
-        
+        console.error('Error creating record:', error);
         return { success: false, error };
       }
       return { success: true, data: data[0] };
@@ -1016,7 +516,7 @@ async function loadEventById(eventId) {
         .select();
       
       if (error) {
-        
+        console.error('Error updating record:', error);
         return { success: false, error };
       }
       return { success: true, data: data[0] };
@@ -1029,7 +529,7 @@ async function loadEventById(eventId) {
         .eq('id', id);
       
       if (error) {
-        
+        console.error('Error deleting record:', error);
         return { success: false, error };
       }
       return { success: true };
@@ -1064,7 +564,7 @@ async function loadEventById(eventId) {
             ])
           });
         } catch (error) {
-          
+          console.error('Element SDK initialization error:', error);
         }
       }
     }
@@ -1081,7 +581,7 @@ async function loadEventById(eventId) {
 
     // Initialize
     async function init() {
-      // Optimized: avoid full reload from Supabase to reduce queries
+      allData = await loadAllData();
       setupEventListeners();
       applyConfig();
       
@@ -1094,7 +594,8 @@ async function loadEventById(eventId) {
           if (session.isAdmin) {
             isAdmin = true;
             document.getElementById('loading-screen').classList.add('hidden');
-            showView('admin-dashboard-view'); renderAdminDashboard();
+            showView('admin-dashboard-view');
+            renderAdminDashboard();
             return;
           } else if (session.ownerId) {
             const owner = allData.find(d => d.type === 'owner' && d.owner_id === session.ownerId);
@@ -1123,15 +624,9 @@ async function loadEventById(eventId) {
         document.getElementById('loading-screen').classList.add('hidden');
         
         if (eventId) {
-  loadEventById(eventId).then(eventData => {
-  if(eventData && eventData.length){
-    allData = eventData;
-    selectEvent(eventId);
-  } else {
-    showView('event-not-found-view');
-  }
-});
-} else {
+          // Load event directly from URL
+          selectEvent(eventId);
+        } else {
           showView('home-view');
         }
       }, 500);
@@ -1246,20 +741,7 @@ async function loadEventById(eventId) {
       }
     }
 
-    
-async function checkAdminLogin(username, password) {
-  const { data, error } = await supabaseClient
-    .from('admins')
-    .select('*')
-    .eq('username', username)
-    .eq('password', password)
-    .single();
-
-  if (data) return true;
-  return false;
-}
-
-// Auth functions
+    // Auth functions
     async function handleRegister() {
       const phone = document.getElementById('reg-phone').value.trim();
       const password = document.getElementById('reg-password').value;
@@ -1304,11 +786,7 @@ async function checkAdminLogin(username, password) {
       btn.textContent = 'Criar Conta';
 
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         document.getElementById('register-form').reset();
         
         // Show pending approval message
@@ -1339,13 +817,13 @@ async function checkAdminLogin(username, password) {
 
       errorEl.classList.add('hidden');
 
-      // Check admin login via Supabase
-      const isAdminLogin = await checkAdminLogin(phone, password);
-      if (isAdminLogin) {
+      // Check for admin login
+      if (phone === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         isAdmin = true;
         localStorage.setItem('rsvp_session', JSON.stringify({ isAdmin: true }));
         document.getElementById('login-form').reset();
-        showView('admin-dashboard-view'); renderAdminDashboard();
+        showView('admin-dashboard-view');
+        renderAdminDashboard();
         return;
       }
 
@@ -1395,7 +873,8 @@ async function checkAdminLogin(username, password) {
       currentOwner = null;
       currentEvent = null;
       localStorage.setItem('rsvp_session', JSON.stringify({ isAdmin: true }));
-      showView('admin-dashboard-view'); renderAdminDashboard();
+      showView('admin-dashboard-view');
+      renderAdminDashboard();
     }
 
     // Image upload
@@ -1441,19 +920,8 @@ async function checkAdminLogin(username, password) {
       reader.readAsDataURL(file);
     }
 
-    
-function applyGuestSideSetting(showSide){
-  const field = document.getElementById('guest-side-field');
-  if(!field) return;
-  if(showSide === 'no'){
-    field.style.display = 'none';
-  }else{
-    field.style.display = 'block';
-  }
-}
-
-// Event functions
-    async function renderDashboard() {
+    // Event functions
+    function renderDashboard() {
       if (!currentOwner) return;
 
       // Show back to admin button if in admin mode
@@ -1540,9 +1008,6 @@ function applyGuestSideSetting(showSide){
     }
 
     async function handleCreateEvent() {
-  const showGuestSideEl = document.querySelector('input[name="show-guest-side"]:checked');
-  const showGuestSide = showGuestSideEl ? showGuestSideEl.value : "yes";
-
       // Check event limit before creating
       if (!canCreateMoreEvents(currentOwner)) {
         const form = document.getElementById('create-event-form');
@@ -1579,18 +1044,14 @@ function applyGuestSideSetting(showSide){
         confirm_by_date: confirmBy,
         event_cover_image: cover,
         allow_companions: allowCompanions,
-        max_companions: maxCompanions,
-        show_guest_side: showGuestSide,});
+        max_companions: maxCompanions
+      });
 
       btn.disabled = false;
       btn.textContent = 'Criar Evento';
 
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         document.getElementById('create-event-form').reset();
         uploadedImageBase64 = '';
         document.getElementById('upload-preview').classList.add('hidden');
@@ -1600,7 +1061,7 @@ function applyGuestSideSetting(showSide){
       }
     }
 
-    async function viewEventDetails(eventId) {
+    function viewEventDetails(eventId) {
       const event = allData.find(d => d.type === 'event' && d.event_id === eventId);
       if (!event) return;
 
@@ -1829,11 +1290,7 @@ function applyGuestSideSetting(showSide){
       btn.textContent = 'Guardar';
 
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         closeEditConfirmationModal();
         renderEventDetails();
       }
@@ -1867,11 +1324,7 @@ function applyGuestSideSetting(showSide){
       const result = await deleteRecord(confirmationId);
       
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         renderEventDetails();
       } else {
         btn.disabled = false;
@@ -1916,7 +1369,7 @@ function applyGuestSideSetting(showSide){
         await deleteRecord(rsvp.id);
       }
 
-      // Optimized: avoid full reload from Supabase to reduce queries
+      allData = await loadAllData();
       currentEvent = null;
       showView('dashboard-view');
     }
@@ -2020,11 +1473,7 @@ function applyGuestSideSetting(showSide){
       btn.textContent = 'Guardar';
 
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         currentEvent = updatedEvent;
         closeEditEventModal();
         renderEventDetails();
@@ -2269,10 +1718,6 @@ function applyGuestSideSetting(showSide){
       }
 
       currentGuestEvent = event;
-    if(event.show_guest_side === "no"){
-      const f = document.getElementById("guest-side-field");
-      if(f){ f.style.display="none"; }
-    }
       document.getElementById('event-link-input').value = '';
       document.getElementById('search-results').classList.add('hidden');
       showGuestEventView();
@@ -2603,10 +2048,8 @@ function applyGuestSideSetting(showSide){
           });
         } else {
           // Create new record
-          result = await supabaseClient
-  .from('rsvp_data')
-  .upsert({
-    type: 'rsvp',
+          result = await createRecord({
+            type: 'rsvp',
             event_id: currentGuestEvent.event_id,
             guest_name: name,
             guest_response: response,
@@ -2620,11 +2063,7 @@ function applyGuestSideSetting(showSide){
       btn.innerHTML = `<span id="submit-text">${config.button_text || defaultConfig.button_text}</span>`;
 
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         
         // Get the updated/created RSVP
         const savedRsvp = result.data;
@@ -2650,17 +2089,11 @@ function applyGuestSideSetting(showSide){
     }
 
     // Admin functions
-    async function renderAdminDashboard() {
+    function renderAdminDashboard() {
       if (!isAdmin) return;
 
-      const { data: owners } = await supabaseClient
-        .from('rsvp_data')
-        .select('*')
-        .eq('type','owner');
-      const { data: events } = await supabaseClient
-        .from('rsvp_data')
-        .select('*')
-        .eq('type','event');
+      const owners = allData.filter(d => d.type === 'owner');
+      const events = allData.filter(d => d.type === 'event');
       const activeOwners = owners.filter(o => o.account_status === 'approved');
       const inactiveOwners = owners.filter(o => o.account_status === 'inactive');
       const pendingOwners = owners.filter(o => o.account_status === 'pending');
@@ -2802,11 +2235,7 @@ function applyGuestSideSetting(showSide){
       btn.textContent = 'Guardar';
 
       if (result.success) {
-        // Optimized: update local cache instead of reloading database
-        if (result.data) {
-          allData.push(result.data);
-        }
-        // Optimized: avoid full reload from Supabase to reduce queries
+        allData = await loadAllData();
         closeEditModal();
       }
     }
@@ -2820,8 +2249,7 @@ function applyGuestSideSetting(showSide){
 
       const updatedOwner = { ...owner, account_status: newStatus };
       await updateRecord(updatedOwner);
-allData = await loadAllData();
-renderAdminDashboard();
+      allData = await loadAllData();
     }
 
     async function approveAccount(backendId) {
@@ -2830,8 +2258,7 @@ renderAdminDashboard();
 
       const updatedOwner = { ...owner, account_status: 'approved', event_limit: 1 };
       await updateRecord(updatedOwner);
-allData = await loadAllData();
-renderAdminDashboard();
+      allData = await loadAllData();
       renderAdminDashboard();
     }
 
@@ -2840,7 +2267,7 @@ renderAdminDashboard();
       if (!owner) return;
 
       await deleteRecord(owner.id);
-      // Optimized: avoid full reload from Supabase to reduce queries
+      allData = await loadAllData();
       renderAdminDashboard();
     }
 
@@ -2865,8 +2292,7 @@ renderAdminDashboard();
 
       const updatedOwner = { ...owner, event_limit: newLimit };
       await updateRecord(updatedOwner);
-allData = await loadAllData();
-renderAdminDashboard();
+      allData = await loadAllData();
       
       // Show success message
       const container = input.parentElement;
@@ -2918,7 +2344,7 @@ renderAdminDashboard();
         }
       }
 
-      // Optimized: avoid full reload from Supabase to reduce queries
+      allData = await loadAllData();
       renderAdminDashboard();
     }
 
@@ -2957,194 +2383,6 @@ renderAdminDashboard();
 
     // Initialize app
     init();
-  
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script>
- <script>function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c1f808c069d06fb',t:'MTc2OTA4OTYzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}
-async function toggleOwnerStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function deleteOwner(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-
-// --- Admin button handlers fix ---
-async function toggleAccountStatus(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  const newStatus = owner.account_status === 'approved' ? 'inactive' : 'approved';
-
-  await supabaseClient
-    .from('rsvp_data')
-    .update({ account_status: newStatus })
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminDeleteAccount(ownerId){
-  if(!confirm("Eliminar esta conta?")) return;
-
-  await supabaseClient
-    .from('rsvp_data')
-    .delete()
-    .eq('id', ownerId);
-
-  renderAdminDashboard();
-}
-
-async function adminLoginAsUser(ownerId){
-  const { data: owner } = await supabaseClient
-    .from('rsvp_data')
-    .select('*')
-    .eq('id', ownerId)
-    .single();
-
-  if(!owner) return;
-
-  currentOwner = owner;
-  localStorage.setItem('rsvp_session', JSON.stringify({ ownerId: owner.owner_id, adminMode:true }));
-
-  showView('dashboard-view');
-  renderDashboard();
-}
-
-// ensure global scope
-window.toggleAccountStatus = toggleAccountStatus;
-window.adminDeleteAccount = adminDeleteAccount;
-window.adminLoginAsUser = adminLoginAsUser;
-
-
-// Fix validation error when guest-side is hidden
-document.addEventListener("submit", function(e){
-  const field = document.getElementById("guest-side-field");
-  if(field && field.style.display === "none"){
-    const radios = document.querySelectorAll('input[name="guest-side"]');
-    radios.forEach(r => r.removeAttribute("required"));
-  }
-}, true);
-
-</script></body>
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c1f808c069d06fb',t:'MTc2OTA4OTYzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
