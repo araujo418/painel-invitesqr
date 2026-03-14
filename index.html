@@ -169,6 +169,13 @@
         </div>
         <div id="kids-extra" class="hidden pl-4"><label class="text-xs text-gray-500">Máximo de crianças</label> <input id="evt-max-kids" type="number" min="1" max="20" value="2" class="input-field w-24">
         </div>
+        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-gray-700">Permitir escolher lado</span>
+         <div id="sw-sides" class="switch active" onclick="toggleSwitch(this, 'sides-extra')"></div>
+        </div>
+        <div id="sides-extra" class="hidden pl-4"><label class="text-xs text-gray-500 mb-2 block">Personalizar nomes dos lados</label>
+         <div class="flex gap-2 mb-2"><input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Noivo" value="Noivo"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Noiva" value="Noiva">
+         </div>
+        </div>
        </div><button type="submit" class="btn-main w-full text-base">Criar Evento</button>
       </form>
      </div>
@@ -197,7 +204,7 @@
     </div>
    </section><!-- ========== SCREEN: GUEST VIEW (RSVP) ========== -->
    <section id="screen-guest" class="page-section hidden">
-    <div class="page-transition w-full max-w-md mx-auto px-4 py-8"><button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+    <div class="page-transition w-full max-w-md mx-auto px-4 py-8">
      <div class="bg-white rounded-2xl shadow-md overflow-hidden">
       <div id="guest-cover" class="w-full h-40 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center"><i data-lucide="calendar-heart" class="w-14 h-14 text-white/60"></i>
       </div>
@@ -210,6 +217,10 @@
         <div class="flex gap-3 mb-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="yes" class="accent-teal-500" required> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
         </div><label class="block text-sm font-semibold text-gray-600 mb-1">Seu Nome</label> <input id="rsvp-name" class="input-field mb-3" placeholder="Nome completo" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Lado do casal</label>
         <div class="flex gap-3 mb-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noivo" class="accent-teal-500" required> <span class="text-sm">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noiva" class="accent-teal-500"> <span class="text-sm">Noiva</span></label>
+        </div>
+        <div id="rsvp-side-section" class="hidden mb-3"><label class="block text-sm font-semibold text-gray-600 mb-1" id="rsvp-side-label">Lado do casal</label>
+         <div class="flex gap-3 mb-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500" required> <span class="text-sm" id="rsvp-side1-label">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm" id="rsvp-side2-label">Noiva</span></label>
+         </div>
         </div>
         <div id="rsvp-companions-section" class="hidden mb-3"><label class="block text-sm font-semibold text-gray-600 mb-1">Acompanhantes</label>
          <div id="rsvp-companions-list"></div><button type="button" class="text-teal-500 text-sm font-semibold mt-1 hover:text-teal-600 transition" onclick="addCompanionField()">+ Adicionar acompanhante</button>
@@ -1020,8 +1031,11 @@ function handleCreateEvent(e) {
   const allowComp = document.getElementById('sw-companions').classList.contains('active');
   const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
   const allowKids = document.getElementById('sw-kids').classList.contains('active');
+  const allowSides = document.getElementById('sw-sides').classList.contains('active');
   const maxComp = parseInt(document.getElementById('evt-max-comp').value) || 2;
   const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
+  const side1Name = allowSides ? (document.getElementById('evt-side1-name').value.trim() || 'Noivo') : 'Lado 1';
+  const side2Name = allowSides ? (document.getElementById('evt-side2-name').value.trim() || 'Noiva') : 'Lado 2';
 
   const coverImg = document.getElementById('cover-img');
   const hasCover = !coverImg.classList.contains('hidden');
@@ -1136,7 +1150,10 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     max_companions: maxComp,
     allow_kids: allowKids ? 'yes' : 'no',
     max_kids: maxKids,
-    allow_gifts: allowGifts ? 'yes' : 'no'
+    allow_gifts: allowGifts ? 'yes' : 'no',
+    allow_sides: allowSides ? 'yes' : 'no',
+    side1_name: side1Name,
+    side2_name: side2Name
   };
   
   console.log('📤 Enviando ao Supabase:', eventData);
@@ -1167,6 +1184,10 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         maxKids: maxKids,
         allow_gifts: allowGifts ? 'yes' : 'no',
         allowGifts: allowGifts,
+        allow_sides: allowSides ? 'yes' : 'no',
+        allowSides: allowSides,
+        side1_name: side1Name,
+        side2_name: side2Name,
         confirmations: [],
         gifts: []
       };
@@ -1182,8 +1203,11 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       document.getElementById('cover-img').classList.add('hidden');
       document.getElementById('cover-placeholder').classList.remove('hidden');
       document.querySelectorAll('#screen-create-event .switch').forEach(s => s.classList.remove('active'));
+      document.getElementById('sw-gifts').classList.add('active');
+      document.getElementById('sw-sides').classList.add('active');
       document.getElementById('companions-extra').classList.add('hidden');
       document.getElementById('kids-extra').classList.add('hidden');
+      document.getElementById('sides-extra').classList.add('hidden');
       
       Router.go('dashboard');
     } else {
@@ -1206,82 +1230,6 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       submitBtn.textContent = originalText;
     }
   });
-}
-
-function handleEditEvent(e, eventId) {
-  e.preventDefault();
-  const ev = Store.events.find(e => e.id === eventId);
-  if (!ev) return;
-  
-  console.log('✏️ Iniciando edição do evento:', eventId);
-  
-  // 🔒 Prevenir submissão dupla
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  if (submitBtn.disabled) {
-    console.log('⚠️ Submissão duplicada bloqueada');
-    return;
-  }
-  
-  submitBtn.disabled = true;
-  submitBtn.style.opacity = '0.6';
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Guardando...';
-  
-  const title = document.getElementById('evt-title').value.trim();
-  const date = document.getElementById('evt-date').value;
-  const time = document.getElementById('evt-time').value;
-  const deadline = document.getElementById('evt-deadline').value;
-  const deadlineTime = document.getElementById('evt-deadline-time').value;
-  const allowComp = document.getElementById('sw-companions').classList.contains('active');
-  const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
-  const allowKids = document.getElementById('sw-kids').classList.contains('active');
-  const maxComp = parseInt(document.getElementById('evt-max-comp').value) || 2;
-  const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
-  
-  // ✅ CRÍTICO: Combinar data + hora do deadline
-  const finalDeadline = (deadline && deadlineTime ? `${deadline} ${deadlineTime}` : deadline) || date;
-
-  console.log('📋 Dados do evento:', { title, date, time, deadline, allowComp, allowGifts, allowKids, finalDeadline });
-
-  const coverImg = document.getElementById('cover-img');
-  const coverPlaceholder = document.getElementById('cover-placeholder');
-  
-  // ✅ Verificar se há NOVA imagem (não está hidden)
-  const hasNewCover = !coverImg.classList.contains('hidden') && coverImg.src && coverImg.src.startsWith('data:');
-  const oldImageURL = ev.cover_image || ev.cover;
-  
-  console.log('🖼️ Imagem:', { hasNewCover, oldImageURL });
-  
-  // Se há nova imagem base64, fazer upload
-  if (hasNewCover) {
-    console.log('📤 Nova imagem detectada, iniciando upload...');
-    submitBtn.textContent = '📤 Enviando imagem...';
-    
-    uploadCoverImageToSupabase(coverImg.src, eventId).then(newCoverURL => {
-      console.log('✅ URL da imagem recebida:', newCoverURL);
-      
-      // Se existe imagem antiga, deletar
-      if (oldImageURL && oldImageURL.includes('supabase')) {
-        const oldFileName = extractFileNameFromURL(oldImageURL);
-        if (oldFileName) {
-          deleteImageFromSupabase(oldFileName).then(() => {
-            console.log('✅ Imagem antiga deletada');
-          });
-        }
-      }
-      
-      submitBtn.textContent = 'Guardando evento...';
-      saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, newCoverURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
-    }).catch(error => {
-      console.error('❌ Erro no upload:', error);
-      submitBtn.textContent = 'Guardando evento...';
-      saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, oldImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
-    });
-  } else {
-    // ✅ Sem nova imagem - usar imagem antiga ou nenhuma
-    console.log('📌 Sem nova imagem, mantendo a antiga');
-    saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, oldImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
-  }
 }
 
 function extractFileNameFromURL(url) {
@@ -1326,6 +1274,20 @@ async function deleteImageFromSupabase(fileName) {
 }
 
 function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev) {
+  console.log('💾 Atualizando evento no Supabase:', {
+    eventId,
+    title,
+    date,
+    time,
+    finalDeadline,
+    coverImageURL,
+    allowComp,
+    maxComp,
+    allowGifts,
+    allowKids,
+    maxKids
+  });
+
   supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', {
     title: title,
     date: date,
@@ -1339,7 +1301,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     max_kids: maxKids,
     allow_gifts: allowGifts ? 'yes' : 'no'
   }).then(result => {
-    if (result && (result.length > 0 || result[0]?.success)) {
+    console.log('✅ Resposta do Supabase:', result);
+    
+    if (result) {
       // ✅ Atualizar Store também
       ev.title = title;
       ev.date = date;
@@ -1359,6 +1323,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       ev.allow_gifts = allowGifts ? 'yes' : 'no';
       ev.allowGifts = allowGifts;
       
+      console.log('✅ Store atualizado. Event details:', { title: ev.title, date: ev.date });
+      
       toast('✓ Evento atualizado com sucesso!');
       
       // Reset form
@@ -1369,8 +1335,11 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       document.getElementById('cover-img').classList.add('hidden');
       document.getElementById('cover-placeholder').classList.remove('hidden');
       document.querySelectorAll('#screen-create-event .switch').forEach(s => s.classList.remove('active'));
+      document.getElementById('sw-gifts').classList.add('active');
+      document.getElementById('sw-sides').classList.add('active');
       document.getElementById('companions-extra').classList.add('hidden');
       document.getElementById('kids-extra').classList.add('hidden');
+      document.getElementById('sides-extra').classList.add('hidden');
       
       // Restaurar form para modo de criação
       const form = document.getElementById('screen-create-event').querySelector('form');
@@ -1378,16 +1347,27 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       const btn = form.querySelector('button[type="submit"]');
       btn.textContent = 'Criar Evento';
       
+      // 🔒 Re-habilitar botão ANTES de navegar
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.textContent = originalText;
+      }
+      
+      // ✅ CRÍTICO: VOLTA PARA DETALHES (NÃO para dashboard)
+      console.log('🔄 Navegando para event-details com eventId:', eventId);
+      Store.currentEventId = eventId;
       Router.go('event-details');
     } else {
+      console.error('❌ Resposta vazia do Supabase');
       toast('❌ Erro ao atualizar evento. Tente novamente.');
-    }
-    
-    // 🔒 Re-habilitar botão
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.style.opacity = '1';
-      submitBtn.textContent = originalText;
+      
+      // 🔒 Re-habilitar botão
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.textContent = originalText;
+      }
     }
   }).catch(error => {
     console.error('❌ Erro ao atualizar evento:', error);
@@ -1929,7 +1909,71 @@ function editEvent() {
   
   // Mudar o form para modo de edição
   const form = document.getElementById('screen-create-event').querySelector('form');
-  form.onsubmit = (e) => handleEditEvent(e, ev.id);
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    
+    // 🔒 Prevenir submissão dupla
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn.disabled) {
+      console.log('⚠️ Submissão duplicada bloqueada');
+      return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.6';
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Guardando...';
+    
+    const title = document.getElementById('evt-title').value.trim();
+    const date = document.getElementById('evt-date').value;
+    const time = document.getElementById('evt-time').value;
+    let deadline = document.getElementById('evt-deadline').value;
+    const deadlineTime = document.getElementById('evt-deadline-time').value;
+    
+    // ✅ CRÍTICO: Se deadline estiver vazio, usar a data do evento
+    if (!deadline || deadline.trim() === '') {
+      deadline = date;
+      console.log('⚠️ Deadline vazio, usando data do evento:', deadline);
+    }
+    
+    // ✅ CRÍTICO: Combinar data + hora do deadline
+    let deadlineWithTime = deadline;
+    if (deadline && deadlineTime) {
+      deadlineWithTime = `${deadline} ${deadlineTime}`;
+    }
+    
+    const allowComp = document.getElementById('sw-companions').classList.contains('active');
+    const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
+    const allowKids = document.getElementById('sw-kids').classList.contains('active');
+    const maxComp = parseInt(document.getElementById('evt-max-comp').value) || 2;
+    const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
+
+    const coverImg = document.getElementById('cover-img');
+    const hasCover = !coverImg.classList.contains('hidden');
+    
+    toast('🖼️ Preparando alterações...');
+    
+    if (hasCover && coverImg.src && coverImg.src.includes('data:')) {
+      // Nova imagem em base64 - fazer upload
+      submitBtn.textContent = '📤 Enviando imagem...';
+      
+      uploadCoverImageToSupabase(coverImg.src, ev.id).then(coverImageURL => {
+        console.log('✅ URL da imagem recebida:', coverImageURL);
+        toast('✓ Imagem recebida, guardando alterações...');
+        submitBtn.textContent = 'Guardando...';
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
+      }).catch(error => {
+        console.error('❌ ERRO upload imagem:', error);
+        toast('Erro ao fazer upload da imagem. Guardando sem capa...');
+        submitBtn.textContent = 'Guardando...';
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
+      });
+    } else {
+      // Usar imagem existente ou nenhuma
+      const coverImageURL = coverImg.src && coverImg.src.startsWith('http') ? coverImg.src : ev.cover_image;
+      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
+    }
+  };
   
   // Mudar texto do botão
   const btn = form.querySelector('button[type="submit"]');
@@ -2064,10 +2108,23 @@ function renderGuestView() {
   console.log('  allowCompanions:', eventData.allowCompanions, '→ Mostrar?', eventData.allowCompanions);
   console.log('  allowKids:', eventData.allowKids, '→ Mostrar?', eventData.allowKids);
   console.log('  allowGifts:', eventData.allowGifts, '→ Mostrar?', eventData.allowGifts);
+  console.log('  allowSides:', eventData.allowSides, '→ Mostrar?', eventData.allowSides);
   
+  document.getElementById('rsvp-side-section').classList.toggle('hidden', !eventData.allowSides);
   document.getElementById('rsvp-companions-section').classList.toggle('hidden', !eventData.allowCompanions);
   document.getElementById('rsvp-kids-section').classList.toggle('hidden', !eventData.allowKids);
   document.getElementById('rsvp-gifts-section').classList.toggle('hidden', !eventData.allowGifts);
+
+  // ✅ Atualizar labels dos lados se customizados
+  if (eventData.allowSides) {
+    const side1Label = eventData.side1_name || 'Noivo';
+    const side2Label = eventData.side2_name || 'Noiva';
+    document.getElementById('rsvp-side-label').textContent = `Escolha`;
+    document.getElementById('rsvp-side1-label').textContent = side1Label;
+    document.getElementById('rsvp-side2-label').textContent = side2Label;
+    document.querySelector('input[name="rsvp-side"][value="side1"]').value = 'side1';
+    document.querySelector('input[name="rsvp-side"][value="side2"]').value = 'side2';
+  }
 
   // ✅ Countdown para a DATA DO EVENTO (não deadline)
   startCountdown(eventData.date);
@@ -2137,7 +2194,23 @@ function handleRSVP(e) {
 
   const attending = document.querySelector('input[name="rsvp-confirm"]:checked').value === 'yes';
   const name = document.getElementById('rsvp-name').value.trim();
-  const side = document.querySelector('input[name="rsvp-side"]:checked').value;
+  
+  // ✅ Determinar lado (pode ser customizado)
+  let side = document.querySelector('input[name="rsvp-side"]:checked').value;
+  const allowSides = ev.allowSides || (ev.allow_sides && String(ev.allow_sides).toLowerCase() === 'yes');
+  
+  if (!allowSides) {
+    // Se não permite escolher lado, usar valores padrão
+    side = 'convidado';
+  } else {
+    // Se permite, mapear side1/side2 para nomes customizados
+    if (side === 'side1') {
+      side = 'side1';
+    } else if (side === 'side2') {
+      side = 'side2';
+    }
+  }
+  
   const wantsGift = document.querySelector('input[name="rsvp-wants-gift"]:checked')?.value === 'yes';
 
   const companions = [...document.querySelectorAll('[data-companion]')].map(i => i.value.trim()).filter(Boolean);
@@ -6077,5 +6150,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc50f6473373eac',t:'MTc3MzUwOTk5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc6207a63513eac',t:'MTc3MzUyMTE3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
