@@ -2159,6 +2159,7 @@ function editEvent() {
     const allowComp = document.getElementById('sw-companions').classList.contains('active');
     const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
     const allowKids = document.getElementById('sw-kids').classList.contains('active');
+    const allowSides = document.getElementById('sw-sides').classList.contains('active');
     const maxComp = parseInt(document.getElementById('evt-max-comp').value) || 2;
     const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
 
@@ -2175,22 +2176,24 @@ function editEvent() {
         console.log('✅ URL da imagem recebida:', coverImageURL);
         toast('✓ Imagem recebida, guardando alterações...');
         submitBtn.textContent = 'Guardando...';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText, ev);
       }).catch(error => {
         console.error('❌ ERRO upload imagem:', error);
         toast('Erro ao fazer upload da imagem. Guardando sem capa...');
         submitBtn.textContent = 'Guardando...';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText, ev);
       });
     } else {
       // Usar imagem existente ou nenhuma
       const coverImageURL = coverImg.src && coverImg.src.startsWith('http') ? coverImg.src : ev.cover_image;
-      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
+      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText, ev);
     }
   };
   
-  // Mudar texto do botão
+  // ✅ CRÍTICO: Re-habilitar o botão (estava ficando desabilitado na segunda edição)
   const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = false;
+  btn.style.opacity = '1';
   btn.textContent = 'Guardar Alterações';
   
   Router.go('create-event');
@@ -2794,8 +2797,16 @@ function backFromGifts() {
   console.log('  guestEventData:', Store.guestEventData ? 'Sim' : 'Não');
   console.log('  currentEventId:', Store.currentEventId);
   
+  // ✅ NOVO: Se veio de URL com ?gifts=only, voltar para home
+  const params = new URLSearchParams(window.location.search);
+  const giftsOnly = params.get('gifts') === 'only';
+  
+  if (giftsOnly) {
+    console.log('🏠 URL com modo gifts-only detectado - voltando para home');
+    Router.go('home');
+  }
   // Se temos guestEventData, voltar para guest view (RSVP)
-  if (Store.guestEventData && Store.currentEventId) {
+  else if (Store.guestEventData && Store.currentEventId) {
     Router.go('guest');
   } else {
     // Senão, voltar para dashboard (organizador)
@@ -5620,10 +5631,12 @@ function isValidEventCode(code) {
 async function checkURLForEvent() {
   // Detectar parâmetro 'event' na URL
   // Funciona com: https://araujo418.github.io/painel-invitesqr/?event=3L3MRVVG
+  // ✅ NOVO: Suporta ?event=ABC&gifts=only para ir DIRETO para presentes
   const params = new URLSearchParams(window.location.search);
   const eventCode = params.get('event');
+  const giftsOnly = params.get('gifts') === 'only';
   
-  console.log('🔗 URL Detection iniciado. Event code:', eventCode);
+  console.log('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
   
   if (eventCode) {
     console.log('📍 Event code encontrado na URL:', eventCode);
@@ -6710,5 +6723,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcc411d72493eac',t:'MTc3MzU4NTQyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcc67da26a43eac',t:'MTc3MzU4NzAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
