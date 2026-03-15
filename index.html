@@ -76,20 +76,26 @@
   <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
  </head>
  <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-  <div id="app-root" class="h-full w-full overflow-auto"><!-- ========== SCREEN: HOME ========== -->
+  <div id="app-root" class="h-full w-full overflow-auto">
+   <!-- ========== SCREEN: HOME ========== -->
    <section id="screen-home" class="page-section hidden">
     <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
-     <div class="w-full max-w-md"><!-- Icon -->
+     <div class="w-full max-w-md">
+      <!-- Icon -->
       <div class="flex justify-center mb-6">
-       <div class="w-20 h-20 rounded-2xl bg-teal-500 flex items-center justify-center shadow-lg"><i data-lucide="calendar-check" class="w-10 h-10 text-white"></i>
+       <div class="w-20 h-20 rounded-2xl bg-teal-500 flex items-center justify-center shadow-lg">
+        <i data-lucide="calendar-check" class="w-10 h-10 text-white"></i>
        </div>
       </div><!-- Title -->
       <h1 id="home-title" class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-2">Confirmação de Presença</h1>
       <p id="home-subtitle" class="text-gray-500 text-center mb-8 text-lg">Crie e gerencie seus eventos facilmente</p><!-- Buttons -->
-      <div class="flex flex-col gap-3 mb-8"><button class="btn-main text-lg" onclick="Router.go('register')">Criar Conta</button> <button class="btn-outline text-lg" onclick="Router.go('login')">Entrar</button>
+      <div class="flex flex-col gap-3 mb-8">
+       <button class="btn-main text-lg" onclick="Router.go('register')">Criar Conta</button> <button class="btn-outline text-lg" onclick="Router.go('login')">Entrar</button>
       </div><!-- Search Card -->
-      <div class="bg-white rounded-2xl shadow-md p-5"><label class="block text-sm font-semibold text-gray-600 mb-2">Buscar Evento</label>
-       <div class="flex gap-2"><input id="home-search" class="input-field" placeholder="Código ou nome do evento"> <button class="btn-main px-4 flex-shrink-0" onclick="searchEvent()"> <i data-lucide="search" class="w-5 h-5"></i> </button>
+      <div class="bg-white rounded-2xl shadow-md p-5">
+       <label class="block text-sm font-semibold text-gray-600 mb-2">Buscar Evento</label>
+       <div class="flex gap-2">
+        <input id="home-search" class="input-field" placeholder="Código ou nome do evento"> <button class="btn-main px-4 flex-shrink-0" onclick="searchEvent()"> <i data-lucide="search" class="w-5 h-5"></i> </button>
        </div>
       </div>
      </div>
@@ -97,11 +103,13 @@
    </section><!-- ========== SCREEN: REGISTER ========== -->
    <section id="screen-register" class="page-section hidden">
     <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
-     <div class="w-full max-w-md"><button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <div class="w-full max-w-md">
+      <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
       <div class="bg-white rounded-2xl shadow-md p-6">
        <h2 class="text-2xl font-bold text-gray-800 mb-1">Criar Conta</h2>
        <p class="text-gray-400 text-sm mb-5">Preencha os campos abaixo</p>
-       <form onsubmit="handleRegister(event)"><label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="reg-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label> <input id="reg-pass" type="password" class="input-field mb-4" placeholder="Mínimo 4 caracteres" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Confirmar Senha</label> <input id="reg-pass2" type="password" class="input-field mb-1" placeholder="Repita a senha" required>
+       <form onsubmit="handleRegister(event)">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="reg-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label> <input id="reg-pass" type="password" class="input-field mb-4" placeholder="Mínimo 4 caracteres" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Confirmar Senha</label> <input id="reg-pass2" type="password" class="input-field mb-1" placeholder="Repita a senha" required>
         <p id="reg-error" class="text-red-500 text-sm mb-4 hidden"></p><button type="submit" class="btn-main w-full text-base mt-2">Criar Conta</button>
        </form>
       </div>
@@ -110,12 +118,15 @@
    </section><!-- ========== SCREEN: LOGIN ========== -->
    <section id="screen-login" class="page-section hidden">
     <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
-     <div class="w-full max-w-md"><button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <div class="w-full max-w-md">
+      <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
       <div class="bg-white rounded-2xl shadow-md p-6">
        <h2 class="text-2xl font-bold text-gray-800 mb-1">Entrar</h2>
        <p class="text-gray-400 text-sm mb-5">Acesse sua conta</p>
-       <form onsubmit="handleLogin(event)"><label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="login-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
-        <div class="relative mb-3"><input id="login-pass" type="password" class="input-field pr-10" placeholder="Sua senha" required> <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500 transition" onclick="togglePassVisibility('login-pass', this)"> <i data-lucide="eye" class="w-5 h-5"></i> </button>
+       <form onsubmit="handleLogin(event)">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="login-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+        <div class="relative mb-3">
+         <input id="login-pass" type="password" class="input-field pr-10" placeholder="Sua senha" required> <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500 transition" onclick="togglePassVisibility('login-pass', this)"> <i data-lucide="eye" class="w-5 h-5"></i> </button>
         </div><label class="flex items-center gap-2 mb-4 cursor-pointer select-none"> <input type="checkbox" class="w-4 h-4 accent-teal-500"> <span class="text-sm text-gray-600">Manter-me conectado</span> </label>
         <p id="login-error" class="text-red-500 text-sm mb-3 hidden"></p><button type="submit" class="btn-main w-full text-base">Entrar</button>
        </form>
@@ -130,50 +141,66 @@
        <h1 class="text-2xl font-bold text-gray-800">Meus Eventos</h1>
        <p id="admin-mode-badge" class="text-xs text-amber-600 font-semibold mt-1 hidden">👤 Logado como: <span id="admin-mode-user"></span></p>
       </div>
-      <div class="flex flex-wrap gap-2"><button class="btn-main text-sm" onclick="Router.go('create-event')"> <span class="flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Criar Novo Evento</span> </button> <button id="btn-return-admin" class="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="backToAdminPanel()"> <span class="flex items-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Admin</span> </button> <button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition" onclick="handleLogout()"> <span class="flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Sair</span> </button>
+      <div class="flex flex-wrap gap-2">
+       <button class="btn-main text-sm" onclick="Router.go('create-event')"> <span class="flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Criar Novo Evento</span> </button> <button id="btn-return-admin" class="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="backToAdminPanel()"> <span class="flex items-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Admin</span> </button> <button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition" onclick="handleLogout()"> <span class="flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Sair</span> </button>
       </div>
      </div>
      <div id="dashboard-events"></div>
     </div>
    </section><!-- ========== SCREEN: CREATE EVENT ========== -->
    <section id="screen-create-event" class="page-section hidden">
-    <div class="page-transition w-full max-w-lg mx-auto px-4 py-8"><button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+    <div class="page-transition w-full max-w-lg mx-auto px-4 py-8">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
      <div class="bg-white rounded-2xl shadow-md p-6">
       <h2 class="text-2xl font-bold text-gray-800 mb-5">Criar Evento</h2>
-      <form onsubmit="handleCreateEvent(event)"><!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
-       <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-4 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()"><span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-cover">
+      <form onsubmit="handleCreateEvent(event)">
+       <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
+       <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-4 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
+        <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-cover">
        </div><input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
-        <div><label class="block text-sm font-semibold text-gray-600 mb-1">Data</label> <input id="evt-date" type="date" class="input-field" required onchange="validateDeadlineDate()">
+        <div>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Data</label> <input id="evt-date" type="date" class="input-field" required onchange="validateDeadlineDate()">
         </div>
-        <div><label class="block text-sm font-semibold text-gray-600 mb-1">Hora</label> <input id="evt-time" type="time" class="input-field" required>
+        <div>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Hora</label> <input id="evt-time" type="time" class="input-field" required>
         </div>
        </div><label class="block text-sm font-semibold text-gray-600 mb-1">Data limite para confirmação</label>
        <div class="grid grid-cols-2 gap-3 mb-4">
-        <div><input id="evt-deadline" type="date" class="input-field" required onchange="validateDeadlineDate()">
+        <div>
+         <input id="evt-deadline" type="date" class="input-field" required onchange="validateDeadlineDate()">
         </div>
-        <div><input id="evt-deadline-time" type="time" class="input-field" value="23:59" required>
+        <div>
+         <input id="evt-deadline-time" type="time" class="input-field" value="23:59" required>
         </div>
        </div><!-- Switches -->
        <div class="space-y-3 mb-4">
-        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-gray-700">Permitir acompanhantes</span>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir acompanhantes</span>
          <div id="sw-companions" class="switch" onclick="toggleSwitch(this, 'companions-extra')"></div>
         </div>
-        <div id="companions-extra" class="hidden pl-4"><label class="text-xs text-gray-500">Máximo de acompanhantes</label> <input id="evt-max-comp" type="number" min="1" max="20" value="2" class="input-field w-24">
+        <div id="companions-extra" class="hidden pl-4">
+         <label class="text-xs text-gray-500">Máximo de acompanhantes</label> <input id="evt-max-comp" type="number" min="1" max="20" value="2" class="input-field w-24">
         </div>
-        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-gray-700">Permitir presentes</span>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir presentes</span>
          <div id="sw-gifts" class="switch active" onclick="toggleSwitch(this)"></div>
         </div>
-        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-gray-700">Permitir crianças</span>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir crianças</span>
          <div id="sw-kids" class="switch" onclick="toggleSwitch(this, 'kids-extra')"></div>
         </div>
-        <div id="kids-extra" class="hidden pl-4"><label class="text-xs text-gray-500">Máximo de crianças</label> <input id="evt-max-kids" type="number" min="1" max="20" value="2" class="input-field w-24">
+        <div id="kids-extra" class="hidden pl-4">
+         <label class="text-xs text-gray-500">Máximo de crianças</label> <input id="evt-max-kids" type="number" min="1" max="20" value="2" class="input-field w-24">
         </div>
-        <div class="flex items-center justify-between"><span class="text-sm font-semibold text-gray-700">Permitir escolher lado</span>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir escolher lado</span>
          <div id="sw-sides" class="switch active" onclick="toggleSwitch(this, 'sides-extra')"></div>
         </div>
-        <div id="sides-extra" class="hidden pl-4"><label class="text-xs text-gray-500 mb-2 block">Personalizar nomes dos lados</label>
-         <div class="flex gap-2 mb-2"><input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Noivo" value="Noivo"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Noiva" value="Noiva">
+        <div id="sides-extra" class="pl-4">
+         <label class="text-xs text-gray-500 mb-2 block">Personalizar nomes dos lados</label>
+         <div class="flex gap-2 mb-2">
+          <input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Noivo" value="Noivo"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Noiva" value="Noiva">
          </div>
         </div>
        </div><button type="submit" class="btn-main w-full text-base">Criar Evento</button>
@@ -182,19 +209,24 @@
     </div>
    </section><!-- ========== SCREEN: EVENT DETAILS ========== -->
    <section id="screen-event-details" class="page-section hidden">
-    <div class="page-transition w-full max-w-2xl mx-auto px-4 py-8"><button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+    <div class="page-transition w-full max-w-2xl mx-auto px-4 py-8">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
      <div class="bg-white rounded-2xl shadow-md overflow-hidden">
-      <div id="detail-cover" class="w-full h-48 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center"><i data-lucide="calendar-heart" class="w-16 h-16 text-white/60"></i>
+      <div id="detail-cover" class="w-full h-48 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center">
+       <i data-lucide="calendar-heart" class="w-16 h-16 text-white/60"></i>
       </div>
       <div class="p-6">
        <h2 id="detail-title" class="text-2xl font-bold text-gray-800 mb-1"></h2>
        <p id="detail-date" class="text-gray-500 mb-4"></p><label class="text-xs font-semibold text-gray-500">Link do Evento</label>
-       <div class="flex gap-2 mb-4"><input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
+       <div class="flex gap-2 mb-4">
+        <input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
        </div>
-       <div id="detail-rsvp-toggle" class="flex items-center gap-2 mb-4 hidden"><label class="text-xs font-semibold text-gray-600">Permitir confirmação de presença</label>
+       <div id="detail-rsvp-toggle" class="flex items-center gap-2 mb-4 hidden">
+        <label class="text-xs font-semibold text-gray-600">Permitir confirmação de presença</label>
         <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
        </div>
-       <div class="flex flex-wrap gap-2 mb-6"><button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
+       <div class="flex flex-wrap gap-2 mb-6">
+        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
        </div><!-- Stats -->
        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
        <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
@@ -206,35 +238,46 @@
    <section id="screen-guest" class="page-section hidden">
     <div class="page-transition w-full max-w-md mx-auto px-4 py-8">
      <div class="bg-white rounded-2xl shadow-md overflow-hidden">
-      <div id="guest-cover" class="w-full h-40 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center"><i data-lucide="calendar-heart" class="w-14 h-14 text-white/60"></i>
+      <div id="guest-cover" class="w-full h-40 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center">
+       <i data-lucide="calendar-heart" class="w-14 h-14 text-white/60"></i>
       </div>
       <div class="p-6">
        <h2 id="guest-title" class="text-xl font-bold text-gray-800 text-center mb-1"></h2>
        <p id="guest-date" class="text-gray-500 text-center text-sm mb-2"></p>
        <p id="guest-deadline-text" class="text-center text-sm text-teal-600 font-semibold mb-4"></p><!-- Countdown -->
        <div class="flex justify-center gap-3 mb-6" id="guest-countdown"></div><!-- RSVP Form -->
-       <form id="rsvp-form" onsubmit="handleRSVP(event)"><label class="block text-sm font-semibold text-gray-600 mb-1">Confirma presença?</label>
-        <div class="flex gap-3 mb-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="yes" class="accent-teal-500" required> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
+       <form id="rsvp-form" onsubmit="handleRSVP(event)">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Confirma presença?</label>
+        <div class="flex gap-3 mb-3">
+         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="yes" class="accent-teal-500" required> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
         </div><label class="block text-sm font-semibold text-gray-600 mb-1">Seu Nome</label> <input id="rsvp-name" class="input-field mb-3" placeholder="Nome completo" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Lado do casal</label>
-        <div class="flex gap-3 mb-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noivo" class="accent-teal-500" required> <span class="text-sm">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noiva" class="accent-teal-500"> <span class="text-sm">Noiva</span></label>
+        <div class="flex gap-3 mb-3">
+         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noivo" class="accent-teal-500" required> <span class="text-sm">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noiva" class="accent-teal-500"> <span class="text-sm">Noiva</span></label>
         </div>
-        <div id="rsvp-side-section" class="hidden mb-3"><label class="block text-sm font-semibold text-gray-600 mb-1" id="rsvp-side-label">Lado do casal</label>
-         <div class="flex gap-3 mb-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500" required> <span class="text-sm" id="rsvp-side1-label">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm" id="rsvp-side2-label">Noiva</span></label>
+        <div id="rsvp-side-section" class="hidden mb-3">
+         <label class="block text-sm font-semibold text-gray-600 mb-1" id="rsvp-side-label">Lado do casal</label>
+         <div class="flex gap-3 mb-3">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500" required> <span class="text-sm" id="rsvp-side1-label">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm" id="rsvp-side2-label">Noiva</span></label>
          </div>
         </div>
-        <div id="rsvp-companions-section" class="hidden mb-3"><label class="block text-sm font-semibold text-gray-600 mb-1">Acompanhantes</label>
+        <div id="rsvp-companions-section" class="hidden mb-3">
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Acompanhantes</label>
          <div id="rsvp-companions-list"></div><button type="button" class="text-teal-500 text-sm font-semibold mt-1 hover:text-teal-600 transition" onclick="addCompanionField()">+ Adicionar acompanhante</button>
         </div>
-        <div id="rsvp-kids-section" class="hidden mb-3"><label class="block text-sm font-semibold text-gray-600 mb-1">Crianças</label>
+        <div id="rsvp-kids-section" class="hidden mb-3">
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Crianças</label>
          <div id="rsvp-kids-list"></div><button type="button" class="text-teal-500 text-sm font-semibold mt-1 hover:text-teal-600 transition" onclick="addKidField()">+ Adicionar criança</button>
         </div>
-        <div id="rsvp-gifts-section" class="hidden mb-3"><label class="block text-sm font-semibold text-gray-600 mb-1">Gostaria de presentear?</label>
-         <div class="flex gap-3"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-wants-gift" value="yes" class="accent-teal-500"> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-wants-gift" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
+        <div id="rsvp-gifts-section" class="hidden mb-3">
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Gostaria de presentear?</label>
+         <div class="flex gap-3">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-wants-gift" value="yes" class="accent-teal-500"> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-wants-gift" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
          </div>
         </div><button type="submit" class="btn-main w-full text-base mt-2">Enviar Confirmação</button>
        </form>
        <div id="rsvp-success" class="hidden text-center py-6">
-        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3"><i data-lucide="check" class="w-8 h-8 text-green-600"></i>
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="check" class="w-8 h-8 text-green-600"></i>
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-1">Confirmação Enviada!</h3>
         <p class="text-gray-500 text-sm">Obrigado por confirmar.</p>
@@ -244,7 +287,8 @@
     </div>
    </section><!-- ========== SCREEN: GIFTS ========== -->
    <section id="screen-gifts" class="page-section hidden">
-    <div class="page-transition w-full max-w-3xl mx-auto px-4 py-8"><button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('event-details')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+    <div class="page-transition w-full max-w-3xl mx-auto px-4 py-8">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('event-details')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
      <h2 class="text-2xl font-bold text-gray-800 mb-6">Lista de Presentes</h2>
      <div id="gifts-container" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
     </div>
@@ -252,7 +296,8 @@
    <section id="screen-gift-confirmed" class="page-section hidden">
     <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
      <div class="bg-white rounded-2xl shadow-md p-8 text-center max-w-sm w-full">
-      <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4"><i data-lucide="check-circle" class="w-10 h-10 text-green-500"></i>
+      <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+       <i data-lucide="check-circle" class="w-10 h-10 text-green-500"></i>
       </div>
       <h2 class="text-2xl font-bold text-gray-800 mb-2">Presente Confirmado!</h2>
       <p class="text-gray-500 mb-6">Sua escolha foi registrada com sucesso.</p><button class="btn-main w-full" onclick="Router.go('gifts')">Finalizar</button>
@@ -262,7 +307,8 @@
    <section id="screen-not-found" class="page-section hidden">
     <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
      <div class="bg-white rounded-2xl shadow-md p-8 text-center max-w-sm w-full">
-      <div class="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4"><i data-lucide="alert-triangle" class="w-10 h-10 text-amber-500"></i>
+      <div class="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+       <i data-lucide="alert-triangle" class="w-10 h-10 text-amber-500"></i>
       </div>
       <h2 class="text-2xl font-bold text-gray-800 mb-2">Evento Não Encontrado</h2>
       <p class="text-gray-500 mb-6">O evento que procura não existe ou foi removido.</p><button class="btn-main w-full" onclick="Router.go('home')">Voltar ao Início</button>
@@ -277,8 +323,7 @@
      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
      <h3 class="font-bold text-gray-700 mb-3">Contas Registradas</h3><!-- Search Box -->
      <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-      <div class="flex gap-2">
-       <input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="🔍 Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
+      <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="🔍 Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
       </div>
      </div>
      <div id="admin-accounts" class="space-y-3"></div>
@@ -370,9 +415,9 @@ async function fetchEventForGuest(eventId) {
     console.log('👤 fetchEventForGuest iniciado para:', eventId);
     
     // ✅ OTIMIZAÇÃO: Usar JOIN para trazer evento + RSVPs + presentes em 1 request
-    // Selecionar TODOS os campos necessários incluindo confirm_by_date, max_companions, max_kids
+    // Selecionar TODOS os campos necessários incluindo confirm_by_date, max_companions, max_kids, allow_sides
     // ✅ CRÍTICO: Procurar por EVENT_CODE (não ID!) - é isso que vem na URL
-    const eventData = await supabaseRequest(`events?event_code=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
+    const eventData = await supabaseRequest(`events?event_code=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
     if (!eventData || eventData.length === 0) {
       console.error('❌ Evento não encontrado no Supabase');
       return null;
@@ -436,6 +481,8 @@ async function fetchEventForGuest(eventId) {
       allow_kids: event.allow_kids,
       maxKids: maxKds,
       max_kids: maxKds,
+      allowSides: String(event.allow_sides).toLowerCase() === 'yes',
+      allow_sides: event.allow_sides,
       confirmations: (event.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
@@ -1052,17 +1099,17 @@ function handleCreateEvent(e) {
       toast('✓ Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
     }).catch(error => {
       console.error('❌ ERRO upload imagem:', error);
       toast('Erro ao fazer upload da imagem. Criando evento sem capa...');
       submitBtn.textContent = 'Criando evento...';
       // Criar evento sem capa se upload falhar
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
     });
   } else {
     // Criar evento sem capa
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
   }
 }
 
@@ -1131,7 +1178,7 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
   }
 }
 
-function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText) {
+function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText) {
   console.log('💾 Salvando evento com capa:', coverImageURL);
   
   // ✅ Garantir que deadline tem valor válido
@@ -1152,8 +1199,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     max_kids: maxKids,
     allow_gifts: allowGifts ? 'yes' : 'no',
     allow_sides: allowSides ? 'yes' : 'no',
-    side1_name: side1Name,
-    side2_name: side2Name
+    side1_name: allowSides ? side1Name : null,
+    side2_name: allowSides ? side2Name : null
   };
   
   console.log('📤 Enviando ao Supabase:', eventData);
@@ -1186,8 +1233,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         allowGifts: allowGifts,
         allow_sides: allowSides ? 'yes' : 'no',
         allowSides: allowSides,
-        side1_name: side1Name,
-        side2_name: side2Name,
+        side1_name: allowSides ? side1Name : null,
+        side2_name: allowSides ? side2Name : null,
         confirmations: [],
         gifts: []
       };
@@ -1273,7 +1320,7 @@ async function deleteImageFromSupabase(fileName) {
   }
 }
 
-function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev) {
+function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText, ev) {
   console.log('💾 Atualizando evento no Supabase:', {
     eventId,
     title,
@@ -1285,7 +1332,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     maxComp,
     allowGifts,
     allowKids,
-    maxKids
+    maxKids,
+    allowSides,
+    side1Name,
+    side2Name
   });
 
   supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', {
@@ -1299,7 +1349,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     max_companions: maxComp,
     allow_kids: allowKids ? 'yes' : 'no',
     max_kids: maxKids,
-    allow_gifts: allowGifts ? 'yes' : 'no'
+    allow_gifts: allowGifts ? 'yes' : 'no',
+    allow_sides: allowSides ? 'yes' : 'no',
+    side1_name: allowSides ? side1Name : null,
+    side2_name: allowSides ? side2Name : null
   }).then(result => {
     console.log('✅ Resposta do Supabase:', result);
     
@@ -1322,8 +1375,12 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       ev.maxKids = maxKids;
       ev.allow_gifts = allowGifts ? 'yes' : 'no';
       ev.allowGifts = allowGifts;
+      ev.allow_sides = allowSides ? 'yes' : 'no';
+      ev.allowSides = allowSides;
+      ev.side1_name = allowSides ? side1Name : null;
+      ev.side2_name = allowSides ? side2Name : null;
       
-      console.log('✅ Store atualizado. Event details:', { title: ev.title, date: ev.date });
+      console.log('✅ Store atualizado. Event details:', { title: ev.title, date: ev.date, allow_sides: ev.allow_sides });
       
       toast('✓ Evento atualizado com sucesso!');
       
@@ -1526,7 +1583,11 @@ function toggleRSVPAllowed() {
   toast(ev.allowRSVP ? 'Confirmação de presença ativada ✓' : 'Confirmação de presença desativada ✗');
 }
 
-function viewAsGuest() { Router.go('guest'); }
+function viewAsGuest() { 
+  // ✅ Guardar que viemos da visualização de organizador
+  Store.viewingAsGuestFromOrganizer = true;
+  Router.go('guest'); 
+}
 
 function downloadGiftsPDF() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
@@ -1830,6 +1891,12 @@ function editEvent() {
   let deadlineValue = ev.confirm_by_date || ev.deadline || ev.date;
   console.log('  Deadline final carregado:', deadlineValue);
   
+  // ✅ CRÍTICO: Remover hora do deadline (apenas data para input type="date")
+  if (deadlineValue && deadlineValue.includes(' ')) {
+    deadlineValue = deadlineValue.split(' ')[0];
+    console.log('  Deadline sem hora:', deadlineValue);
+  }
+  
   // Se não houver deadline válido, não preenchemos (força o user a colocar)
   if (deadlineValue && deadlineValue !== ev.date) {
     document.getElementById('evt-deadline').value = deadlineValue;
@@ -1866,6 +1933,18 @@ function editEvent() {
   } else {
     document.getElementById('sw-kids').classList.remove('active');
     document.getElementById('kids-extra').classList.add('hidden');
+  }
+  
+  // ✅ CRÍTICO: allowSides - Carregar do Supabase
+  const hasSides = String(ev.allow_sides).toLowerCase() === 'yes';
+  console.log('✅ Carregando allowSides:', { raw: ev.allow_sides, string: String(ev.allow_sides), parsed: hasSides });
+  
+  if (hasSides) {
+    document.getElementById('sw-sides').classList.add('active');
+    document.getElementById('sides-extra').classList.remove('hidden');
+  } else {
+    document.getElementById('sw-sides').classList.remove('active');
+    document.getElementById('sides-extra').classList.add('hidden');
   }
   
   // ✅ CRÍTICO: max_companions e max_kids vêm DIRETO do Supabase como NUMBERS
@@ -1984,6 +2063,16 @@ function editEvent() {
 
 // ===================== GUEST VIEW =====================
 function renderGuestView() {
+  // ✅ MOSTRAR/ESCONDER botão de voltar baseado se veio do painel
+  const backBtn = document.getElementById('guest-back-btn');
+  if (backBtn) {
+    if (Store.viewingAsGuestFromOrganizer) {
+      backBtn.classList.remove('hidden');
+    } else {
+      backBtn.classList.add('hidden');
+    }
+  }
+  
   // ✅ CRÍTICO: Tentar PRIMEIRO usar guestEventData (carregado da busca/URL)
   // DEPOIS tentar Store.events (se estiver logado)
   let eventData = Store.guestEventData;
@@ -2009,7 +2098,8 @@ function renderGuestView() {
     allowCompanions: eventData.allowCompanions,
     maxCompanions: eventData.maxCompanions,
     allowKids: eventData.allowKids,
-    maxKids: eventData.maxKids
+    maxKids: eventData.maxKids,
+    allowSides: eventData.allowSides
   });
 
   // Verificar se RSVP está desativado
@@ -2150,6 +2240,16 @@ function startCountdown(deadline) {
   }
   update();
   Store.countdownInterval = setInterval(update, 1000);
+}
+
+// ✅ NOVA FUNÇÃO: Voltar do guest view para o painel do organizador
+function backFromGuestView() {
+  // Limpar flag
+  Store.viewingAsGuestFromOrganizer = false;
+  Store.guestEventData = null;
+  
+  // Voltar para detalhes do evento
+  Router.go('event-details');
 }
 
 let companionCount = 0;
@@ -3108,11 +3208,10 @@ async function searchEvent() {
   console.log('🔍 Buscando evento com query:', query);
   
   try {
-    // ✅ PASSO 1: Carregar eventos do Supabase SEM select (para evitar erro 400)
-    console.log('📥 Buscando evento DIRETO do Supabase (sem select)...');
+    // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
+    console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    // ✅ CRÍTICO: Buscar SEM parâmetro select complexo (Supabase pode estar bloqueando)
-    const allEvents = await supabaseRequest(`events`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log('📋 Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -3126,52 +3225,45 @@ async function searchEvent() {
     // ✅ PASSO 2: Debug - mostrar TODOS os codes
     console.log('🔎 Debug - Primeiros 5 eventos:');
     allEvents.slice(0, 5).forEach((e, i) => {
-      const cleanCode = cleanId(e.event_code);
-      const cleanId_val = cleanId(e.id);
-      console.log(`  ${i}. ID: "${e.id}" (limpo: "${cleanId_val}") | event_code: "${e.event_code}" (limpo: "${cleanCode}") | title: ${e.title}`);
+      console.log(`  ${i}. ID: "${e.id}" | event_code: "${e.event_code}" | title: ${e.title}`);
     });
     
-    // ✅ PASSO 3: Procurar com múltiplas estratégias - AGORA LIMPANDO O PREFIXO
-    const queryUpper = query.toUpperCase();
-    const queryLower = query.toLowerCase();
-    
-    console.log('🔎 Procurando com query:', { original: query, upper: queryUpper, lower: queryLower });
-    
+    // ✅ PASSO 3: Procurar com múltiplas estratégias
     let found = null;
     
-    // ✅ ESTRATÉGIA 1: Procurar por event_code LIMPO (removendo prefixo "id. ")
-    console.log('🔍 Estratégia 1: Procurando por event_code LIMPO...');
+    // Estratégia 1: Procurar por event_code EXATO
+    console.log('🔍 Estratégia 1: Procurando por event_code EXATO...');
     found = allEvents.find(e => {
       if (!e.event_code) return false;
-      const cleanCode = cleanId(e.event_code).toUpperCase();
-      console.log(`  Comparando: "${cleanCode}" === "${query}"`);
-      const match = cleanCode === query;
+      const code = String(e.event_code).trim().toUpperCase();
+      console.log(`  Comparando: "${code}" === "${query}"`);
+      const match = code === query;
       if (match) console.log('  ✅ MATCH ENCONTRADO!');
       return match;
     });
     
     if (found) {
-      console.log('✅ Sucesso na estratégia 1 (event_code limpo):', found.title);
+      console.log('✅ Sucesso na estratégia 1 (event_code):', found.title);
     } else {
-      // ✅ ESTRATÉGIA 2: Procurar por ID LIMPO (removendo prefixo "id. ")
-      console.log('🔍 Estratégia 2: Procurando por ID LIMPO...');
+      // Estratégia 2: Procurar por ID EXATO
+      console.log('🔍 Estratégia 2: Procurando por ID EXATO...');
       found = allEvents.find(e => {
         if (!e.id) return false;
-        const cleanId_val = cleanId(e.id).toUpperCase();
-        console.log(`  Comparando: "${cleanId_val}" === "${query}"`);
-        const match = cleanId_val === query;
+        const id = String(e.id).trim().toUpperCase();
+        console.log(`  Comparando: "${id}" === "${query}"`);
+        const match = id === query;
         if (match) console.log('  ✅ MATCH ENCONTRADO!');
         return match;
       });
       
       if (found) {
-        console.log('✅ Sucesso na estratégia 2 (ID limpo):', found.title);
+        console.log('✅ Sucesso na estratégia 2 (ID):', found.title);
       } else {
         // Estratégia 3: Procurar por TÍTULO (parcial)
         console.log('🔍 Estratégia 3: Procurando por TÍTULO...');
         found = allEvents.find(e => {
           if (!e.title) return false;
-          const match = e.title.toUpperCase().includes(queryUpper);
+          const match = e.title.toUpperCase().includes(query);
           if (match) console.log('  ✅ MATCH ENCONTRADO:', e.title);
           return match;
         });
@@ -3184,8 +3276,6 @@ async function searchEvent() {
     
     if (!found) {
       console.log('❌ Evento não encontrado em nenhuma estratégia');
-      console.log('❌ Query procurada:', query);
-      console.log('❌ Eventos disponíveis:', allEvents.length);
       Router.go('not-found');
       return;
     }
@@ -3229,6 +3319,8 @@ async function searchEvent() {
       allow_kids: found.allow_kids,
       maxKids: maxKds,
       max_kids: maxKds,
+      allowSides: String(found.allow_sides).toLowerCase() === 'yes',
+      allow_sides: found.allow_sides,
       confirmations: (found.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
@@ -5102,20 +5194,16 @@ function parseSupabaseJSON(data) {
 // ✅ FUNÇÃO AUXILIAR: Limpar IDs com prefixo "id. "
 function cleanId(id) {
   if (!id) return id;
-  const str = String(id).trim();
+  let str = String(id).trim();
   
-  // ✅ CRÍTICO: Remover "id. " (nota: espaço LITERAL após o ponto)
-  // Padrão exato: começa com "id." seguido de espaço
+  // ✅ CRÍTICO: Remover prefixo "id. " se existir
   if (str.startsWith('id. ')) {
-    return str.substring(4).trim(); // Remove "id. " (4 caracteres)
+    console.log('🧹 Limpando ID com prefixo "id. ":', str);
+    str = str.replace(/^id\.\s*/, '').trim();
+    console.log('   Resultado:', str);
   }
   
-  // Fallback: se começar apenas com "id." (sem espaço)
-  if (str.startsWith('id.')) {
-    return str.substring(3).trim();
-  }
-  
-  return str;
+  return str.toUpperCase();
 }
 
 // ✅ FUNÇÃO AUXILIAR: Gerar código legível válido
@@ -5174,23 +5262,29 @@ async function checkURLForEvent() {
     let eventsData = null;
     
     if (allEvents && Array.isArray(allEvents)) {
-      // ✅ PASSO 2A: Procurar por event_code VÁLIDO (sem prefixo "id. ")
-      eventsData = allEvents.filter(e => {
-        const eventCodeClean = cleanId(e.event_code);
-        return isValidEventCode(eventCodeClean) && eventCodeClean === eventCode;
-      });
+      // ✅ PASSO 2A: Limpar TODOS os IDs e procurar por event_code VÁLIDO
+      allEvents = allEvents.map(e => ({
+        ...e,
+        id: cleanId(e.id),  // ✅ CRÍTICO: Limpar ID ao carregar
+        event_code: cleanId(e.event_code)  // ✅ Também limpar event_code
+      }));
       
-      console.log('🔍 Encontrados por event_code válido:', eventsData?.length || 0);
+      console.log('✅ IDs limpos. Primeiros 3 eventos:', allEvents.slice(0, 3).map(e => ({
+        id: e.id,
+        event_code: e.event_code,
+        title: e.title
+      })));
+      
+      // Procurar por event_code EXATO
+      eventsData = allEvents.filter(e => e.event_code === eventCode);
+      
+      console.log('🔍 Encontrados por event_code exato:', eventsData?.length || 0);
       
       // ✅ PASSO 2B: Se não encontrou, procurar por ID (último recurso)
       if (!eventsData || eventsData.length === 0) {
-        console.log('⚠️ Não encontrado por event_code válido. Tentando por ID...');
-        const idClean = cleanId(eventCode);
+        console.log('⚠️ Não encontrado por event_code. Tentando por ID...');
         
-        eventsData = allEvents.filter(e => {
-          const eIdClean = cleanId(e.id);
-          return eIdClean === eventCode || eIdClean === idClean;
-        });
+        eventsData = allEvents.filter(e => e.id === eventCode);
         
         console.log('🔍 Encontrados por ID:', eventsData?.length || 0);
       }
@@ -5217,27 +5311,13 @@ async function checkURLForEvent() {
         deadlineValue = eventData.date;
       }
       
-      // ✅ CRÍTICO: Validar e corrigir event_code se inválido
-      let finalEventCode = cleanId(eventData.event_code) || cleanId(eventData.id);
+      // ✅ CRÍTICO: Usar event_code já limpo
+      let finalEventCode = eventData.event_code || eventData.id;
       
-      if (!isValidEventCode(finalEventCode)) {
-        console.log('⚠️ event_code INVÁLIDO detectado:', eventData.event_code);
-        console.log('  Gerando novo código válido...');
-        
-        finalEventCode = generateValidEventCode();
-        
-        console.log('  ✅ Novo código gerado:', finalEventCode);
-        
-        // ✅ Atualizar no Supabase (assincronamente, não bloqueia)
-        supabaseRequest(`events?id=eq.${cleanId(eventData.id)}`, 'PATCH', { event_code: finalEventCode }).then(result => {
-          console.log('✅ event_code actualizado no Supabase:', finalEventCode);
-        }).catch(error => {
-          console.error('❌ Erro ao atualizar event_code:', error);
-        });
-      }
+      console.log('✅ Event code final:', finalEventCode);
       
       const normalizedEvent = {
-        id: cleanId(eventData.id),
+        id: eventData.id,
         title: eventData.title,
         date: eventData.date,
         time: eventData.time,
@@ -5256,6 +5336,8 @@ async function checkURLForEvent() {
         allow_kids: eventData.allow_kids,
         maxKids: maxKds,
         max_kids: maxKds,
+        allowSides: String(eventData.allow_sides).toLowerCase() === 'yes',
+        allow_sides: eventData.allow_sides,
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
@@ -5273,10 +5355,11 @@ async function checkURLForEvent() {
         }))
       };
       
-      Store.currentEventId = cleanId(eventData.id);
+      Store.currentEventId = eventData.id;
       Store.guestEventData = normalizedEvent;
       console.log('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
       console.log('  Código final do evento:', finalEventCode);
+      console.log('  Allow Sides:', normalizedEvent.allowSides);
       return 'guest';
     }
     
@@ -6150,5 +6233,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc6207a63513eac',t:'MTc3MzUyMTE3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc9d4ad973a3eac',t:'MTc3MzU2MDAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
