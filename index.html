@@ -6,6 +6,7 @@
   <title>RSVP Event Manager</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
@@ -1605,80 +1606,109 @@ function downloadGiftsPDF() {
     categories[cat].push(g);
   });
 
-  let pdfContent = '';
+  // Gerar HTML do PDF
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Lista de Presentes</title>
+      <style>
+        * { font-family: 'Quicksand', Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background: white; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #007f9f; padding-bottom: 20px; }
+        .header h1 { margin: 0 0 5px 0; color: #007f9f; font-size: 28px; }
+        .header p { margin: 5px 0; color: #666; font-size: 14px; }
+        .summary { background: #f0f9fb; border-left: 4px solid #007f9f; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
+        .summary-item { display: inline-block; margin-right: 30px; }
+        .summary-item strong { color: #007f9f; }
+        .category { margin-bottom: 30px; page-break-inside: avoid; }
+        .category-header { background: #007f9f; color: white; padding: 10px 15px; border-radius: 4px 4px 0 0; font-weight: bold; font-size: 16px; }
+        .gift-list { border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; }
+        .gift-item { padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+        .gift-item:last-child { border-bottom: none; }
+        .gift-status { width: 20px; height: 20px; border-radius: 50%; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        .gift-status.reserved { background: #10b981; color: white; }
+        .gift-status.available { background: #e5e7eb; color: #999; }
+        .gift-name { flex: 1; font-weight: 500; }
+        .gift-reserved-by { color: #10b981; font-size: 13px; font-weight: 500; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>📋 Lista de Presentes</h1>
+        <p><strong>${ev.title}</strong></p>
+        <p>${formatDate(ev.date)} às ${ev.time}</p>
+        <p style="font-size: 12px; color: #999;">Relatório gerado em ${new Date().toLocaleDateString('pt-PT')} às ${new Date().toLocaleTimeString('pt-PT')}</p>
+      </div>
 
-  // CABEÇALHO
-  pdfContent += `${'='.repeat(70)}\n`;
-  pdfContent += `LISTA DE PRESENTES - ${ev.title}\n`;
-  pdfContent += `Data do Evento: ${formatDate(ev.date)} às ${ev.time}\n`;
-  pdfContent += `Data do Relatório: ${new Date().toLocaleDateString('pt-PT')}\n`;
-  pdfContent += `${'='.repeat(70)}\n\n`;
+      <div class="summary">
+        <div class="summary-item">
+          <strong>${ev.gifts.length}</strong> Total de Presentes
+        </div>
+        <div class="summary-item">
+          <strong>${ev.gifts.filter(g => g.reserved).length}</strong> Escolhidos
+        </div>
+        <div class="summary-item">
+          <strong>${ev.gifts.filter(g => !g.reserved).length}</strong> Disponíveis
+        </div>
+        <div class="summary-item">
+          <strong>${((ev.gifts.filter(g => g.reserved).length / ev.gifts.length) * 100).toFixed(0)}%</strong> Percentual
+        </div>
+      </div>
+  `;
 
-  // RESUMO GERAL
-  const totalGifts = ev.gifts.length;
-  const reservedGifts = ev.gifts.filter(g => g.reserved).length;
-  const availableGifts = totalGifts - reservedGifts;
-
-  pdfContent += `RESUMO DE PRESENTES:\n`;
-  pdfContent += `─────────────────────────────────────────────────────────────────────\n`;
-  pdfContent += `Total de Presentes: ${totalGifts}\n`;
-  pdfContent += `Escolhidos: ${reservedGifts}\n`;
-  pdfContent += `Disponíveis: ${availableGifts}\n`;
-  pdfContent += `Percentual Escolhido: ${totalGifts > 0 ? ((reservedGifts / totalGifts) * 100).toFixed(1) : 0}%\n`;
-  pdfContent += `${'─'.repeat(70)}\n\n`;
-
-  // PRESENTES POR CATEGORIA
+  // Adicionar presentes por categoria
   Object.keys(categories).sort().forEach(cat => {
-    pdfContent += `\n${'═'.repeat(70)}\n`;
-    pdfContent += `${cat}\n`;
-    pdfContent += `${'═'.repeat(70)}\n\n`;
+    htmlContent += `
+      <div class="category">
+        <div class="category-header">${cat}</div>
+        <div class="gift-list">
+    `;
 
     categories[cat].forEach(gift => {
-      const status = gift.reserved ? '✓ ESCOLHIDO' : '◯ DISPONÍVEL';
-      const chosenBy = gift.reserved ? ` → ${gift.reservedBy}` : '';
-      pdfContent += `${status}: ${gift.name}${chosenBy}\n`;
+      htmlContent += `
+        <div class="gift-item">
+          <div class="gift-status ${gift.reserved ? 'reserved' : 'available'}">
+            ${gift.reserved ? '✓' : '○'}
+          </div>
+          <div class="gift-name">${gift.name}</div>
+          ${gift.reserved ? `<div class="gift-reserved-by">Escolhido por: ${gift.reservedBy}</div>` : ''}
+        </div>
+      `;
     });
 
-    const catReserved = categories[cat].filter(g => g.reserved).length;
-    const catAvailable = categories[cat].length - catReserved;
-    pdfContent += `\nResumo: ${catReserved} escolhido(s) | ${catAvailable} disponível(is)\n`;
+    htmlContent += `
+        </div>
+      </div>
+    `;
   });
 
-  // LISTA DE CONVIDADOS QUE QUERIAM PRESENTEAR
-  if (ev.confirmations && ev.confirmations.length > 0) {
-    const wantGifts = ev.confirmations.filter(c => c.wantsGift && c.attending);
-    
-    if (wantGifts.length > 0) {
-      pdfContent += `\n${'═'.repeat(70)}\n`;
-      pdfContent += `CONVIDADOS QUE QUERIAM PRESENTEAR\n`;
-      pdfContent += `${'═'.repeat(70)}\n\n`;
+  htmlContent += `
+      <div class="footer">
+        <p>Evento: ${ev.title}</p>
+        <p>© RSVP Event Manager</p>
+      </div>
+    </body>
+    </html>
+  `;
 
-      const noivo = wantGifts.filter(c => c.side === 'noivo');
-      const noiva = wantGifts.filter(c => c.side === 'noiva');
+  // Converter HTML para PDF
+  const element = document.createElement('div');
+  element.innerHTML = htmlContent;
+  
+  const opt = {
+    margin: 10,
+    filename: `${ev.title.replace(/\s+/g, '_')}_presentes_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
 
-      if (noivo.length > 0) {
-        pdfContent += `Convidados do Noivo:\n`;
-        pdfContent += `${noivo.map(c => `• ${c.name}`).join('\n')}\n\n`;
-      }
-
-      if (noiva.length > 0) {
-        pdfContent += `Convidados da Noiva:\n`;
-        pdfContent += `${noiva.map(c => `• ${c.name}`).join('\n')}\n\n`;
-      }
-    }
-  }
-
-  pdfContent += `\n${'═'.repeat(70)}\n`;
-  pdfContent += `Fim do Relatório de Presentes\n`;
-
-  // Criar Blob e descarregar
-  const blob = new Blob([pdfContent], { type: 'text/plain;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = ev.title.replace(/\s+/g, '_') + '_presentes_' + new Date().toISOString().split('T')[0] + '.txt';
-  a.click();
-
-  toast('✓ Lista de presentes baixada!');
+  html2pdf().set(opt).from(element).save();
+  toast('✓ PDF de presentes gerado com sucesso!');
 }
 
 function downloadPDF() {
@@ -1718,148 +1748,212 @@ function downloadPDF() {
   const confirmed = (ev.confirmations || []).filter(c => c.attending);
   const declined = (ev.confirmations || []).filter(c => !c.attending);
   
-  // Agrupar confirmações por lado
-  const confirmedNoivo = confirmed.filter(c => c.side === 'noivo');
+  // Agrupar confirmações por lado - NOIVA PRIMEIRO, DEPOIS NOIVO
   const confirmedNoiva = confirmed.filter(c => c.side === 'noiva');
+  const confirmedNoivo = confirmed.filter(c => c.side === 'noivo');
   
   // Calcular totais
   const totalPeople = confirmed.reduce((sum, c) => sum + 1 + (c.companions || []).length + (c.kids || []).length, 0);
   const totalGiftsWanted = confirmed.filter(c => c.wantsGift).length;
-  
-  // Gerar PDF em formato texto para compatibilidade
-  let pdfContent = '';
-  
-  // CABEÇALHO
-  pdfContent += `${'='.repeat(70)}\n`;
-  pdfContent += `CONFIRMAÇÃO DE PRESENÇA - ${ev.title}\n`;
-  pdfContent += `Data: ${formatDate(ev.date)} às ${ev.time}\n`;
-  pdfContent += `Data do Relatório: ${new Date().toLocaleDateString('pt-PT')}\n`;
-  pdfContent += `${'='.repeat(70)}\n\n`;
-  
-  // RESUMO ESTATÍSTICO
-  pdfContent += `RESUMO ESTATÍSTICO:\n`;
-  pdfContent += `─────────────────────────────────────────────────────────────────────\n`;
-  pdfContent += `Total de Confirmações: ${confirmed.length}\n`;
-  pdfContent += `Não Comparecem: ${declined.length}\n`;
-  pdfContent += `Total de Pessoas: ${totalPeople}\n`;
-  pdfContent += `Lado Noivo: ${confirmedNoivo.length}\n`;
-  pdfContent += `Lado Noiva: ${confirmedNoiva.length}\n`;
-  pdfContent += `Querem Presentear: ${totalGiftsWanted}\n`;
-  pdfContent += `${'─'.repeat(70)}\n\n`;
-  
-  // CONFIRMAÇÕES PRESENÇA
+
+  // Gerar HTML do PDF
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Confirmações de Presença</title>
+      <style>
+        * { font-family: 'Quicksand', Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background: white; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #007f9f; padding-bottom: 20px; }
+        .header h1 { margin: 0 0 5px 0; color: #007f9f; font-size: 28px; }
+        .header p { margin: 5px 0; color: #666; font-size: 14px; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-box { background: #f0f9fb; border-left: 4px solid #007f9f; padding: 15px; border-radius: 4px; }
+        .stat-box strong { display: block; font-size: 20px; color: #007f9f; }
+        .stat-box span { display: block; font-size: 12px; color: #666; margin-top: 5px; }
+        .section { margin-bottom: 30px; }
+        .section-title { background: #007f9f; color: white; padding: 12px 15px; border-radius: 4px 4px 0 0; font-weight: bold; font-size: 16px; }
+        .section-content { border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; }
+        .guest-item { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .guest-item:last-child { border-bottom: none; }
+        .guest-name { font-weight: 600; color: #333; }
+        .guest-new { background: #dcfce7; display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #166534; margin-left: 8px; font-weight: 600; }
+        .guest-details { font-size: 13px; color: #666; margin-top: 4px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>✓ Confirmações de Presença</h1>
+        <p><strong>${ev.title}</strong></p>
+        <p>${formatDate(ev.date)} às ${ev.time}</p>
+        <p style="font-size: 12px; color: #999;">Relatório gerado em ${new Date().toLocaleDateString('pt-PT')} às ${new Date().toLocaleTimeString('pt-PT')}</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-box">
+          <strong>${confirmed.length}</strong>
+          <span>Confirmados</span>
+        </div>
+        <div class="stat-box">
+          <strong>${declined.length}</strong>
+          <span>Não Comparecem</span>
+        </div>
+        <div class="stat-box">
+          <strong>${totalPeople}</strong>
+          <span>Total de Pessoas</span>
+        </div>
+      </div>
+  `;
+
+  // CONFIRMADOS - NOIVA PRIMEIRO, DEPOIS NOIVO
   if (confirmed.length > 0) {
-    pdfContent += `CONFIRMARAM PRESENÇA\n`;
-    pdfContent += `═══════════════════════════════════════════════════════════════════\n\n`;
-    
-    // CONVIDADOS DO NOIVO
-    if (confirmedNoivo.length > 0) {
-      pdfContent += `Convidados do Noivo:\n`;
-      pdfContent += `───────────────────────────────────────────────────────────────────\n`;
-      
-      confirmedNoivo.forEach(conf => {
-        const isNew = isNewConfirmation(conf);
-        const newMarker = isNew ? ' ✓ NOVO' : '';
-        let line = `• ${conf.name}${newMarker}\n`;
-        
-        if (conf.companions && conf.companions.length > 0) {
-          line += `  Acompanhantes: ${conf.companions.join(', ')}\n`;
-        }
-        if (conf.kids && conf.kids.length > 0) {
-          line += `  Crianças: ${conf.kids.join(', ')}\n`;
-        }
-        
-        pdfContent += line;
-      });
-      pdfContent += `\n`;
-    }
-    
-    // CONVIDADOS DA NOIVA
+    htmlContent += `
+      <div class="section">
+        <div class="section-title">🎉 CONFIRMARAM PRESENÇA (${confirmed.length})</div>
+        <div class="section-content">
+    `;
+
+    // Lado da Noiva PRIMEIRO
     if (confirmedNoiva.length > 0) {
-      pdfContent += `Convidados da Noiva:\n`;
-      pdfContent += `───────────────────────────────────────────────────────────────────\n`;
-      
+      htmlContent += `<div style="background: #f9fafb; padding: 12px 15px; font-weight: 600; color: #007f9f; border-bottom: 1px solid #eee;">👰 Convidados da Noiva (${confirmedNoiva.length})</div>`;
       confirmedNoiva.forEach(conf => {
         const isNew = isNewConfirmation(conf);
-        const newMarker = isNew ? ' ✓ NOVO' : '';
-        let line = `• ${conf.name}${newMarker}\n`;
-        
-        if (conf.companions && conf.companions.length > 0) {
-          line += `  Acompanhantes: ${conf.companions.join(', ')}\n`;
-        }
-        if (conf.kids && conf.kids.length > 0) {
-          line += `  Crianças: ${conf.kids.join(', ')}\n`;
-        }
-        
-        pdfContent += line;
+        const guestLine = formatGuestWithCompanions(conf);
+        htmlContent += `
+          <div class="guest-item">
+            <div class="guest-name">
+              ${guestLine}
+              ${isNew ? '<span class="guest-new">✓ NOVO</span>' : ''}
+            </div>
+            ${conf.kids && conf.kids.length > 0 ? `<div class="guest-details">Crianças: ${conf.kids.join(', ')}</div>` : ''}
+          </div>
+        `;
       });
-      pdfContent += `\n`;
     }
+
+    // Lado do Noivo DEPOIS
+    if (confirmedNoivo.length > 0) {
+      htmlContent += `<div style="background: #f9fafb; padding: 12px 15px; font-weight: 600; color: #007f9f; border-bottom: 1px solid #eee;">🤵 Convidados do Noivo (${confirmedNoivo.length})</div>`;
+      confirmedNoivo.forEach(conf => {
+        const isNew = isNewConfirmation(conf);
+        const guestLine = formatGuestWithCompanions(conf);
+        htmlContent += `
+          <div class="guest-item">
+            <div class="guest-name">
+              ${guestLine}
+              ${isNew ? '<span class="guest-new">✓ NOVO</span>' : ''}
+            </div>
+            ${conf.kids && conf.kids.length > 0 ? `<div class="guest-details">Crianças: ${conf.kids.join(', ')}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    htmlContent += `
+        </div>
+      </div>
+    `;
   }
-  
+
   // NÃO COMPARECEM
   if (declined.length > 0) {
-    pdfContent += `\n${'═'.repeat(70)}\n`;
-    pdfContent += `NÃO COMPARECEM\n`;
-    pdfContent += `═══════════════════════════════════════════════════════════════════\n\n`;
+    htmlContent += `
+      <div class="section">
+        <div class="section-title">✗ NÃO COMPARECEM (${declined.length})</div>
+        <div class="section-content">
+    `;
     
     declined.forEach(conf => {
       const isNew = isNewConfirmation(conf);
-      const newMarker = isNew ? ' ✓ NOVO' : '';
-      pdfContent += `• ${conf.name}${newMarker} (${conf.side === 'noivo' ? 'Lado Noivo' : 'Lado Noiva'})\n`;
+      htmlContent += `
+        <div class="guest-item">
+          <div class="guest-name">
+            ${conf.name}
+            ${isNew ? '<span class="guest-new">✓ NOVO</span>' : ''}
+          </div>
+        </div>
+      `;
     });
-    pdfContent += `\n`;
+
+    htmlContent += `
+        </div>
+      </div>
+    `;
   }
-  
+
   // PRESENTES (SE PERMITIDOS)
   if (ev.allowGifts && ev.gifts && ev.gifts.length > 0) {
-    pdfContent += `\n${'═'.repeat(70)}\n`;
-    pdfContent += `PRESENTES\n`;
-    pdfContent += `═══════════════════════════════════════════════════════════════════\n\n`;
-    
-    // Agrupar por categoria
-    const categories = {};
-    ev.gifts.forEach(g => {
-      const cat = g.category || 'Sem categoria';
-      if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(g);
-    });
-    
-    // Mostrar presentes por categoria
-    Object.keys(categories).sort().forEach(cat => {
-      pdfContent += `${cat}:\n`;
-      pdfContent += `───────────────────────────────────────────────────────────────────\n`;
-      
-      categories[cat].forEach(g => {
-        if (g.reserved) {
-          pdfContent += `✓ ${g.name} → Escolhido por: ${g.reservedBy}\n`;
-        } else {
-          pdfContent += `◯ ${g.name} → Disponível\n`;
-        }
-      });
-      pdfContent += `\n`;
-    });
-    
-    // Resumo de presentes
     const reserved = ev.gifts.filter(g => g.reserved).length;
     const available = ev.gifts.length - reserved;
-    pdfContent += `RESUMO DE PRESENTES:\n`;
-    pdfContent += `• Escolhidos: ${reserved}\n`;
-    pdfContent += `• Disponíveis: ${available}\n`;
-    pdfContent += `• Total: ${ev.gifts.length}\n`;
+
+    htmlContent += `
+      <div class="section">
+        <div class="section-title">🎁 PRESENTES (${reserved}/${ev.gifts.length} escolhidos)</div>
+        <div class="section-content">
+          <div style="padding: 12px 15px; background: #f0f9fb; border-bottom: 1px solid #ddd;">
+            <strong style="color: #007f9f;">${reserved} presentes escolhidos</strong> | <strong>${available} disponíveis</strong>
+          </div>
+    `;
+
+    // Agrupar por categoria
+    const giftCategories = {};
+    ev.gifts.forEach(g => {
+      const cat = g.category || 'Sem categoria';
+      if (!giftCategories[cat]) giftCategories[cat] = [];
+      giftCategories[cat].push(g);
+    });
+
+    Object.keys(giftCategories).sort().forEach(cat => {
+      htmlContent += `<div style="background: #fafafa; padding: 10px 15px; font-weight: 600; font-size: 13px; color: #007f9f; border-bottom: 1px solid #eee;">${cat}</div>`;
+      
+      giftCategories[cat].forEach(gift => {
+        htmlContent += `
+          <div class="guest-item" style="padding: 10px 15px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 16px; height: 16px; border-radius: 50%; background: ${gift.reserved ? '#10b981' : '#e5e7eb'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">
+                ${gift.reserved ? '✓' : '○'}
+              </span>
+              <span>${gift.name}</span>
+              ${gift.reserved ? `<span style="color: #10b981; font-size: 12px; font-weight: 600;">→ ${gift.reservedBy}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    });
+
+    htmlContent += `
+        </div>
+      </div>
+    `;
   }
+
+  htmlContent += `
+      <div class="footer">
+        <p>📅 Evento: ${ev.title}</p>
+        <p>© RSVP Event Manager</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Converter HTML para PDF
+  const element = document.createElement('div');
+  element.innerHTML = htmlContent;
   
-  pdfContent += `\n${'═'.repeat(70)}\n`;
-  pdfContent += `Fim do Relatório\n`;
-  
-  // Criar Blob e descarregar
-  const blob = new Blob([pdfContent], { type: 'text/plain;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = ev.title.replace(/\s+/g, '_') + '_confirmacoes_' + new Date().toISOString().split('T')[0] + '.txt';
-  a.click();
-  
-  toast('✓ Relatório baixado! As confirmações novas estão marcadas com ✓ NOVO');
+  const opt = {
+    margin: 10,
+    filename: `${ev.title.replace(/\s+/g, '_')}_confirmacoes_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+  toast('✓ PDF de confirmações gerado com sucesso!');
 }
 
 function manageGifts() { Router.go('gifts'); }
@@ -6479,5 +6573,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcbef0bd7323eac',t:'MTc3MzU4MjA2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcc08ed52e83eac',t:'MTc3MzU4MzEyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
