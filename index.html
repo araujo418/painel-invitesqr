@@ -877,27 +877,32 @@ async function handleLogin(e) {
   // ✅ Login bem-sucedido
   console.log('✅ Login bem-sucedido para:', phone);
   
+  const userRole = user.role || 'user';
   Store.currentUser = {
     id: user.id,
     phone: user.phone,
-    role: user.role || 'user',
+    role: userRole,
     status: user.status,
     eventLimit: user.event_limit
   };
 
-  // ✅ Usar localStorage para persistir entre refreshes
+  // ✅ Usar localStorage para persistir entre refreshes (INCLUINDO ROLE!)
   localStorage.setItem('authToken', user.id);
   localStorage.setItem('userId', user.id);
   localStorage.setItem('userPhone', user.phone);
+  localStorage.setItem('userRole', userRole);
   
   toast('Bem-vindo! Carregando seus dados...');
 
-  // 🎯 Carregar eventos do Supabase
+  // 🎯 Carregar dados do Supabase
   if (user.role === 'admin') {
     console.log('👨‍💼 Admin logado - carregando dados administrativos...');
     
-    // ✅ CAREGAR TODAS AS CONTAS com paginação (primeiras 50)
-    const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit&limit=50&order=created_at.desc`);
+    // ✅ AGUARDAR um pouco para garantir conexão
+    await new Promise(r => setTimeout(r, 300));
+    
+    // ✅ CARREGA 1: TODAS AS CONTAS
+    const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
     
     Store.users = (allAccounts || []).filter(a => a.role !== 'admin').map(u => ({
       id: u.id,
@@ -910,14 +915,13 @@ async function handleLogin(e) {
       createdAt: u.created_at
     }));
     
-    // ✅ OTIMIZAÇÃO: Usar JOIN para trazer eventos + presentes + RSVPs em 1 request (SEM N+1)
-    // Selecionar TODOS campos necessários com limit para evitar sobrecarga
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)&limit=50&order=date.desc`);
+    console.log('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
-    console.log('📥 Dados do admin carregados:', {
-      contas: Store.users?.length || 0,
-      eventos: Store.events?.length || 0
-    });
+    // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)&limit=500&order=date.desc`);
+    
+    console.log('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
+    
     Store.events = (allEvents || []).map(event => {
       const maxComp = event.max_companions !== null && event.max_companions !== undefined ? parseInt(event.max_companions) : 2;
       const maxKds = event.max_kids !== null && event.max_kids !== undefined ? parseInt(event.max_kids) : 2;
@@ -945,6 +949,8 @@ async function handleLogin(e) {
         allow_gifts: event.allow_gifts,
         allowKids: String(event.allow_kids).toLowerCase() === 'yes',
         allow_kids: event.allow_kids,
+        allowSides: String(event.allow_sides).toLowerCase() === 'yes',
+        allow_sides: event.allow_sides,
         cover: event.cover_image,
         cover_image: event.cover_image,
         gifts: (event.gifts || []).map(g => ({
@@ -963,6 +969,12 @@ async function handleLogin(e) {
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
         }))
       };
+    });
+    
+    console.log('📊 Admin dashboard carregado:', {
+      contas: Store.users.length,
+      eventos: Store.events.length,
+      role: userRole
     });
     
     setTimeout(() => Router.go('admin'), 300);
@@ -985,6 +997,7 @@ function handleLogout() {
   localStorage.removeItem('authToken');
   localStorage.removeItem('userId');
   localStorage.removeItem('userPhone');
+  localStorage.removeItem('userRole');
   sessionStorage.removeItem('authToken');
   sessionStorage.removeItem('userId');
   localStorage.removeItem('lastUserPhone');
@@ -6540,120 +6553,118 @@ function confirmAdminDeleteEvent(eventId, confirmModal, parentModal) {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Inicializando aplicação...');
   
-  // ✅ Verificar token NO LOCALSTORAGE (persiste entre refreshes)
+  // ✅ PASSO 1: Verificar token NO LOCALSTORAGE (persiste entre refreshes)
   const token = localStorage.getItem('authToken');
   const userId = localStorage.getItem('userId');
   const userPhone = localStorage.getItem('userPhone');
+  const userRole = localStorage.getItem('userRole') || 'user';
 
-  if (token && userId) {
-    console.log('✅ Sessão anterior encontrada, restaurando...', { userId, userPhone });
-    
-    // ✅ Restaurar informações do utilizador PRIMEIRO
-    Store.currentUser = {
-      id: userId,
-      phone: userPhone || 'user',
-      role: 'user'
-    };
-    
-    console.log('✅ Utilizador restaurado:', Store.currentUser);
-    
-    // ✅ CRÍTICO: RECARREGAR DADOS DO SUPABASE PARA GARANTIR SINCRONIZAÇÃO
-    console.log('📥 Recarregando dados do Supabase...');
-    
-    try {
-      // Buscar dados atualizados do Supabase
-      const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)`);
+  async function loadEventosComDelay() {
+    if (token && userId) {
+      console.log('✅ Sessão anterior encontrada, restaurando...', { userId, userPhone, userRole });
       
-      console.log('📥 Dados recebidos do Supabase:', userEvents?.length || 0, 'eventos');
+      // ✅ PASSO 2: Restaurar informações do utilizador PRIMEIRO (COM ROLE!)
+      Store.currentUser = {
+        id: userId,
+        phone: userPhone || 'user',
+        role: userRole,
+        status: 'active'
+      };
       
-      // ✅ Normalizar nomes dos campos do Supabase para o frontend
-      if (userEvents && Array.isArray(userEvents)) {
-        Store.events = userEvents.map(event => {
-          const maxComp = event.max_companions !== null && event.max_companions !== undefined ? parseInt(event.max_companions) : 2;
-          const maxKds = event.max_kids !== null && event.max_kids !== undefined ? parseInt(event.max_kids) : 2;
-          const deadlineDate = event.confirm_by_date ? event.confirm_by_date.trim() : event.date;
-          
-          console.log('✅ Normalizando evento:', {
-            id: event.id,
-            title: event.title,
-            maxCompanions: maxComp,
-            maxKids: maxKds,
-            deadline: deadlineDate
+      console.log('✅ Utilizador restaurado:', Store.currentUser);
+      
+      // ✅ PASSO 3: CRÍTICO - RECARREGAR DADOS DO SUPABASE COM DELAY PARA GARANTIR
+      console.log('📥 Recarregando eventos do Supabase...');
+      
+      // Dar 500ms para garantir que a conexão está pronta
+      await new Promise(r => setTimeout(r, 500));
+      
+      try {
+        // Buscar dados atualizados do Supabase
+        const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)`);
+        
+        console.log('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
+        
+        // ✅ Normalizar dados do Supabase
+        if (userEvents && Array.isArray(userEvents)) {
+          Store.events = userEvents.map(event => {
+            const maxComp = event.max_companions !== null && event.max_companions !== undefined ? parseInt(event.max_companions) : 2;
+            const maxKds = event.max_kids !== null && event.max_kids !== undefined ? parseInt(event.max_kids) : 2;
+            let deadlineDate = event.confirm_by_date;
+            if (deadlineDate) deadlineDate = deadlineDate.trim();
+            if (!deadlineDate || deadlineDate === '') deadlineDate = event.date;
+            
+            return {
+              id: event.id,
+              user_id: event.user_id,
+              userId: event.user_id,
+              title: event.title,
+              date: event.date,
+              time: event.time,
+              eventCode: event.event_code || event.id,
+              deadline: deadlineDate,
+              confirm_by_date: deadlineDate,
+              maxCompanions: maxComp,
+              max_companions: maxComp,
+              maxKids: maxKds,
+              max_kids: maxKds,
+              allowCompanions: String(event.allow_companions).toLowerCase() === 'yes',
+              allow_companions: event.allow_companions,
+              allowGifts: String(event.allow_gifts).toLowerCase() === 'yes',
+              allow_gifts: event.allow_gifts,
+              allowKids: String(event.allow_kids).toLowerCase() === 'yes',
+              allow_kids: event.allow_kids,
+              allowSides: String(event.allow_sides).toLowerCase() === 'yes',
+              allow_sides: event.allow_sides,
+              cover: event.cover_image,
+              cover_image: event.cover_image,
+              gifts: (event.gifts || []).map(g => ({
+                id: g.id,
+                name: g.name,
+                category: g.category || 'Sem categoria',
+                reserved: g.reserved || false,
+                reservedBy: g.reserved_by || null
+              })),
+              confirmations: (event.rsvps || []).map(rsvp => ({
+                name: rsvp.guest_name,
+                attending: rsvp.attending === true || rsvp.attending === 'yes',
+                side: rsvp.side || 'noivo',
+                companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
+                kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
+                wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }))
+            };
           });
           
-          return {
-            id: event.id,
-            user_id: event.user_id,
-            userId: event.user_id,
-            title: event.title,
-            date: event.date,
-            time: event.time,
-            eventCode: event.event_code || event.id,
-            
-            deadline: deadlineDate,
-            confirm_by_date: deadlineDate,
-            
-            maxCompanions: maxComp,
-            max_companions: maxComp,
-            
-            maxKids: maxKds,
-            max_kids: maxKds,
-            
-            allowCompanions: String(event.allow_companions).toLowerCase() === 'yes',
-            allow_companions: event.allow_companions,
-            
-            allowGifts: String(event.allow_gifts).toLowerCase() === 'yes',
-            allow_gifts: event.allow_gifts,
-            
-            allowKids: String(event.allow_kids).toLowerCase() === 'yes',
-            allow_kids: event.allow_kids,
-            
-            cover: event.cover_image,
-            cover_image: event.cover_image,
-            
-            // ✅ Presentes carregados do JOIN
-            gifts: (event.gifts || []).map(g => ({
-              id: g.id,
-              name: g.name,
-              category: g.category || 'Sem categoria',
-              reserved: g.reserved || false,
-              reservedBy: g.reserved_by || null
-            })),
-            
-            // ✅ Confirmações carregadas do JOIN
-            confirmations: (event.rsvps || []).map(rsvp => ({
-              name: rsvp.guest_name,
-              attending: rsvp.attending === true || rsvp.attending === 'yes',
-              side: rsvp.side || 'noivo',
-              companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
-              kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
-              wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }))
-          };
-        });
-        
-        console.log('✅ Store.events sincronizado:', Store.events.length, 'eventos carregados');
-      } else {
-        console.log('⚠️ Nenhum evento retornado do Supabase');
+          console.log('✅ Store.events sincronizado:', Store.events.length, 'eventos carregados');
+        } else {
+          console.log('⚠️ Nenhum evento retornado');
+          Store.events = [];
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar eventos:', error);
         Store.events = [];
       }
-    } catch (error) {
-      console.error('❌ Erro ao carregar eventos do Supabase:', error);
-      Store.events = [];
+      
+      return true; // Indicar que dados foram carregados
     }
+    return false;
   }
 
-  // Verificar se tem evento na URL e carregar página
+  // ✅ PASSO 4: Carregamos eventos se tem sessão, DEPOIS verificamos URL
+  const sessaoCarregada = await loadEventosComDelay();
+
+  // ✅ PASSO 5: Verificar se tem evento na URL
   const eventFromURL = await checkURLForEvent();
   
   if (eventFromURL) {
-    console.log('📍 Evento encontrado na URL, navegando para:', eventFromURL);
+    console.log('📍 Evento encontrado na URL');
     Router.go(eventFromURL);
-  } else if (token && userId) {
-    // ✅ Se tem token mas não tem evento na URL, ir para dashboard
-    console.log('✅ Sessão válida, navegando para dashboard');
+  } else if (token && userId && sessaoCarregada) {
+    // ✅ Sessão válida e eventos carregados - ir para dashboard
+    console.log('✅ Sessão válida com', Store.events.length, 'evento(s)');
     Router.go('dashboard');
   } else {
     console.log('🏠 Navegando para home');
@@ -6665,5 +6676,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcc2b9f21673eac',t:'MTc3MzU4NDU0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcc3b2093053eac',t:'MTc3MzU4NTE4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
