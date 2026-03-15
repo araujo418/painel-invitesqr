@@ -197,7 +197,7 @@
          <span class="text-sm font-semibold text-gray-700">Permitir escolher lado</span>
          <div id="sw-sides" class="switch active" onclick="toggleSwitch(this, 'sides-extra')"></div>
         </div>
-        <div id="sides-extra" class="pl-4">
+        <div id="sides-extra" class="hidden pl-4">
          <label class="text-xs text-gray-500 mb-2 block">Personalizar nomes dos lados</label>
          <div class="flex gap-2 mb-2">
           <input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Noivo" value="Noivo"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Noiva" value="Noiva">
@@ -415,9 +415,9 @@ async function fetchEventForGuest(eventId) {
     console.log('👤 fetchEventForGuest iniciado para:', eventId);
     
     // ✅ OTIMIZAÇÃO: Usar JOIN para trazer evento + RSVPs + presentes em 1 request
-    // Selecionar TODOS os campos necessários incluindo confirm_by_date, max_companions, max_kids, allow_sides
+    // Selecionar TODOS os campos necessários incluindo confirm_by_date, max_companions, max_kids
     // ✅ CRÍTICO: Procurar por EVENT_CODE (não ID!) - é isso que vem na URL
-    const eventData = await supabaseRequest(`events?event_code=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
+    const eventData = await supabaseRequest(`events?event_code=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
     if (!eventData || eventData.length === 0) {
       console.error('❌ Evento não encontrado no Supabase');
       return null;
@@ -481,8 +481,6 @@ async function fetchEventForGuest(eventId) {
       allow_kids: event.allow_kids,
       maxKids: maxKds,
       max_kids: maxKds,
-      allowSides: String(event.allow_sides).toLowerCase() === 'yes',
-      allow_sides: event.allow_sides,
       confirmations: (event.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
@@ -1099,17 +1097,17 @@ function handleCreateEvent(e) {
       toast('✓ Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText);
     }).catch(error => {
       console.error('❌ ERRO upload imagem:', error);
       toast('Erro ao fazer upload da imagem. Criando evento sem capa...');
       submitBtn.textContent = 'Criando evento...';
       // Criar evento sem capa se upload falhar
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText);
     });
   } else {
     // Criar evento sem capa
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText);
   }
 }
 
@@ -1178,7 +1176,7 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
   }
 }
 
-function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText) {
+function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText) {
   console.log('💾 Salvando evento com capa:', coverImageURL);
   
   // ✅ Garantir que deadline tem valor válido
@@ -1199,8 +1197,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     max_kids: maxKids,
     allow_gifts: allowGifts ? 'yes' : 'no',
     allow_sides: allowSides ? 'yes' : 'no',
-    side1_name: allowSides ? side1Name : null,
-    side2_name: allowSides ? side2Name : null
+    side1_name: side1Name,
+    side2_name: side2Name
   };
   
   console.log('📤 Enviando ao Supabase:', eventData);
@@ -1233,8 +1231,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         allowGifts: allowGifts,
         allow_sides: allowSides ? 'yes' : 'no',
         allowSides: allowSides,
-        side1_name: allowSides ? side1Name : null,
-        side2_name: allowSides ? side2Name : null,
+        side1_name: side1Name,
+        side2_name: side2Name,
         confirmations: [],
         gifts: []
       };
@@ -1320,24 +1318,7 @@ async function deleteImageFromSupabase(fileName) {
   }
 }
 
-function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText, ev) {
-  console.log('💾 Atualizando evento no Supabase:', {
-    eventId,
-    title,
-    date,
-    time,
-    finalDeadline,
-    coverImageURL,
-    allowComp,
-    maxComp,
-    allowGifts,
-    allowKids,
-    maxKids,
-    allowSides,
-    side1Name,
-    side2Name
-  });
-
+function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev) {
   supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', {
     title: title,
     date: date,
@@ -1349,14 +1330,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     max_companions: maxComp,
     allow_kids: allowKids ? 'yes' : 'no',
     max_kids: maxKids,
-    allow_gifts: allowGifts ? 'yes' : 'no',
-    allow_sides: allowSides ? 'yes' : 'no',
-    side1_name: allowSides ? side1Name : null,
-    side2_name: allowSides ? side2Name : null
+    allow_gifts: allowGifts ? 'yes' : 'no'
   }).then(result => {
-    console.log('✅ Resposta do Supabase:', result);
-    
-    if (result) {
+    if (result && (result.length > 0 || result[0]?.success)) {
       // ✅ Atualizar Store também
       ev.title = title;
       ev.date = date;
@@ -1375,12 +1351,6 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       ev.maxKids = maxKids;
       ev.allow_gifts = allowGifts ? 'yes' : 'no';
       ev.allowGifts = allowGifts;
-      ev.allow_sides = allowSides ? 'yes' : 'no';
-      ev.allowSides = allowSides;
-      ev.side1_name = allowSides ? side1Name : null;
-      ev.side2_name = allowSides ? side2Name : null;
-      
-      console.log('✅ Store atualizado. Event details:', { title: ev.title, date: ev.date, allow_sides: ev.allow_sides });
       
       toast('✓ Evento atualizado com sucesso!');
       
@@ -1404,27 +1374,16 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       const btn = form.querySelector('button[type="submit"]');
       btn.textContent = 'Criar Evento';
       
-      // 🔒 Re-habilitar botão ANTES de navegar
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-        submitBtn.textContent = originalText;
-      }
-      
-      // ✅ CRÍTICO: VOLTA PARA DETALHES (NÃO para dashboard)
-      console.log('🔄 Navegando para event-details com eventId:', eventId);
-      Store.currentEventId = eventId;
       Router.go('event-details');
     } else {
-      console.error('❌ Resposta vazia do Supabase');
       toast('❌ Erro ao atualizar evento. Tente novamente.');
-      
-      // 🔒 Re-habilitar botão
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-        submitBtn.textContent = originalText;
-      }
+    }
+    
+    // 🔒 Re-habilitar botão
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.textContent = originalText;
     }
   }).catch(error => {
     console.error('❌ Erro ao atualizar evento:', error);
@@ -1583,11 +1542,7 @@ function toggleRSVPAllowed() {
   toast(ev.allowRSVP ? 'Confirmação de presença ativada ✓' : 'Confirmação de presença desativada ✗');
 }
 
-function viewAsGuest() { 
-  // ✅ Guardar que viemos da visualização de organizador
-  Store.viewingAsGuestFromOrganizer = true;
-  Router.go('guest'); 
-}
+function viewAsGuest() { Router.go('guest'); }
 
 function downloadGiftsPDF() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
@@ -1891,12 +1846,6 @@ function editEvent() {
   let deadlineValue = ev.confirm_by_date || ev.deadline || ev.date;
   console.log('  Deadline final carregado:', deadlineValue);
   
-  // ✅ CRÍTICO: Remover hora do deadline (apenas data para input type="date")
-  if (deadlineValue && deadlineValue.includes(' ')) {
-    deadlineValue = deadlineValue.split(' ')[0];
-    console.log('  Deadline sem hora:', deadlineValue);
-  }
-  
   // Se não houver deadline válido, não preenchemos (força o user a colocar)
   if (deadlineValue && deadlineValue !== ev.date) {
     document.getElementById('evt-deadline').value = deadlineValue;
@@ -1933,18 +1882,6 @@ function editEvent() {
   } else {
     document.getElementById('sw-kids').classList.remove('active');
     document.getElementById('kids-extra').classList.add('hidden');
-  }
-  
-  // ✅ CRÍTICO: allowSides - Carregar do Supabase
-  const hasSides = String(ev.allow_sides).toLowerCase() === 'yes';
-  console.log('✅ Carregando allowSides:', { raw: ev.allow_sides, string: String(ev.allow_sides), parsed: hasSides });
-  
-  if (hasSides) {
-    document.getElementById('sw-sides').classList.add('active');
-    document.getElementById('sides-extra').classList.remove('hidden');
-  } else {
-    document.getElementById('sw-sides').classList.remove('active');
-    document.getElementById('sides-extra').classList.add('hidden');
   }
   
   // ✅ CRÍTICO: max_companions e max_kids vêm DIRETO do Supabase como NUMBERS
@@ -1988,71 +1925,7 @@ function editEvent() {
   
   // Mudar o form para modo de edição
   const form = document.getElementById('screen-create-event').querySelector('form');
-  form.onsubmit = (e) => {
-    e.preventDefault();
-    
-    // 🔒 Prevenir submissão dupla
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    if (submitBtn.disabled) {
-      console.log('⚠️ Submissão duplicada bloqueada');
-      return;
-    }
-    
-    submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.6';
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Guardando...';
-    
-    const title = document.getElementById('evt-title').value.trim();
-    const date = document.getElementById('evt-date').value;
-    const time = document.getElementById('evt-time').value;
-    let deadline = document.getElementById('evt-deadline').value;
-    const deadlineTime = document.getElementById('evt-deadline-time').value;
-    
-    // ✅ CRÍTICO: Se deadline estiver vazio, usar a data do evento
-    if (!deadline || deadline.trim() === '') {
-      deadline = date;
-      console.log('⚠️ Deadline vazio, usando data do evento:', deadline);
-    }
-    
-    // ✅ CRÍTICO: Combinar data + hora do deadline
-    let deadlineWithTime = deadline;
-    if (deadline && deadlineTime) {
-      deadlineWithTime = `${deadline} ${deadlineTime}`;
-    }
-    
-    const allowComp = document.getElementById('sw-companions').classList.contains('active');
-    const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
-    const allowKids = document.getElementById('sw-kids').classList.contains('active');
-    const maxComp = parseInt(document.getElementById('evt-max-comp').value) || 2;
-    const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
-
-    const coverImg = document.getElementById('cover-img');
-    const hasCover = !coverImg.classList.contains('hidden');
-    
-    toast('🖼️ Preparando alterações...');
-    
-    if (hasCover && coverImg.src && coverImg.src.includes('data:')) {
-      // Nova imagem em base64 - fazer upload
-      submitBtn.textContent = '📤 Enviando imagem...';
-      
-      uploadCoverImageToSupabase(coverImg.src, ev.id).then(coverImageURL => {
-        console.log('✅ URL da imagem recebida:', coverImageURL);
-        toast('✓ Imagem recebida, guardando alterações...');
-        submitBtn.textContent = 'Guardando...';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
-      }).catch(error => {
-        console.error('❌ ERRO upload imagem:', error);
-        toast('Erro ao fazer upload da imagem. Guardando sem capa...');
-        submitBtn.textContent = 'Guardando...';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
-      });
-    } else {
-      // Usar imagem existente ou nenhuma
-      const coverImageURL = coverImg.src && coverImg.src.startsWith('http') ? coverImg.src : ev.cover_image;
-      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, submitBtn, originalText, ev);
-    }
-  };
+  form.onsubmit = (e) => handleEditEvent(e, ev.id);
   
   // Mudar texto do botão
   const btn = form.querySelector('button[type="submit"]');
@@ -2063,16 +1936,6 @@ function editEvent() {
 
 // ===================== GUEST VIEW =====================
 function renderGuestView() {
-  // ✅ MOSTRAR/ESCONDER botão de voltar baseado se veio do painel
-  const backBtn = document.getElementById('guest-back-btn');
-  if (backBtn) {
-    if (Store.viewingAsGuestFromOrganizer) {
-      backBtn.classList.remove('hidden');
-    } else {
-      backBtn.classList.add('hidden');
-    }
-  }
-  
   // ✅ CRÍTICO: Tentar PRIMEIRO usar guestEventData (carregado da busca/URL)
   // DEPOIS tentar Store.events (se estiver logado)
   let eventData = Store.guestEventData;
@@ -2098,8 +1961,7 @@ function renderGuestView() {
     allowCompanions: eventData.allowCompanions,
     maxCompanions: eventData.maxCompanions,
     allowKids: eventData.allowKids,
-    maxKids: eventData.maxKids,
-    allowSides: eventData.allowSides
+    maxKids: eventData.maxKids
   });
 
   // Verificar se RSVP está desativado
@@ -2240,16 +2102,6 @@ function startCountdown(deadline) {
   }
   update();
   Store.countdownInterval = setInterval(update, 1000);
-}
-
-// ✅ NOVA FUNÇÃO: Voltar do guest view para o painel do organizador
-function backFromGuestView() {
-  // Limpar flag
-  Store.viewingAsGuestFromOrganizer = false;
-  Store.guestEventData = null;
-  
-  // Voltar para detalhes do evento
-  Router.go('event-details');
 }
 
 let companionCount = 0;
@@ -3208,10 +3060,11 @@ async function searchEvent() {
   console.log('🔍 Buscando evento com query:', query);
   
   try {
-    // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
-    console.log('📥 Buscando evento DIRETO do Supabase...');
+    // ✅ PASSO 1: Carregar eventos do Supabase SEM select (para evitar erro 400)
+    console.log('📥 Buscando evento DIRETO do Supabase (sem select)...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
+    // ✅ CRÍTICO: Buscar SEM parâmetro select complexo (Supabase pode estar bloqueando)
+    const allEvents = await supabaseRequest(`events`);
     
     console.log('📋 Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -3225,45 +3078,52 @@ async function searchEvent() {
     // ✅ PASSO 2: Debug - mostrar TODOS os codes
     console.log('🔎 Debug - Primeiros 5 eventos:');
     allEvents.slice(0, 5).forEach((e, i) => {
-      console.log(`  ${i}. ID: "${e.id}" | event_code: "${e.event_code}" | title: ${e.title}`);
+      const cleanCode = cleanId(e.event_code);
+      const cleanId_val = cleanId(e.id);
+      console.log(`  ${i}. ID: "${e.id}" (limpo: "${cleanId_val}") | event_code: "${e.event_code}" (limpo: "${cleanCode}") | title: ${e.title}`);
     });
     
-    // ✅ PASSO 3: Procurar com múltiplas estratégias
+    // ✅ PASSO 3: Procurar com múltiplas estratégias - AGORA LIMPANDO O PREFIXO
+    const queryUpper = query.toUpperCase();
+    const queryLower = query.toLowerCase();
+    
+    console.log('🔎 Procurando com query:', { original: query, upper: queryUpper, lower: queryLower });
+    
     let found = null;
     
-    // Estratégia 1: Procurar por event_code EXATO
-    console.log('🔍 Estratégia 1: Procurando por event_code EXATO...');
+    // ✅ ESTRATÉGIA 1: Procurar por event_code LIMPO (removendo prefixo "id. ")
+    console.log('🔍 Estratégia 1: Procurando por event_code LIMPO...');
     found = allEvents.find(e => {
       if (!e.event_code) return false;
-      const code = String(e.event_code).trim().toUpperCase();
-      console.log(`  Comparando: "${code}" === "${query}"`);
-      const match = code === query;
+      const cleanCode = cleanId(e.event_code).toUpperCase();
+      console.log(`  Comparando: "${cleanCode}" === "${query}"`);
+      const match = cleanCode === query;
       if (match) console.log('  ✅ MATCH ENCONTRADO!');
       return match;
     });
     
     if (found) {
-      console.log('✅ Sucesso na estratégia 1 (event_code):', found.title);
+      console.log('✅ Sucesso na estratégia 1 (event_code limpo):', found.title);
     } else {
-      // Estratégia 2: Procurar por ID EXATO
-      console.log('🔍 Estratégia 2: Procurando por ID EXATO...');
+      // ✅ ESTRATÉGIA 2: Procurar por ID LIMPO (removendo prefixo "id. ")
+      console.log('🔍 Estratégia 2: Procurando por ID LIMPO...');
       found = allEvents.find(e => {
         if (!e.id) return false;
-        const id = String(e.id).trim().toUpperCase();
-        console.log(`  Comparando: "${id}" === "${query}"`);
-        const match = id === query;
+        const cleanId_val = cleanId(e.id).toUpperCase();
+        console.log(`  Comparando: "${cleanId_val}" === "${query}"`);
+        const match = cleanId_val === query;
         if (match) console.log('  ✅ MATCH ENCONTRADO!');
         return match;
       });
       
       if (found) {
-        console.log('✅ Sucesso na estratégia 2 (ID):', found.title);
+        console.log('✅ Sucesso na estratégia 2 (ID limpo):', found.title);
       } else {
         // Estratégia 3: Procurar por TÍTULO (parcial)
         console.log('🔍 Estratégia 3: Procurando por TÍTULO...');
         found = allEvents.find(e => {
           if (!e.title) return false;
-          const match = e.title.toUpperCase().includes(query);
+          const match = e.title.toUpperCase().includes(queryUpper);
           if (match) console.log('  ✅ MATCH ENCONTRADO:', e.title);
           return match;
         });
@@ -3276,6 +3136,8 @@ async function searchEvent() {
     
     if (!found) {
       console.log('❌ Evento não encontrado em nenhuma estratégia');
+      console.log('❌ Query procurada:', query);
+      console.log('❌ Eventos disponíveis:', allEvents.length);
       Router.go('not-found');
       return;
     }
@@ -3319,8 +3181,6 @@ async function searchEvent() {
       allow_kids: found.allow_kids,
       maxKids: maxKds,
       max_kids: maxKds,
-      allowSides: String(found.allow_sides).toLowerCase() === 'yes',
-      allow_sides: found.allow_sides,
       confirmations: (found.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
@@ -5194,16 +5054,20 @@ function parseSupabaseJSON(data) {
 // ✅ FUNÇÃO AUXILIAR: Limpar IDs com prefixo "id. "
 function cleanId(id) {
   if (!id) return id;
-  let str = String(id).trim();
+  const str = String(id).trim();
   
-  // ✅ CRÍTICO: Remover prefixo "id. " se existir
+  // ✅ CRÍTICO: Remover "id. " (nota: espaço LITERAL após o ponto)
+  // Padrão exato: começa com "id." seguido de espaço
   if (str.startsWith('id. ')) {
-    console.log('🧹 Limpando ID com prefixo "id. ":', str);
-    str = str.replace(/^id\.\s*/, '').trim();
-    console.log('   Resultado:', str);
+    return str.substring(4).trim(); // Remove "id. " (4 caracteres)
   }
   
-  return str.toUpperCase();
+  // Fallback: se começar apenas com "id." (sem espaço)
+  if (str.startsWith('id.')) {
+    return str.substring(3).trim();
+  }
+  
+  return str;
 }
 
 // ✅ FUNÇÃO AUXILIAR: Gerar código legível válido
@@ -5262,29 +5126,23 @@ async function checkURLForEvent() {
     let eventsData = null;
     
     if (allEvents && Array.isArray(allEvents)) {
-      // ✅ PASSO 2A: Limpar TODOS os IDs e procurar por event_code VÁLIDO
-      allEvents = allEvents.map(e => ({
-        ...e,
-        id: cleanId(e.id),  // ✅ CRÍTICO: Limpar ID ao carregar
-        event_code: cleanId(e.event_code)  // ✅ Também limpar event_code
-      }));
+      // ✅ PASSO 2A: Procurar por event_code VÁLIDO (sem prefixo "id. ")
+      eventsData = allEvents.filter(e => {
+        const eventCodeClean = cleanId(e.event_code);
+        return isValidEventCode(eventCodeClean) && eventCodeClean === eventCode;
+      });
       
-      console.log('✅ IDs limpos. Primeiros 3 eventos:', allEvents.slice(0, 3).map(e => ({
-        id: e.id,
-        event_code: e.event_code,
-        title: e.title
-      })));
-      
-      // Procurar por event_code EXATO
-      eventsData = allEvents.filter(e => e.event_code === eventCode);
-      
-      console.log('🔍 Encontrados por event_code exato:', eventsData?.length || 0);
+      console.log('🔍 Encontrados por event_code válido:', eventsData?.length || 0);
       
       // ✅ PASSO 2B: Se não encontrou, procurar por ID (último recurso)
       if (!eventsData || eventsData.length === 0) {
-        console.log('⚠️ Não encontrado por event_code. Tentando por ID...');
+        console.log('⚠️ Não encontrado por event_code válido. Tentando por ID...');
+        const idClean = cleanId(eventCode);
         
-        eventsData = allEvents.filter(e => e.id === eventCode);
+        eventsData = allEvents.filter(e => {
+          const eIdClean = cleanId(e.id);
+          return eIdClean === eventCode || eIdClean === idClean;
+        });
         
         console.log('🔍 Encontrados por ID:', eventsData?.length || 0);
       }
@@ -5311,13 +5169,27 @@ async function checkURLForEvent() {
         deadlineValue = eventData.date;
       }
       
-      // ✅ CRÍTICO: Usar event_code já limpo
-      let finalEventCode = eventData.event_code || eventData.id;
+      // ✅ CRÍTICO: Validar e corrigir event_code se inválido
+      let finalEventCode = cleanId(eventData.event_code) || cleanId(eventData.id);
       
-      console.log('✅ Event code final:', finalEventCode);
+      if (!isValidEventCode(finalEventCode)) {
+        console.log('⚠️ event_code INVÁLIDO detectado:', eventData.event_code);
+        console.log('  Gerando novo código válido...');
+        
+        finalEventCode = generateValidEventCode();
+        
+        console.log('  ✅ Novo código gerado:', finalEventCode);
+        
+        // ✅ Atualizar no Supabase (assincronamente, não bloqueia)
+        supabaseRequest(`events?id=eq.${cleanId(eventData.id)}`, 'PATCH', { event_code: finalEventCode }).then(result => {
+          console.log('✅ event_code actualizado no Supabase:', finalEventCode);
+        }).catch(error => {
+          console.error('❌ Erro ao atualizar event_code:', error);
+        });
+      }
       
       const normalizedEvent = {
-        id: eventData.id,
+        id: cleanId(eventData.id),
         title: eventData.title,
         date: eventData.date,
         time: eventData.time,
@@ -5336,8 +5208,6 @@ async function checkURLForEvent() {
         allow_kids: eventData.allow_kids,
         maxKids: maxKds,
         max_kids: maxKds,
-        allowSides: String(eventData.allow_sides).toLowerCase() === 'yes',
-        allow_sides: eventData.allow_sides,
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
@@ -5355,11 +5225,10 @@ async function checkURLForEvent() {
         }))
       };
       
-      Store.currentEventId = eventData.id;
+      Store.currentEventId = cleanId(eventData.id);
       Store.guestEventData = normalizedEvent;
       console.log('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
       console.log('  Código final do evento:', finalEventCode);
-      console.log('  Allow Sides:', normalizedEvent.allowSides);
       return 'guest';
     }
     
@@ -6233,5 +6102,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc9d4ad973a3eac',t:'MTc3MzU2MDAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dc9e363e4d23eac',t:'MTc3MzU2MDYxNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
