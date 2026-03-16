@@ -131,7 +131,7 @@
        <h1 class="text-2xl font-bold text-gray-800">Meus Eventos</h1>
        <p id="admin-mode-badge" class="text-xs text-amber-600 font-semibold mt-1 hidden">👤 Logado como: <span id="admin-mode-user"></span></p>
       </div>
-      <div class="flex flex-wrap gap-2"><button class="btn-main text-sm" onclick="Router.go('create-event')"> <span class="flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Criar Novo Evento</span> </button> <button id="btn-return-admin" class="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="backToAdminPanel()"> <span class="flex items-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Admin</span> </button> <button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition" onclick="handleLogout()"> <span class="flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Sair</span> </button>
+      <div class="flex flex-wrap gap-2"><button class="btn-main text-sm" onclick="goToCreateEvent()"> <span class="flex items-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> Criar Novo Evento</span> </button> <button id="btn-return-admin" class="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="backToAdminPanel()"> <span class="flex items-center gap-1"><i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao Admin</span> </button> <button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition" onclick="handleLogout()"> <span class="flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Sair</span> </button>
       </div>
      </div>
      <div id="dashboard-events"></div>
@@ -1030,6 +1030,51 @@ function renderDashboard() {
   lucide.createIcons();
 }
 
+// ✅ NOVA FUNÇÃO: Limpar formulário ANTES de ir para create-event
+function goToCreateEvent() {
+  console.log('🔄 Limpando formulário para novo evento...');
+  
+  // ✅ Limpar TODOS os campos do formulário
+  document.getElementById('evt-title').value = '';
+  document.getElementById('evt-date').value = '';
+  document.getElementById('evt-time').value = '';
+  document.getElementById('evt-deadline').value = '';
+  document.getElementById('evt-deadline-time').value = '23:59';
+  document.getElementById('evt-max-comp').value = '2';
+  document.getElementById('evt-max-kids').value = '2';
+  document.getElementById('evt-side1-name').value = 'Noivo';
+  document.getElementById('evt-side2-name').value = 'Noiva';
+  
+  // ✅ Limpar imagem de capa
+  document.getElementById('cover-img').classList.add('hidden');
+  document.getElementById('cover-placeholder').classList.remove('hidden');
+  document.getElementById('cover-input').value = '';
+  
+  // ✅ Limpar switches - ESTADO PADRÃO
+  document.getElementById('sw-companions').classList.remove('active');
+  document.getElementById('sw-gifts').classList.add('active');
+  document.getElementById('sw-kids').classList.remove('active');
+  document.getElementById('sw-sides').classList.add('active');
+  
+  // ✅ Esconder extras
+  document.getElementById('companions-extra').classList.add('hidden');
+  document.getElementById('kids-extra').classList.add('hidden');
+  document.getElementById('sides-extra').classList.remove('hidden'); // sides sempre mostra
+  
+  // ✅ Resetar form para CREATE (não EDIT)
+  const form = document.getElementById('screen-create-event').querySelector('form');
+  form.onsubmit = handleCreateEvent;
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.textContent = 'Criar Evento';
+  
+  console.log('✅ Formulário limpo e pronto para novo evento');
+  
+  // Navegar para create-event
+  Router.go('create-event');
+}
+
 // ===================== CREATE EVENT =====================
 function handleCreateEvent(e) {
   e.preventDefault();
@@ -1326,18 +1371,14 @@ async function deleteImageFromSupabase(fileName) {
   }
 }
 
-function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText) {
-  // ✅ CRÍTICO: Procurar o evento no Store
-  let ev = Store.events.find(e => e.id === eventId);
+function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText) {
+  // ✅ CRÍTICO: Procurar o evento no Store usando Store.currentEventId
+  console.log('🔍 Procurando evento:', { eventId, currentEventId: Store.currentEventId });
+  
+  let ev = Store.events.find(e => e.id === Store.currentEventId);
   
   if (!ev) {
-    console.error('❌ Erro: evento não encontrado! ID:', eventId);
-    console.error('  Procurando por Store.currentEventId:', Store.currentEventId);
-    ev = Store.events.find(e => e.id === Store.currentEventId);
-  }
-  
-  if (!ev) {
-    console.error('❌ Erro: evento não encontrado em nenhum lugar!');
+    console.error('❌ Erro: evento não encontrado! ID:', Store.currentEventId);
     toast('❌ Erro: evento não encontrado. Recarregue a página.');
     // ✅ SEGURO: verificar se submitBtn existe ANTES de acessar
     if (submitBtn && typeof submitBtn === 'object') {
@@ -1351,6 +1392,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     }
     return;
   }
+  
+  console.log('✅ Evento encontrado:', ev.title);
 
   // ✅ CRÍTICO: Garantir que side1Name e side2Name têm valores padrão
   const finalSide1Name = side1Name && side1Name.trim() ? side1Name.trim() : 'Noivo';
@@ -2203,7 +2246,6 @@ function editEvent() {
     const maxComp = parseInt(document.getElementById('evt-max-comp').value) || 2;
     const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
 
-    // ✅ CRÍTICO: SEMPRE usar os valores dos inputs
     const side1Name = document.getElementById('evt-side1-name').value.trim() || 'Noivo';
     const side2Name = document.getElementById('evt-side2-name').value.trim() || 'Noiva';
     
@@ -2221,17 +2263,17 @@ function editEvent() {
         console.log('✅ URL da imagem recebida:', coverImageURL);
         toast('✓ Imagem recebida, guardando alterações...');
         submitBtn.textContent = 'Guardando...';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText);
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
       }).catch(error => {
         console.error('❌ ERRO upload imagem:', error);
         toast('Erro ao fazer upload da imagem. Guardando sem capa...');
         submitBtn.textContent = 'Guardando...';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText);
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
       });
     } else {
       // Usar imagem existente ou nenhuma
       const coverImageURL = coverImg.src && coverImg.src.startsWith('http') ? coverImg.src : ev.cover_image;
-      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText);
+      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, submitBtn, originalText);
     }
   };
   
@@ -6866,5 +6908,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dd454eb36e4d04e',t:'MTc3MzY3MDEyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dd4a0bf3379d04e',t:'MTc3MzY3MzIzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
