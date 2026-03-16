@@ -1378,10 +1378,15 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     if (!ev) {
       console.error('❌ Erro: evento não encontrado em nenhum lugar!');
       toast('❌ Erro: evento não encontrado. Recarregue a página.');
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-        submitBtn.textContent = originalText;
+      // ✅ SEGURO: verificar se submitBtn existe ANTES de acessar
+      if (submitBtn && typeof submitBtn === 'object') {
+        try {
+          submitBtn.disabled = false;
+          if (submitBtn.style) submitBtn.style.opacity = '1';
+          submitBtn.textContent = originalText;
+        } catch (e) {
+          console.error('Erro ao restaurar botão:', e);
+        }
       }
       return;
     }
@@ -1472,11 +1477,15 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       const btn = form.querySelector('button[type="submit"]');
       btn.textContent = 'Criar Evento';
       
-      // 🔒 Re-habilitar botão ANTES de navegar
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-        submitBtn.textContent = originalText;
+      // 🔒 Re-habilitar botão ANTES de navegar - COM VERIFICAÇÃO SEGURA
+      if (submitBtn && typeof submitBtn === 'object') {
+        try {
+          submitBtn.disabled = false;
+          if (submitBtn.style) submitBtn.style.opacity = '1';
+          submitBtn.textContent = originalText;
+        } catch (e) {
+          console.error('Erro ao restaurar botão:', e);
+        }
       }
       
       // ✅ CRÍTICO: VOLTA PARA DETALHES (NÃO para dashboard)
@@ -1487,22 +1496,30 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       console.error('❌ Resposta vazia do Supabase');
       toast('❌ Erro ao atualizar evento. Tente novamente.');
       
-      // 🔒 Re-habilitar botão
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-        submitBtn.textContent = originalText;
+      // 🔒 Re-habilitar botão - COM VERIFICAÇÃO SEGURA
+      if (submitBtn && typeof submitBtn === 'object') {
+        try {
+          submitBtn.disabled = false;
+          if (submitBtn.style) submitBtn.style.opacity = '1';
+          submitBtn.textContent = originalText;
+        } catch (e) {
+          console.error('Erro ao restaurar botão:', e);
+        }
       }
     }
   }).catch(error => {
     console.error('❌ Erro ao atualizar evento:', error);
     toast('❌ Erro ao atualizar evento. Tente novamente.');
     
-    // 🔒 Re-habilitar botão
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.style.opacity = '1';
-      submitBtn.textContent = originalText;
+    // 🔒 Re-habilitar botão - COM VERIFICAÇÃO SEGURA
+    if (submitBtn && typeof submitBtn === 'object') {
+      try {
+        submitBtn.disabled = false;
+        if (submitBtn.style) submitBtn.style.opacity = '1';
+        submitBtn.textContent = originalText;
+      } catch (e) {
+        console.error('Erro ao restaurar botão:', e);
+      }
     }
   });
 }
@@ -2616,7 +2633,9 @@ async function saveRSVPToSupabase(data, isUpdate) {
         console.log('✅ RSVP atualizado no Supabase');
         // 📢 Enviar notificação em tempo real
         sendRealtimeNotification(data);
-        // ✅ CRÍTICO: Recarregar evento do Supabase para garantir que dados apareçam no dashboard
+        // ✅ CRÍTICO: Aguardar um pouco e depois recarregar
+        console.log('⏳ Aguardando 500ms antes de recarregar evento...');
+        await new Promise(r => setTimeout(r, 500));
         await reloadEventFromSupabase(data.event_id);
       } else {
         console.error('❌ Erro ao atualizar confirmação');
@@ -2628,7 +2647,9 @@ async function saveRSVPToSupabase(data, isUpdate) {
         console.log('✅ RSVP criado no Supabase');
         // 📢 Enviar notificação em tempo real
         sendRealtimeNotification(data);
-        // ✅ CRÍTICO: Recarregar evento do Supabase para garantir que dados apareçam no dashboard
+        // ✅ CRÍTICO: Aguardar um pouco e depois recarregar
+        console.log('⏳ Aguardando 500ms antes de recarregar evento...');
+        await new Promise(r => setTimeout(r, 500));
         await reloadEventFromSupabase(data.event_id);
       } else {
         console.error('❌ Erro ao salvar confirmação');
@@ -6855,5 +6876,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dcda52994543eac',t:'MTc3MzYwMDAxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dd41ff8e2e4d04e',t:'MTc3MzY2Nzk1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
