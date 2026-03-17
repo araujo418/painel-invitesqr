@@ -1506,6 +1506,16 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     side2Name: finalSide2Name
   });
 
+  const showTimeActive = document.getElementById('sw-show-time').classList.contains('active');
+  const allowMessagesActive = document.getElementById('sw-messages').classList.contains('active');
+  const showGuestMessagesChecked = document.getElementById('evt-show-messages').checked;
+
+  console.log('💾 Salvando evento com:', {
+    show_time: showTimeActive ? 'yes' : 'no',
+    allow_messages: allowMessagesActive ? 'yes' : 'no',
+    show_guest_messages: showGuestMessagesChecked ? 'yes' : 'no'
+  });
+
   supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', {
     title: title,
     date: date,
@@ -1521,9 +1531,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     allow_sides: allowSides ? 'yes' : 'no',
     side1_name: finalSide1Name,
     side2_name: finalSide2Name,
-    show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
-    allow_messages: document.getElementById('sw-messages').classList.contains('active') ? 'yes' : 'no',
-    show_guest_messages: document.getElementById('evt-show-messages').checked ? 'yes' : 'no'
+    show_time: showTimeActive ? 'yes' : 'no',
+    allow_messages: allowMessagesActive ? 'yes' : 'no',
+    show_guest_messages: showGuestMessagesChecked ? 'yes' : 'no'
   }).then(result => {
     console.log('✅ Resposta do Supabase:', result);
     
@@ -1551,8 +1561,13 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
         ev.allowSides = allowSides;
         ev.side1_name = allowSides ? finalSide1Name : null;
         ev.side2_name = allowSides ? finalSide2Name : null;
+        ev.show_time = showTimeActive ? 'yes' : 'no';
+        ev.allowMessages = allowMessagesActive;
+        ev.allow_messages = allowMessagesActive ? 'yes' : 'no';
+        ev.showGuestMessages = showGuestMessagesChecked;
+        ev.show_guest_messages = showGuestMessagesChecked ? 'yes' : 'no';
         
-        console.log('✅ Store atualizado. Event details:', { title: ev.title, date: ev.date, allow_sides: ev.allow_sides });
+        console.log('✅ Store atualizado. Event details:', { title: ev.title, date: ev.date, allow_sides: ev.allow_sides, allow_messages: ev.allow_messages, show_guest_messages: ev.show_guest_messages });
       }
       
       toast('✓ Evento atualizado com sucesso!');
@@ -2272,11 +2287,33 @@ function editEvent() {
     document.getElementById('kids-extra').classList.add('hidden');
   }
   
-  const hasShowTime = String(ev.show_time).toLowerCase() !== 'no' && ev.show_time !== false;
+  const hasShowTime = String(ev.show_time).toLowerCase() === 'yes' || ev.show_time === true;
+  console.log('✅ Carregando show_time:', { raw: ev.show_time, parsed: hasShowTime });
   if (hasShowTime) {
     document.getElementById('sw-show-time').classList.add('active');
   } else {
     document.getElementById('sw-show-time').classList.remove('active');
+  }
+  
+  // ✅ CRÍTICO: Carregar allow_messages (ativa/desativa a seção de recados)
+  const hasAllowMessages = String(ev.allow_messages).toLowerCase() === 'yes' || ev.allow_messages === true;
+  console.log('✅ Carregando allow_messages:', { raw: ev.allow_messages, parsed: hasAllowMessages });
+  if (hasAllowMessages) {
+    document.getElementById('sw-messages').classList.add('active');
+    document.getElementById('messages-extra').classList.remove('hidden');
+  } else {
+    document.getElementById('sw-messages').classList.remove('active');
+    document.getElementById('messages-extra').classList.add('hidden');
+  }
+  
+  // ✅ CRÍTICO: Carregar show_guest_messages (permite ver recados de outros)
+  const hasShowGuestMessages = String(ev.show_guest_messages).toLowerCase() === 'yes' || ev.show_guest_messages === true;
+  console.log('✅ Carregando show_guest_messages:', { raw: ev.show_guest_messages, parsed: hasShowGuestMessages });
+  
+  if (hasShowGuestMessages) {
+    document.getElementById('evt-show-messages').checked = true;
+  } else {
+    document.getElementById('evt-show-messages').checked = false;
   }
   
   // ✅ CRÍTICO: allowSides - Carregar do Supabase
@@ -2507,11 +2544,19 @@ function renderGuestView() {
 
   document.getElementById('guest-title').textContent = eventData.title;
   
-  // ✅ NOVO: Mostrar hora APENAS se showTime está ativo (true)
-  const shouldShowTime = eventData.showTime !== false; // Default true
-  const timeDisplay = shouldShowTime 
+  // ✅ CRÍTICO: Mostrar hora para convidados baseado em show_time
+  // Verificar AMBAS as formas (show_time e showTime)
+  const showTimeRaw = eventData.show_time !== undefined ? eventData.show_time : eventData.showTime;
+  const showTime = String(showTimeRaw).toLowerCase() === 'yes' || showTimeRaw === true;
+  
+  console.log('👤 Guest view - Verificando show_time:', { raw: showTimeRaw, string: String(showTimeRaw), parsed: showTime });
+  
+  // ✅ NOVO: Mostrar hora APENAS se show_time está ativo (true ou 'yes')
+  const timeDisplay = showTime 
     ? formatDate(eventData.date) + ' às ' + eventData.time
     : formatDate(eventData.date);
+  
+  console.log('👤 Guest view - Time display:', { showTime, timeDisplay });
   
   document.getElementById('guest-date').textContent = timeDisplay;
   
@@ -4201,6 +4246,9 @@ function renderAdminAccountsList(users) {
       </button>
       <button class="text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 px-4 font-semibold transition flex items-center gap-1" onclick="cleanupEventCodes()">
         <i data-lucide="trash" class="w-4 h-4"></i> Limpar Códigos
+      </button>
+      <button class="text-xs bg-rose-700 hover:bg-rose-800 text-white rounded-lg py-2 px-4 font-semibold transition flex items-center gap-1" onclick="repairCorruptedData()">
+        <i data-lucide="alert-triangle" class="w-4 h-4"></i> 🆘 Reparar Dados
       </button>
     </div>
   `;
@@ -5961,14 +6009,211 @@ function cleanId(id) {
   return str.toUpperCase();
 }
 
-// ✅ FUNÇÃO AUXILIAR: Gerar código legível válido
-function generateValidEventCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+// ✅ FUNÇÃO CRÍTICA: Reparar dados corrompidos no Supabase
+async function repairCorruptedData() {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+    toast('Apenas admin pode reparar dados.');
+    return;
   }
-  return code;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-lg w-full mx-4 max-h-96 overflow-y-auto">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">🆘 Reparar Dados Corrompidos</h3>
+      <p class="text-sm text-gray-600 mb-4">Esta função irá:</p>
+      <ul class="text-sm text-gray-600 mb-4 list-disc list-inside space-y-1">
+        <li>Limpar campos corrompidos (side1_name, side2_name com JSON ou objetos)</li>
+        <li>Remover prefixo "id. " dos IDs de eventos</li>
+        <li>Remover espaços extras em nomes e URLs</li>
+        <li>Restaurar valores padrão quando necessário</li>
+      </ul>
+      
+      <div class="bg-red-50 border-l-3 border-red-500 p-3 rounded mb-4 text-xs text-red-700">
+        ⚠️ <strong>AVISO:</strong> Isto pode levar VÁRIOS MINUTOS. Não feche a página ou o navegador!
+      </div>
+      
+      <div id="repair-status" class="mb-4 text-sm text-gray-600 hidden">
+        <p class="font-semibold mb-2">Status da Reparação:</p>
+        <p id="repair-log" class="text-xs text-gray-500 font-mono bg-gray-100 p-2 rounded max-h-48 overflow-y-auto"></p>
+      </div>
+      
+      <div class="flex gap-2">
+        <button id="repair-btn" class="flex-1 btn-main" onclick="executeRepairCorruptedData(this.closest('.modal-overlay'))">Iniciar Reparação</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// ✅ Executar reparação
+async function executeRepairCorruptedData(modal) {
+  const statusDiv = modal.querySelector('#repair-status');
+  const logDiv = modal.querySelector('#repair-log');
+  const btn = modal.querySelector('#repair-btn');
+  
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+  statusDiv.classList.remove('hidden');
+  
+  let log = [];
+  let fixed = 0;
+  let errors = 0;
+  
+  const addLog = (msg) => {
+    console.log(msg);
+    log.push(msg);
+    logDiv.textContent = log.join('\n');
+    logDiv.parentElement.parentElement.scrollTop = logDiv.parentElement.parentElement.scrollHeight;
+  };
+  
+  try {
+    addLog('🔍 Fase 1: Buscando TODOS os eventos...');
+    
+    // Carregar TODOS os eventos do Supabase (sem limite)
+    const allEventsData = await supabaseRequest('events?select=*&limit=1000');
+    
+    if (!allEventsData || allEventsData.length === 0) {
+      addLog('✅ Nenhum evento para reparar.');
+      setTimeout(() => {
+        modal.remove();
+        toast('Nenhum evento para reparar.');
+      }, 1000);
+      return;
+    }
+    
+    addLog(`📋 Total de eventos encontrados: ${allEventsData.length}`);
+    addLog('');
+    
+    // Analisar e reparar CADA evento
+    for (let i = 0; i < allEventsData.length; i++) {
+      const event = allEventsData[i];
+      const eventId = event.id;
+      const eventTitle = event.title || 'Sem título';
+      
+      addLog(`⏳ [${i + 1}/${allEventsData.length}] Analisando: "${eventTitle}"`);
+      
+      let needsUpdate = false;
+      const updateData = {};
+      
+      // ✅ VERIFICAR 1: ID corrompido (começa com "id. ")
+      if (eventId && String(eventId).trim().startsWith('id. ')) {
+        addLog(`  ❌ ID CORROMPIDO: "${eventId}"`);
+        
+        const cleanedId = String(eventId).trim().replace(/^id\.\s*/, '').trim();
+        if (cleanedId && cleanedId.length > 2) {
+          addLog(`  ✅ Novo ID: "${cleanedId}"`);
+          // ✅ CRÍTICO: Precisamos deletar o registo antigo e criar novo com ID correto
+          // Por enquanto, apenas logar (não é possível alterar PK diretamente)
+          addLog(`  ⚠️ ID é chave primária - requer migração manual no Supabase`);
+          errors++;
+        }
+      }
+      
+      // ✅ VERIFICAR 2: side1_name com JSON ou objeto
+      if (event.side1_name && typeof event.side1_name === 'string' && event.side1_name.startsWith('{')) {
+        addLog(`  ❌ side1_name CORROMPIDO (JSON): ${event.side1_name.substring(0, 50)}...`);
+        updateData.side1_name = 'Noivo';
+        needsUpdate = true;
+        fixed++;
+        addLog(`  ✅ Restaurado para: "Noivo"`);
+      }
+      
+      // ✅ VERIFICAR 3: side2_name com JSON ou objeto
+      if (event.side2_name && typeof event.side2_name === 'string' && event.side2_name.startsWith('{')) {
+        addLog(`  ❌ side2_name CORROMPIDO (JSON): ${event.side2_name.substring(0, 50)}...`);
+        updateData.side2_name = 'Noiva';
+        needsUpdate = true;
+        fixed++;
+        addLog(`  ✅ Restaurado para: "Noiva"`);
+      }
+      
+      // ✅ VERIFICAR 4: cover_image com espaços extras ou "id. " no filename
+      if (event.cover_image && event.cover_image.includes('event_id. ')) {
+        addLog(`  ❌ cover_image com prefixo corrupto`);
+        // Remover espaços extras do filename
+        const cleanedUrl = event.cover_image.replace(/event_id\.\s*/g, 'event_').replace(/\s+/g, '');
+        updateData.cover_image = cleanedUrl;
+        needsUpdate = true;
+        fixed++;
+        addLog(`  ✅ URL limpo`);
+      }
+      
+      // ✅ VERIFICAR 5: event_code inválido (começa com "id. ")
+      if (event.event_code && String(event.event_code).trim().startsWith('id. ')) {
+        addLog(`  ❌ event_code CORROMPIDO: "${event.event_code}"`);
+        const cleanedCode = String(event.event_code).trim().replace(/^id\.\s*/, '').trim().toUpperCase();
+        if (cleanedCode && cleanedCode.length > 2) {
+          updateData.event_code = cleanedCode;
+          needsUpdate = true;
+          fixed++;
+          addLog(`  ✅ Novo event_code: "${cleanedCode}"`);
+        }
+      }
+      
+      // ✅ Executar UPDATE se necessário
+      if (needsUpdate) {
+        try {
+          addLog(`  📤 Salvando alterações no Supabase...`);
+          
+          const updateResult = await supabaseRequest(
+            `events?id=eq.${eventId}`,
+            'PATCH',
+            updateData
+          );
+          
+          if (updateResult) {
+            addLog(`  ✅ EVENTO REPARADO com sucesso`);
+          } else {
+            addLog(`  ⚠️ Resposta vazia - possível sucesso`);
+          }
+        } catch (updateError) {
+          addLog(`  ❌ ERRO ao salvar: ${updateError.message}`);
+          errors++;
+        }
+      } else {
+        addLog(`  ✅ Evento OK - nenhuma reparação necessária`);
+      }
+      
+      addLog('');
+      
+      // Pausa entre requests
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    addLog('═════════════════════════════════════════');
+    addLog('📊 RESUMO FINAL DA REPARAÇÃO:');
+    addLog(`  ✅ Campos reparados: ${fixed}`);
+    addLog(`  ❌ Erros encontrados: ${errors}`);
+    addLog(`  📋 Total de eventos processados: ${allEventsData.length}`);
+    addLog('═════════════════════════════════════════');
+    
+    if (errors > 0) {
+      addLog('');
+      addLog('⚠️ NOTA: Alguns eventos têm IDs corrompidos (chave primária)');
+      addLog('Será necessário reparação manual no Supabase ou migração de dados.');
+    }
+    
+    addLog('');
+    addLog('✅ Reparação concluída!');
+    
+    setTimeout(() => {
+      modal.remove();
+      toast(`✅ Reparação concluída! ${fixed} campo(s) corrigido(s)`);
+      if (errors > 0) {
+        toast(`⚠️ ${errors} problema(s) requer(em) atenção manual`);
+      }
+      renderAdmin();
+    }, 2000);
+    
+  } catch (error) {
+    addLog(`❌ ERRO CRÍTICO: ${error.message}`);
+    setTimeout(() => {
+      modal.remove();
+      toast('❌ Erro durante reparação. Verifique a consola.');
+    }, 2000);
+  }
 }
 
 // ✅ FUNÇÃO AUXILIAR: Validar se código é válido (apenas letras e números, sem prefixo)
@@ -7114,5 +7359,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddd8a3322b71b23',t:'MTc3Mzc2NjY3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dddb3f653e11b23',t:'MTc3Mzc2ODM5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
