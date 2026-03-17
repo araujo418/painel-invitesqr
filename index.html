@@ -4,7 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RSVP Event Manager</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17">
+// ===================== CONTROLO DINÂMICO DO LADO =====================
+function controlarLado(ativo) {
+  const radios = document.querySelectorAll('input[name="rsvp-side"]');
+  const section1 = document.getElementById('rsvp-side-section');
+  const section2 = document.getElementById('rsvp-default-side-section');
+
+  if (ativo) {
+    if (section1) section1.classList.remove('hidden');
+    if (section2) section2.classList.remove('hidden');
+
+    radios.forEach(r => {
+      r.required = true;
+      r.disabled = false;
+    });
+  } else {
+    if (section1) section1.classList.add('hidden');
+    if (section2) section2.classList.add('hidden');
+
+    radios.forEach(r => {
+      r.required = false;
+      r.checked = false;
+      r.disabled = true;
+    });
+  }
+}
+
+</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
@@ -269,13 +296,13 @@
         <div id="rsvp-default-side-section" class="hidden mb-3">
          <label class="block text-sm font-semibold text-gray-600 mb-1">Lado do casal</label>
          <div class="flex gap-3">
-          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noivo" class="accent-teal-500" required> <span class="text-sm">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noiva" class="accent-teal-500" required> <span class="text-sm">Noiva</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noivo" class="accent-teal-500"> <span class="text-sm">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noiva" class="accent-teal-500"> <span class="text-sm">Noiva</span></label>
          </div>
         </div>
         <div id="rsvp-side-section" class="hidden mb-3">
          <label class="block text-sm font-semibold text-gray-600 mb-1" id="rsvp-side-label">Lado do casal</label>
          <div class="flex gap-3 mb-3">
-          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500" required> <span class="text-sm" id="rsvp-side1-label">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500" required> <span class="text-sm" id="rsvp-side2-label">Noiva</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500"> <span class="text-sm" id="rsvp-side1-label">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm" id="rsvp-side2-label">Noiva</span></label>
          </div>
         </div>
         <div id="rsvp-message-section" class="hidden mb-3">
@@ -2474,11 +2501,18 @@ function editEvent() {
 
 // ===================== GUEST VIEW =====================
 function renderGuestView() {
+  // controlo de lado será aplicado após carregar evento
+
   // ✅ MOSTRAR/ESCONDER botão de voltar baseado se veio do painel
   const backBtn = document.getElementById('guest-back-btn');
   if (backBtn) {
     if (Store.viewingAsGuestFromOrganizer) {
       backBtn.classList.remove('hidden');
+  try { if (Store.currentEventId && Store.events) {
+    const ev = Store.events.find(e => e.id === Store.currentEventId);
+    if (ev) controlarLado(ev.allowSides);
+  }} catch(e) { console.warn('Erro ao aplicar controlo de lado', e); }
+
     } else {
       backBtn.classList.add('hidden');
     }
