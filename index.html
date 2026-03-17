@@ -1323,7 +1323,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     allow_sides: allowSides ? 'yes' : 'no',
     side1_name: side1Name,
     side2_name: side2Name,
-    show_time: 'yes',
+    show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
     allow_messages: allowMessages ? 'yes' : 'no',
     show_guest_messages: showGuestMessages ? 'yes' : 'no'
   };
@@ -1364,6 +1364,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         allowMessages: allowMessages,
         show_guest_messages: showGuestMessages ? 'yes' : 'no',
         showGuestMessages: showGuestMessages,
+        show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
         confirmations: [],
         gifts: []
       };
@@ -1519,7 +1520,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     allow_gifts: allowGifts ? 'yes' : 'no',
     allow_sides: allowSides ? 'yes' : 'no',
     side1_name: finalSide1Name,
-    side2_name: finalSide2Name
+    side2_name: finalSide2Name,
+    show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
+    allow_messages: document.getElementById('sw-messages').classList.contains('active') ? 'yes' : 'no',
+    show_guest_messages: document.getElementById('evt-show-messages').checked ? 'yes' : 'no'
   }).then(result => {
     console.log('✅ Resposta do Supabase:', result);
     
@@ -7110,5 +7114,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddd07e156a54193',t:'MTc3Mzc2MTM0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddd8a3322b71b23',t:'MTc3Mzc2NjY3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
