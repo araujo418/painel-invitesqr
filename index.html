@@ -204,6 +204,10 @@
           <input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Noivo" value="Noivo"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Noiva" value="Noiva">
          </div>
         </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Mostrar hora para convidados</span>
+         <div id="sw-show-time" class="switch active" onclick="toggleSwitch(this)"></div>
+        </div>
        </div><button type="submit" class="btn-main w-full text-base">Criar Evento</button>
       </form>
      </div>
@@ -413,15 +417,17 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
 
 // ===================== SUPABASE: FETCH DATA (OTIMIZADO POR TIPO DE USUÁRIO) =====================
 
-// 🎯 CONVIDADO: Puxar APENAS evento + seus RSVPs + presentes (COM JOIN - SEM N+1)
+// 🎯 CONVIDADO: Puxar APENAS evento específico + RSVPs + presentes (SEM N+1, QUERY OTIMIZADA)
 async function fetchEventForGuest(eventId) {
   try {
     console.log('👤 fetchEventForGuest iniciado para:', eventId);
     
-    // ✅ OTIMIZAÇÃO: Usar JOIN para trazer evento + RSVPs + presentes em 1 request
-    // Selecionar TODOS os campos necessários incluindo confirm_by_date, max_companions, max_kids, allow_sides, side1_name, side2_name
-    // ✅ CRÍTICO: Procurar por EVENT_CODE (não ID!) - é isso que vem na URL
-    const eventData = await supabaseRequest(`events?event_code=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
+    // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
+    // ✅ Usar event_code ou id com filtro EXATO
+    const eventData = await supabaseRequest(
+      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)&limit=1`
+    );
+    
     if (!eventData || eventData.length === 0) {
       console.error('❌ Evento não encontrado no Supabase');
       return null;
@@ -1297,7 +1303,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     allow_gifts: allowGifts ? 'yes' : 'no',
     allow_sides: allowSides ? 'yes' : 'no',
     side1_name: side1Name,
-    side2_name: side2Name
+    side2_name: side2Name,
+    show_time: showTime ? 'yes' : 'no'
   };
   
   console.log('📤 Enviando ao Supabase:', eventData);
@@ -1417,7 +1424,7 @@ async function deleteImageFromSupabase(fileName) {
   }
 }
 
-function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, submitBtn, originalText) {
+function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, showTime, submitBtn, originalText) {
   // ✅ CRÍTICO: Procurar o evento no Store usando Store.currentEventId
   console.log('🔍 Procurando evento:', { eventId, currentEventId: Store.currentEventId });
   
@@ -2163,11 +2170,8 @@ function editEvent() {
     document.getElementById('evt-deadline').value = '';
   }
   
-  // ✅ Restaurar switches - SEMPRE usar campos do Supabase (allow_companions, não allowCompanions)
-  // Supabase retorna 'yes'/'no' como STRING
+  // Restaurar switches - SEMPRE usar campos do Supabase
   const hasCompanions = String(ev.allow_companions).toLowerCase() === 'yes';
-  console.log('  Has Companions?', { raw: ev.allow_companions, string: String(ev.allow_companions), parsed: hasCompanions });
-  
   if (hasCompanions) {
     document.getElementById('sw-companions').classList.add('active');
     document.getElementById('companions-extra').classList.remove('hidden');
@@ -2176,7 +2180,6 @@ function editEvent() {
     document.getElementById('companions-extra').classList.add('hidden');
   }
   
-  // allowGifts
   const hasGifts = String(ev.allow_gifts).toLowerCase() === 'yes';
   if (hasGifts) {
     document.getElementById('sw-gifts').classList.add('active');
@@ -2184,7 +2187,6 @@ function editEvent() {
     document.getElementById('sw-gifts').classList.remove('active');
   }
   
-  // allowKids
   const hasKids = String(ev.allow_kids).toLowerCase() === 'yes';
   if (hasKids) {
     document.getElementById('sw-kids').classList.add('active');
@@ -2194,11 +2196,21 @@ function editEvent() {
     document.getElementById('kids-extra').classList.add('hidden');
   }
   
+  const hasShowTime = String(ev.show_time).toLowerCase() !== 'no' && ev.show_time !== false;
+  if (hasShowTime) {
+    document.getElementById('sw-show-time').classList.add('active');
+  } else {
+    document.getElementById('sw-show-time').classList.remove('active');
+  }
+  
   // ✅ CRÍTICO: allowSides - Carregar do Supabase
-  const hasSides = String(ev.allow_sides).toLowerCase() === 'yes';
-  console.log('✅ Carregando allowSides:', { raw: ev.allow_sides, string: String(ev.allow_sides), parsed: hasSides });
+  // Verificar AMBAS as variáveis (allow_sides E allowSides)
+  const allowSidesRaw = ev.allow_sides !== undefined ? ev.allow_sides : ev.allowSides;
+  const hasSides = String(allowSidesRaw).toLowerCase() === 'yes' || allowSidesRaw === true;
+  console.log('✅ Carregando allowSides:', { raw: allowSidesRaw, string: String(allowSidesRaw), parsed: hasSides });
   
   if (hasSides) {
+    console.log('  ✅ ATIVANDO sides');
     document.getElementById('sw-sides').classList.add('active');
     document.getElementById('sides-extra').classList.remove('hidden');
     
@@ -2211,6 +2223,7 @@ function editEvent() {
     document.getElementById('evt-side1-name').value = side1Val;
     document.getElementById('evt-side2-name').value = side2Val;
   } else {
+    console.log('  ❌ DESATIVANDO sides');
     document.getElementById('sw-sides').classList.remove('active');
     document.getElementById('sides-extra').classList.add('hidden');
     
@@ -2384,7 +2397,8 @@ function renderGuestView() {
     maxCompanions: eventData.maxCompanions,
     allowKids: eventData.allowKids,
     maxKids: eventData.maxKids,
-    allowSides: eventData.allowSides
+    allowSides: eventData.allowSides,
+    showTime: eventData.showTime
   });
 
   // Verificar se RSVP está desativado
@@ -2416,7 +2430,14 @@ function renderGuestView() {
   }
 
   document.getElementById('guest-title').textContent = eventData.title;
-  document.getElementById('guest-date').textContent = formatDate(eventData.date) + ' às ' + eventData.time;
+  
+  // ✅ NOVO: Mostrar hora APENAS se showTime está ativo (true)
+  const shouldShowTime = eventData.showTime !== false; // Default true
+  const timeDisplay = shouldShowTime 
+    ? formatDate(eventData.date) + ' às ' + eventData.time
+    : formatDate(eventData.date);
+  
+  document.getElementById('guest-date').textContent = timeDisplay;
   
   // ✅ CRÍTICO: Usar deadline/confirm_by_date correto
   let deadlineDate = eventData.confirm_by_date || eventData.deadline || eventData.date;
@@ -2529,6 +2550,8 @@ function renderGuestView() {
 }
 
 
+
+
 function startCountdown(deadline) {
   if (Store.countdownInterval) clearInterval(Store.countdownInterval);
   const container = document.getElementById('guest-countdown');
@@ -2558,6 +2581,21 @@ function backFromGuestView() {
   
   // Voltar para detalhes do evento
   Router.go('event-details');
+}
+
+// ✅ SHOW/HIDE botão de voltar (guest view)
+function showGuestBackButton() {
+  const backBtn = document.createElement('button');
+  backBtn.id = 'guest-back-btn';
+  backBtn.className = 'flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition';
+  backBtn.innerHTML = '<i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar';
+  backBtn.onclick = backFromGuestView;
+  backBtn.classList.add('hidden');
+  
+  const guestSection = document.getElementById('screen-guest');
+  if (guestSection && !document.getElementById('guest-back-btn')) {
+    guestSection.prepend(backBtn);
+  }
 }
 
 let companionCount = 0;
@@ -2606,7 +2644,7 @@ function handleRSVP(e) {
   const name = document.getElementById('rsvp-name').value.trim();
   
   // ✅ Determinar lado (pode ser customizado)
-  const allowSides = ev.allowSides || (ev.allow_sides && String(ev.allow_sides).toLowerCase() === 'yes');
+  const allowSides = (ev.allowSides === true) || (ev.allow_sides === 'yes') || (String(ev.allow_sides).toLowerCase() === 'yes');
   let side = 'noivo';
   
   if (allowSides) {
@@ -2634,7 +2672,10 @@ function handleRSVP(e) {
   const hasReservedGift = ev.gifts && ev.gifts.some(g => g.reservedBy === name);
   
   // Criar dados da resposta
-  const responseData = {
+  // Mostrar hora para convidados
+  const showTime = document.getElementById('sw-show-time').classList.contains('active');
+  
+  const eventData = {
     event_id: Store.currentEventId,
     guest_name: name,
     attending: attending,
@@ -2661,7 +2702,7 @@ function handleRSVP(e) {
     };
     
     // ✅ Atualizar no Supabase
-    saveRSVPToSupabase(responseData, true);
+    saveRSVPToSupabase(eventData, true);
   } else {
     // ✅ NOVO - fazer INSERT
     console.log('✨ Adicionando nova resposta');
@@ -2679,7 +2720,7 @@ function handleRSVP(e) {
     });
     
     // ✅ Criar no Supabase
-    saveRSVPToSupabase(responseData, false);
+    saveRSVPToSupabase(eventData, false);
   }
 
   // ✅ Atualizar sessão do convidado
@@ -4100,6 +4141,7 @@ function renderAdminAccountsList(users) {
     const userStatusClass = statusColors[u.status] || statusColors['active'] || 'bg-green-100 text-green-700';
     const eventLimit = u.eventLimit !== null ? u.eventLimit : '∞';
     const adminLabel = u.adminLabel || '-';
+    const userRole = u.role || 'user';
     
     let html = '<div class="bg-white rounded-xl shadow-sm p-4 mb-3">';
     html += '<div class="flex items-start gap-3 mb-3">';
@@ -4110,6 +4152,7 @@ function renderAdminAccountsList(users) {
     html += '</div></div>';
     
     html += '<div class="grid grid-cols-2 gap-2 mb-3 text-xs">';
+    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">👤 Tipo</p><p class="text-gray-800 font-semibold">' + (userRole === 'moderator' ? '🛡️ Moderador' : 'Utilizador') + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">📛 Nome Admin</p><p class="text-gray-800 font-semibold">' + adminLabel + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">🔐 Senha</p><p class="text-gray-800 font-mono text-xs">' + userPassword + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
@@ -4120,6 +4163,7 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-teal-400 hover:bg-teal-500 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminLoginAs(\'' + u.id + '\')">Entrar</button>';
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="editAdminLabel(\'' + u.id + '\')">📛 Nome</button>';
     html += '<button class="text-xs bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="setEventLimit(\'' + u.id + '\')">Limite</button>';
+    html += '<button class="text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleModeratorRole(\'' + u.id + '\')">' + (userRole === 'moderator' ? '👤 Utilizador' : '🛡️ Moderador') + '</button>';
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">🔐 Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">👤 Username</button>';
     html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserId(\'' + u.id + '\')">🔑 ID</button>';
@@ -5888,49 +5932,18 @@ async function checkURLForEvent() {
   if (eventCode) {
     console.log('📍 Event code encontrado na URL:', eventCode);
     
-    // ✅ PASSO 1: Buscar DIRETO DO SUPABASE (NÃO depender do Store.events)
-    // Isto funciona com OU SEM login!
-    console.log('📥 Buscando evento DIRETO do Supabase...');
+    // ✅ PASSO 1: Buscar APENAS ESTE EVENTO específico do Supabase (NÃO todos!)
+    // CRÍTICO: Usar query otimizada para evitar carregar todo o banco de dados
+    console.log('📥 Buscando evento ESPECÍFICO do Supabase...');
     console.log('🔍 Procurando por event_code=', eventCode);
     
-    // ✅ CRÍTICO: Buscar TODOS os eventos e filtrar localmente para contornar prefixos "id. "
-    let allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
+    // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
+    let eventsData = await supabaseRequest(
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)&limit=1`
+    );
     
-    console.log('📥 Total de eventos no Supabase:', allEvents?.length || 0);
+    console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
     
-    // Limpar e procurar MANUALMENTE (contorna o prefixo "id. ")
-    let eventsData = null;
-    
-    if (allEvents && Array.isArray(allEvents)) {
-      // ✅ PASSO 2A: Limpar TODOS os IDs e procurar por event_code VÁLIDO
-      allEvents = allEvents.map(e => ({
-        ...e,
-        id: cleanId(e.id),  // ✅ CRÍTICO: Limpar ID ao carregar
-        event_code: cleanId(e.event_code)  // ✅ Também limpar event_code
-      }));
-      
-      console.log('✅ IDs limpos. Primeiros 3 eventos:', allEvents.slice(0, 3).map(e => ({
-        id: e.id,
-        event_code: e.event_code,
-        title: e.title
-      })));
-      
-      // Procurar por event_code EXATO
-      eventsData = allEvents.filter(e => e.event_code === eventCode);
-      
-      console.log('🔍 Encontrados por event_code exato:', eventsData?.length || 0);
-      
-      // ✅ PASSO 2B: Se não encontrou, procurar por ID (último recurso)
-      if (!eventsData || eventsData.length === 0) {
-        console.log('⚠️ Não encontrado por event_code. Tentando por ID...');
-        
-        eventsData = allEvents.filter(e => e.id === eventCode);
-        
-        console.log('🔍 Encontrados por ID:', eventsData?.length || 0);
-      }
-    }
-    
-    // ✅ Se encontrou no Supabase, normalizar dados
     if (eventsData && eventsData.length > 0) {
       console.log('✅ Evento encontrado no Supabase!');
       const eventData = eventsData[0];
@@ -5951,7 +5964,6 @@ async function checkURLForEvent() {
         deadlineValue = eventData.date;
       }
       
-      // ✅ CRÍTICO: Usar event_code já limpo
       let finalEventCode = eventData.event_code || eventData.id;
       
       console.log('✅ Event code final:', finalEventCode);
@@ -6760,6 +6772,65 @@ function confirmAdminDeleteEvent(eventId, confirmModal, parentModal) {
   }
 }
 
+// ===================== TOGGLE MODERATOR ROLE =====================
+function toggleModeratorRole(userId) {
+  const user = Store.users.find(u => u.id === userId);
+  if (!user) return;
+
+  // Apenas admin pode atribuir role de moderador
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+    toast('Apenas admin pode atribuir role de moderador!');
+    return;
+  }
+
+  const newRole = user.role === 'moderator' ? 'user' : 'moderator';
+  
+  // ✅ Mostrar confirmação
+  const confirmModal = document.createElement('div');
+  confirmModal.className = 'modal-overlay';
+  confirmModal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">${newRole === 'moderator' ? '🛡️ Promover a Moderador?' : '👤 Remover de Moderador?'}</h3>
+      <p class="text-sm text-gray-600 mb-4">Utilizador: <strong>${user.phone}</strong></p>
+      
+      <div class="bg-blue-50 border-l-3 border-blue-500 p-3 rounded mb-4 text-xs text-blue-700">
+        ${newRole === 'moderator' 
+          ? '<p class="font-semibold mb-1">🛡️ Moderador pode:</p><ul class="list-disc list-inside"><li>Editar eventos</li><li>Ver confirmações</li><li>Gerir presentes</li></ul><p class="mt-2">❌ NÃO pode eliminar convidados, eventos ou utilizadores</p>'
+          : '<p class="font-semibold mb-1">O utilizador voltará a ser um utilizador normal</p>'
+        }
+      </div>
+      
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="confirmToggleModeratorRole('${userId}', '${newRole}', this.closest('.modal-overlay'))">Confirmar</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(confirmModal);
+}
+
+function confirmToggleModeratorRole(userId, newRole, modal) {
+  const user = Store.users.find(u => u.id === userId);
+  if (!user) return;
+
+  user.role = newRole;
+  
+  // ✅ Sincronizar com Supabase
+  supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { role: newRole }).then(result => {
+    console.log('✅ Role alterado para:', newRole);
+    
+    modal.remove();
+    toast(newRole === 'moderator' 
+      ? `✓ ${user.phone} foi promovido a Moderador!` 
+      : `✓ ${user.phone} voltou a ser Utilizador Normal!`);
+    
+    renderAdmin();
+  }).catch(error => {
+    console.error('❌ Erro ao alterar role:', error);
+    toast('❌ Erro ao alterar role. Tente novamente.');
+  });
+}
+
 // Adicionar botão admin para gerir URLs legados (no renderAdmin)
 // Será adicionado no painel admin
 
@@ -6970,5 +7041,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dd4bfd6546fd04e',t:'MTc3MzY3NDUwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddc2fb0050f4193',t:'MTc3Mzc1MjQ4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
