@@ -1714,9 +1714,11 @@ function renderEventDetails() {
   });
 
   const stats = [
+    { label: '👰 Noiva', value: noiva, color: 'bg-pink-50 text-pink-600', icon: 'heart' },
+    { label: '🤵 Noivo', value: noivo, color: 'bg-blue-50 text-blue-600', icon: 'heart' },
     { label: 'Confirmados', value: confirmed.length, color: 'bg-green-50 text-green-600', icon: 'check-circle' },
     { label: 'Não Comparecem', value: declined.length, color: 'bg-red-50 text-red-600', icon: 'x-circle' },
-    { label: 'Total de Pessoas', value: totalPeople, color: 'bg-blue-50 text-blue-600', icon: 'users' }
+    { label: 'Total de Pessoas', value: totalPeople, color: 'bg-indigo-50 text-indigo-600', icon: 'users' }
   ];
   document.getElementById('detail-stats').innerHTML = stats.map(s => '<div class="stat-card ' + s.color + ' rounded-xl p-4 text-center"><i data-lucide="' + s.icon + '" class="w-5 h-5 mx-auto mb-1"></i><div class="text-2xl font-bold">' + s.value + '</div><div class="text-xs font-semibold mt-1">' + s.label + '</div></div>').join('');
 
@@ -7108,5 +7110,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddcff55c6b54193',t:'MTc3Mzc2MDk5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ddd07e156a54193',t:'MTc3Mzc2MTM0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
