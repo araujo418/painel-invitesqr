@@ -546,7 +546,7 @@ async function fetchEventForGuest(eventId) {
       confirmations: (event.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
-        side: rsvp.side || 'noivo',
+        side: rsvp.side ?? null,
         companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
         kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
         wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -647,7 +647,7 @@ async function fetchUserDataForOrganizer(userId) {
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side || 'noivo',
+          side: rsvp.side ?? null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
@@ -1019,7 +1019,7 @@ async function handleLogin(e) {
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side || 'noivo',
+          side: rsvp.side ?? null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -1083,9 +1083,9 @@ function renderDashboard() {
   const container = document.getElementById('dashboard-events');
   
   // ✅ Mostrar eventos pertencentes ao usuário (já carregados do Supabase)
-  let userEvents = Store.events.filter(ev => {
+  let userEvents = (Store.events || []).filter(ev => {
     const userId = ev.user_id || ev.userId;
-    return userId === Store.currentUser.id;
+    return String(userId) === String(Store.currentUser.id);
   });
   
   // Remover duplicatas (mesmo ID)
@@ -3015,7 +3015,7 @@ async function reloadEventFromSupabase(eventId) {
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side || 'noivo',
+          side: rsvp.side ?? null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
@@ -4157,7 +4157,7 @@ async function searchEvent() {
       confirmations: (found.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
-        side: rsvp.side || 'noivo',
+        side: rsvp.side ?? null,
         companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
         kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
         wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -6345,7 +6345,7 @@ async function checkURLForEvent() {
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side || 'noivo',
+          side: rsvp.side ?? null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -7281,7 +7281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               confirmations: (event.rsvps || []).map(rsvp => ({
                 name: rsvp.guest_name,
                 attending: rsvp.attending === true || rsvp.attending === 'yes',
-                side: rsvp.side || 'noivo',
+                side: rsvp.side ?? null,
                 companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
                 kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                 wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
@@ -7343,7 +7343,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 confirmations: (event.rsvps || []).map(rsvp => ({
                   name: rsvp.guest_name,
                   attending: rsvp.attending === true || rsvp.attending === 'yes',
-                  side: rsvp.side || 'noivo',
+                  side: rsvp.side ?? null,
                   companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
                   kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                   wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
