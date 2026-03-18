@@ -546,7 +546,9 @@ async function fetchEventForGuest(eventId) {
       confirmations: (event.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
-        side: rsvp.side ?? null,
+        side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
         companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
         kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
         wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -647,7 +649,9 @@ async function fetchUserDataForOrganizer(userId) {
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side ?? null,
+          side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
@@ -705,7 +709,23 @@ async function fetchAdminStats() {
   }
 }
 
-// ===================== DATA STORE =====================
+function resetGift(eventId, guestName){
+  if(!confirm('Remover presente deste convidado?')) return;
+
+  supabaseRequest(
+    `rsvps?guest_name=eq.${encodeURIComponent(guestName)}&event_id=eq.${eventId}`,
+    'PATCH',
+    {
+      wants_gift: false,
+      gift_ids: null
+    }
+  ).then(()=>{
+    toast('Presente removido');
+    renderEventDetails();
+  });
+}
+
+ // ===================== DATA STORE =====================
 const Store = {
   users: [], // ⚠️ NUNCA armazenar senhas no frontend!
   events: [],
@@ -1019,7 +1039,9 @@ async function handleLogin(e) {
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side ?? null,
+          side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -3015,7 +3037,9 @@ async function reloadEventFromSupabase(eventId) {
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side ?? null,
+          side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
@@ -3795,7 +3819,7 @@ function editConfirmationModal(confIndex) {
           <div class="flex gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="edit-conf-attending" value="yes" ${conf.attending ? 'checked' : ''} class="accent-teal-500">
-              <span class="text-sm">Vai</span>
+              <span class="text-sm">Vai ${conf.wantsGift ? `<button onclick="resetGift('${event.id}','${conf.name}')" class="text-xs text-red-500 ml-2">Remover presente</button>` : ''}</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="edit-conf-attending" value="no" ${!conf.attending ? 'checked' : ''} class="accent-teal-500">
@@ -4157,7 +4181,9 @@ async function searchEvent() {
       confirmations: (found.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
-        side: rsvp.side ?? null,
+        side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
         companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
         kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
         wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -6345,7 +6371,9 @@ async function checkURLForEvent() {
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
-          side: rsvp.side ?? null,
+          side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
@@ -7281,7 +7309,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               confirmations: (event.rsvps || []).map(rsvp => ({
                 name: rsvp.guest_name,
                 attending: rsvp.attending === true || rsvp.attending === 'yes',
-                side: rsvp.side ?? null,
+                side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
                 companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
                 kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                 wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
@@ -7343,7 +7373,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 confirmations: (event.rsvps || []).map(rsvp => ({
                   name: rsvp.guest_name,
                   attending: rsvp.attending === true || rsvp.attending === 'yes',
-                  side: rsvp.side ?? null,
+                  side: (String(event.allow_sides).toLowerCase() === 'yes') 
+        ? (rsvp.side ?? null) 
+        : null,
                   companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
                   kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                   wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
