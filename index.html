@@ -438,6 +438,15 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           return supabaseRequest(fallbackEndpoint, method, body);
         }
       }
+      const missingRsvpColumn = text.match(/column\s+rsvps_\d+\.([a-zA-Z0-9_]+)\s+does not exist/i);
+      if (response.status === 400 && method === 'GET' && missingRsvpColumn && endpoint.includes('rsvps(')) {
+        const missingColumn = missingRsvpColumn[1];
+        console.warn(`Coluna ${missingColumn} nao existe em rsvps. Repetindo consulta sem essa coluna.`);
+        const fallbackEndpoint = endpoint.replace(new RegExp(`,${missingColumn}(?=[,)])`, 'g'), '');
+        if (fallbackEndpoint !== endpoint) {
+          return supabaseRequest(fallbackEndpoint, method, body);
+        }
+      }
       return null;
     }
     
@@ -2025,12 +2034,48 @@ function downloadPDF() {
 
   const enumerated = confirm('Quer baixar a lista enumerada?\n\nOK = com numeros\nCancelar = apenas nomes');
   const generatedAt = new Date().toLocaleString('pt-PT');
-  const names = confirmed.map(conf => formatGuestWithCompanions(conf));
-  const lines = names.map((name, index) => enumerated ? `${index + 1}. ${name}` : name);
+  const hasSides = ev.allowSides === true || String(ev.allow_sides).toLowerCase() === 'yes';
+  const side1Name = ev.side1_name && String(ev.side1_name).trim() ? String(ev.side1_name).trim() : 'Noivo';
+  const side2Name = ev.side2_name && String(ev.side2_name).trim() ? String(ev.side2_name).trim() : 'Noiva';
+  const side1Values = ['noivo', 'side1', side1Name.toLowerCase()];
+  const side2Values = ['noiva', 'side2', side2Name.toLowerCase()];
+
+  function sideKey(conf) {
+    const value = String(conf.side || '').trim().toLowerCase();
+    if (side1Values.includes(value)) return 'side1';
+    if (side2Values.includes(value)) return 'side2';
+    return 'other';
+  }
+
+  function makeLines(list) {
+    return list.map((conf, index) => {
+      const name = formatGuestWithCompanions(conf);
+      return enumerated ? `${index + 1}. ${name}` : name;
+    });
+  }
+
+  const sections = [];
+  if (hasSides) {
+    const side1List = confirmed.filter(conf => sideKey(conf) === 'side1');
+    const side2List = confirmed.filter(conf => sideKey(conf) === 'side2');
+    const otherList = confirmed.filter(conf => sideKey(conf) === 'other');
+
+    sections.push({ title: `Lista do ${side1Name}`, lines: makeLines(side1List) });
+    sections.push({ title: `Lista da ${side2Name}`, lines: makeLines(side2List) });
+    if (otherList.length > 0) sections.push({ title: 'Sem lado definido', lines: makeLines(otherList) });
+  } else {
+    sections.push({ title: '', lines: makeLines(confirmed) });
+  }
+
+  const textSections = sections.map(section => {
+    const header = section.title ? `${section.title}\n` : '';
+    const body = section.lines.length ? section.lines.join('\n') : 'Nenhum convidado confirmado nesta lista.';
+    return header + body;
+  });
 
   const JsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!JsPDF) {
-    const text = `${ev.title}\nGerado em: ${generatedAt}\n\n${lines.join('\n')}`;
+    const text = `${ev.title}\nGerado em: ${generatedAt}\n\n${textSections.join('\n\n')}`;
     const element = document.createElement('pre');
     element.style.whiteSpace = 'pre-wrap';
     element.style.fontFamily = 'Arial, sans-serif';
@@ -2061,15 +2106,31 @@ function downloadPDF() {
   y += 12;
 
   doc.setFontSize(12);
-  lines.forEach(line => {
-    const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
-    wrapped.forEach(part => {
-      if (y > pageHeight - 18) {
+  sections.forEach((section, sectionIndex) => {
+    if (sectionIndex > 0) y += 4;
+
+    if (section.title) {
+      if (y > pageHeight - 24) {
         doc.addPage();
         y = 20;
       }
-      doc.text(part, margin, y);
-      y += 7;
+      doc.setFont('helvetica', 'bold');
+      doc.text(section.title, margin, y);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+    }
+
+    const sectionLines = section.lines.length ? section.lines : ['Nenhum convidado confirmado nesta lista.'];
+    sectionLines.forEach(line => {
+      const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
+      wrapped.forEach(part => {
+        if (y > pageHeight - 18) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(part, margin, y);
+        y += 7;
+      });
     });
   });
 
