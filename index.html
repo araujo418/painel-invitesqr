@@ -229,7 +229,7 @@ function controlarLado(ativo) {
         <div id="sides-extra" class="pl-4">
          <label class="text-xs text-gray-500 mb-2 block">Personalizar nomes dos lados</label>
          <div class="flex gap-2 mb-2">
-          <input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Noivo" value="Noivo"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Noiva" value="Noiva">
+          <input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Família" value="Grupo 1"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Amigos" value="Grupo 2">
          </div>
         </div>
         <div class="flex items-center justify-between">
@@ -295,19 +295,19 @@ function controlarLado(ativo) {
          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="yes" class="accent-teal-500" required> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
         </div><label class="block text-sm font-semibold text-gray-600 mb-1">Seu Nome</label> <input id="rsvp-name" class="input-field mb-3" placeholder="Nome completo" required>
         <div id="rsvp-default-side-section" class="hidden mb-3">
-         <label class="block text-sm font-semibold text-gray-600 mb-1">Lado do casal</label>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Grupo do convidado</label>
          <div class="flex gap-3">
-          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noivo" class="accent-teal-500"> <span class="text-sm">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="noiva" class="accent-teal-500"> <span class="text-sm">Noiva</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500"> <span class="text-sm">Grupo 1</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm">Grupo 2</span></label>
          </div>
         </div>
         <div id="rsvp-side-section" class="hidden mb-3">
-         <label class="block text-sm font-semibold text-gray-600 mb-1" id="rsvp-side-label">Lado do casal</label>
+         <label class="block text-sm font-semibold text-gray-600 mb-1" id="rsvp-side-label">Grupo do convidado</label>
          <div class="flex gap-3 mb-3">
-          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500"> <span class="text-sm" id="rsvp-side1-label">Noivo</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm" id="rsvp-side2-label">Noiva</span></label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side1" class="accent-teal-500"> <span class="text-sm" id="rsvp-side1-label">Grupo 1</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-side" value="side2" class="accent-teal-500"> <span class="text-sm" id="rsvp-side2-label">Grupo 2</span></label>
          </div>
         </div>
         <div id="rsvp-message-section" class="hidden mb-3">
-         <label class="block text-sm font-semibold text-gray-600 mb-1">Deixar um Recado</label> <textarea id="rsvp-message" class="input-field text-sm h-20 p-2" placeholder="Deixe um recado para o casal..."></textarea>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Deixar um Recado</label> <textarea id="rsvp-message" class="input-field text-sm h-20 p-2" placeholder="Deixe um recado para o organizador..."></textarea>
          <p class="text-xs text-gray-400 mt-1">Máximo 500 caracteres</p>
         </div>
         <div id="rsvp-companions-section" class="hidden mb-3">
@@ -847,6 +847,41 @@ function normalizeGuestName(name) {
   return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+function isSideSelectionEnabled(eventData) {
+  return eventData && (
+    eventData.allowSides === true ||
+    eventData.allow_sides === true ||
+    String(eventData.allow_sides).toLowerCase() === 'yes'
+  );
+}
+
+function getEventSideNames(eventData) {
+  const side1 = eventData && eventData.side1_name && String(eventData.side1_name).trim()
+    ? String(eventData.side1_name).trim()
+    : 'Grupo 1';
+  const side2 = eventData && eventData.side2_name && String(eventData.side2_name).trim()
+    ? String(eventData.side2_name).trim()
+    : 'Grupo 2';
+  return { side1, side2 };
+}
+
+function getSideBucket(sideValue, eventData) {
+  const value = String(sideValue || '').trim().toLowerCase();
+  const names = getEventSideNames(eventData);
+  if (['noivo', 'side1', names.side1.toLowerCase()].includes(value)) return 'side1';
+  if (['noiva', 'side2', names.side2.toLowerCase()].includes(value)) return 'side2';
+  return 'other';
+}
+
+function getSideLabel(sideValue, eventData) {
+  if (!isSideSelectionEnabled(eventData)) return '';
+  const names = getEventSideNames(eventData);
+  const bucket = getSideBucket(sideValue, eventData);
+  if (bucket === 'side1') return names.side1;
+  if (bucket === 'side2') return names.side2;
+  return 'Sem grupo definido';
+}
+
 function validateDeadlineDate() {
   const eventDateInput = document.getElementById('evt-date');
   const deadlineInput = document.getElementById('evt-deadline');
@@ -1183,8 +1218,8 @@ function goToCreateEvent() {
   document.getElementById('evt-deadline-time').value = '23:59';
   document.getElementById('evt-max-comp').value = '2';
   document.getElementById('evt-max-kids').value = '2';
-  document.getElementById('evt-side1-name').value = 'Noivo';
-  document.getElementById('evt-side2-name').value = 'Noiva';
+  document.getElementById('evt-side1-name').value = 'Grupo 1';
+  document.getElementById('evt-side2-name').value = 'Grupo 2';
   
   // ✅ Limpar imagem de capa
   document.getElementById('cover-img').classList.add('hidden');
@@ -1275,8 +1310,8 @@ function handleCreateEvent(e) {
   const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
   
   // ✅ CRÍTICO: SEMPRE usar os valores dos inputs, mesmo que allowSides seja false
-  const side1Name = document.getElementById('evt-side1-name').value.trim() || 'Noivo';
-  const side2Name = document.getElementById('evt-side2-name').value.trim() || 'Noiva';
+  const side1Name = document.getElementById('evt-side1-name').value.trim() || 'Grupo 1';
+  const side2Name = document.getElementById('evt-side2-name').value.trim() || 'Grupo 2';
 
   const coverImg = document.getElementById('cover-img');
   const hasCover = !coverImg.classList.contains('hidden');
@@ -1555,11 +1590,11 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
   
   const finalSide1Name = side1NameInput && side1NameInput.value && side1NameInput.value.trim() 
     ? side1NameInput.value.trim() 
-    : 'Noivo';
+    : 'Grupo 1';
   
   const finalSide2Name = side2NameInput && side2NameInput.value && side2NameInput.value.trim() 
     ? side2NameInput.value.trim() 
-    : 'Noiva';
+    : 'Grupo 2';
 
   console.log('💾 Atualizando evento no Supabase:', {
     eventId,
@@ -1785,32 +1820,38 @@ function renderEventDetails() {
   const confirmed = confirmations.filter(c => c.attending === true || c.attending === 'yes');
   const declined = confirmations.filter(c => c.attending === false || c.attending === 'no' || !c.attending);
   const totalPeople = confirmed.reduce((sum, c) => sum + 1 + (c.companions || []).length + (c.kids || []).length, 0);
+  const hasSides = isSideSelectionEnabled(event);
+  const sideNames = getEventSideNames(event);
   
   // ✅ CRÍTICO: Contar PESSOAS por lado (principal + acompanhantes) - NÃO apenas confirmações
-  let noivo = 0;
-  let noiva = 0;
+  let side1Total = 0;
+  let side2Total = 0;
   confirmed.forEach(c => {
-    const isNoiva = c.side === 'noiva' || c.side === 'side2';
-    const isNoivo = c.side === 'noivo' || c.side === 'side1';
+    const sideBucket = getSideBucket(c.side, event);
+    const isSide1 = sideBucket === 'side1';
+    const isSide2 = sideBucket === 'side2';
     
     // Contar a pessoa principal
-    if (isNoiva) noiva++;
-    if (isNoivo) noivo++;
+    if (isSide1) side1Total++;
+    if (isSide2) side2Total++;
     
     // ✅ Contar acompanhantes do mesmo lado
     if (c.companions && c.companions.length > 0) {
-      if (isNoiva) noiva += c.companions.length;
-      if (isNoivo) noivo += c.companions.length;
+      if (isSide1) side1Total += c.companions.length;
+      if (isSide2) side2Total += c.companions.length;
     }
   });
 
-  const stats = [
-    { label: '👰 Noiva', value: noiva, color: 'bg-pink-50 text-pink-600', icon: 'heart' },
-    { label: '🤵 Noivo', value: noivo, color: 'bg-blue-50 text-blue-600', icon: 'heart' },
+  const stats = [];
+  if (hasSides) {
+    stats.push({ label: sideNames.side1, value: side1Total, color: 'bg-teal-50 text-teal-600', icon: 'users' });
+    stats.push({ label: sideNames.side2, value: side2Total, color: 'bg-blue-50 text-blue-600', icon: 'users' });
+  }
+  stats.push(
     { label: 'Confirmados', value: confirmed.length, color: 'bg-green-50 text-green-600', icon: 'check-circle' },
     { label: 'Não Comparecem', value: declined.length, color: 'bg-red-50 text-red-600', icon: 'x-circle' },
     { label: 'Total de Pessoas', value: totalPeople, color: 'bg-indigo-50 text-indigo-600', icon: 'users' }
-  ];
+  );
   document.getElementById('detail-stats').innerHTML = stats.map(s => '<div class="stat-card ' + s.color + ' rounded-xl p-4 text-center"><i data-lucide="' + s.icon + '" class="w-5 h-5 mx-auto mb-1"></i><div class="text-2xl font-bold">' + s.value + '</div><div class="text-xs font-semibold mt-1">' + s.label + '</div></div>').join('');
 
   const confContainer = document.getElementById('detail-confirmations');
@@ -1870,7 +1911,14 @@ function renderEventDetails() {
         replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(' + idx + ')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
       }
       
-      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + (c.side === 'noivo' ? '🤵 Noivo' : '👰 Noiva') + ((c.companions || []).length ? ' · Acomp: ' + c.companions.join(', ') : '') + ((c.kids || []).length ? ' · Crianças: ' + c.kids.join(', ') : '') + (hasReservedGift ? ' · 🎁 ' + reservedGift.name : '') + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
+      const sideLabel = getSideLabel(c.side, event);
+      const details = [
+        sideLabel,
+        ((c.companions || []).length ? 'Acomp: ' + c.companions.join(', ') : ''),
+        ((c.kids || []).length ? 'Crianças: ' + c.kids.join(', ') : ''),
+        (hasReservedGift ? '🎁 ' + reservedGift.name : '')
+      ].filter(Boolean).join(' · ');
+      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
     }).join('');
   }
 
@@ -2034,17 +2082,11 @@ function downloadPDF() {
 
   const enumerated = confirm('Quer baixar a lista enumerada?\n\nOK = com numeros\nCancelar = apenas nomes');
   const generatedAt = new Date().toLocaleString('pt-PT');
-  const hasSides = ev.allowSides === true || String(ev.allow_sides).toLowerCase() === 'yes';
-  const side1Name = ev.side1_name && String(ev.side1_name).trim() ? String(ev.side1_name).trim() : 'Noivo';
-  const side2Name = ev.side2_name && String(ev.side2_name).trim() ? String(ev.side2_name).trim() : 'Noiva';
-  const side1Values = ['noivo', 'side1', side1Name.toLowerCase()];
-  const side2Values = ['noiva', 'side2', side2Name.toLowerCase()];
+  const hasSides = isSideSelectionEnabled(ev);
+  const sideNames = getEventSideNames(ev);
 
   function sideKey(conf) {
-    const value = String(conf.side || '').trim().toLowerCase();
-    if (side1Values.includes(value)) return 'side1';
-    if (side2Values.includes(value)) return 'side2';
-    return 'other';
+    return getSideBucket(conf.side, ev);
   }
 
   function makeLines(list) {
@@ -2060,8 +2102,8 @@ function downloadPDF() {
     const side2List = confirmed.filter(conf => sideKey(conf) === 'side2');
     const otherList = confirmed.filter(conf => sideKey(conf) === 'other');
 
-    sections.push({ title: `Lista do ${side1Name}`, lines: makeLines(side1List) });
-    sections.push({ title: `Lista da ${side2Name}`, lines: makeLines(side2List) });
+    sections.push({ title: `Lista - ${sideNames.side1}`, lines: makeLines(side1List) });
+    sections.push({ title: `Lista - ${sideNames.side2}`, lines: makeLines(side2List) });
     if (otherList.length > 0) sections.push({ title: 'Sem lado definido', lines: makeLines(otherList) });
   } else {
     sections.push({ title: '', lines: makeLines(confirmed) });
@@ -2247,8 +2289,8 @@ function editEvent() {
     document.getElementById('sides-extra').classList.remove('hidden');
     
     // ✅ CRÍTICO: Carregar também side1_name e side2_name
-    const side1Val = ev.side1_name && ev.side1_name.trim() ? ev.side1_name.trim() : 'Noivo';
-    const side2Val = ev.side2_name && ev.side2_name.trim() ? ev.side2_name.trim() : 'Noiva';
+    const side1Val = ev.side1_name && ev.side1_name.trim() ? ev.side1_name.trim() : 'Grupo 1';
+    const side2Val = ev.side2_name && ev.side2_name.trim() ? ev.side2_name.trim() : 'Grupo 2';
     
     console.log('✅ Nomes dos lados carregados:', { side1: side1Val, side2: side2Val });
     
@@ -2260,8 +2302,8 @@ function editEvent() {
     document.getElementById('sides-extra').classList.add('hidden');
     
     // Reset valores padrão
-    document.getElementById('evt-side1-name').value = 'Noivo';
-    document.getElementById('evt-side2-name').value = 'Noiva';
+    document.getElementById('evt-side1-name').value = 'Grupo 1';
+    document.getElementById('evt-side2-name').value = 'Grupo 2';
   }
   
   // ✅ CRÍTICO: max_companions e max_kids vêm DIRETO do Supabase como NUMBERS
@@ -2346,8 +2388,8 @@ function editEvent() {
     const maxKids = parseInt(document.getElementById('evt-max-kids').value) || 2;
 
     // ✅ CRÍTICO: Definir side1Name e side2Name AQUI dentro do formulário
-    const side1NameVal = document.getElementById('evt-side1-name').value.trim() || 'Noivo';
-    const side2NameVal = document.getElementById('evt-side2-name').value.trim() || 'Noiva';
+    const side1NameVal = document.getElementById('evt-side1-name').value.trim() || 'Grupo 1';
+    const side2NameVal = document.getElementById('evt-side2-name').value.trim() || 'Grupo 2';
     
     // ✅ CRÍTICO: Definir coverImg AQUI dentro do formulário
     const coverImgEdit = document.getElementById('cover-img');
@@ -2364,8 +2406,8 @@ function editEvent() {
         toast('✓ Imagem recebida, guardando alterações...');
         submitBtn.textContent = 'Guardando...';
         // ✅ CRÍTICO: Ler valores AQUI dentro do formulário
-        const finalSide1Name = document.getElementById('evt-side1-name').value.trim() || 'Noivo';
-        const finalSide2Name = document.getElementById('evt-side2-name').value.trim() || 'Noiva';
+        const finalSide1Name = document.getElementById('evt-side1-name').value.trim() || 'Grupo 1';
+        const finalSide2Name = document.getElementById('evt-side2-name').value.trim() || 'Grupo 2';
         saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, finalSide1Name, finalSide2Name, submitBtn, originalText);
       }).catch(error => {
         console.error('❌ ERRO upload imagem:', error);
@@ -2591,9 +2633,10 @@ function renderGuestView() {
 
   // ✅ Atualizar labels dos lados se customizados
   if (eventData.allowSides) {
-    const side1Label = eventData.side1_name || 'Noivo';
-    const side2Label = eventData.side2_name || 'Noiva';
-    document.getElementById('rsvp-side-label').textContent = `Escolha`;
+    const sideNames = getEventSideNames(eventData);
+    const side1Label = sideNames.side1;
+    const side2Label = sideNames.side2;
+    document.getElementById('rsvp-side-label').textContent = `Escolha o grupo`;
     document.getElementById('rsvp-side1-label').textContent = side1Label;
     document.getElementById('rsvp-side2-label').textContent = side2Label;
     document.querySelector('input[name="rsvp-side"][value="side1"]').value = 'side1';
@@ -2808,24 +2851,16 @@ function handleRSVP(e) {
   
   // ✅ Determinar lado (pode ser customizado)
   const allowSides = (ev.allowSides === true) || (ev.allow_sides === 'yes') || (String(ev.allow_sides).toLowerCase() === 'yes');
-  let side = 'noivo';
+  let side = '';
   
   if (allowSides) {
     // Se permite escolher lado, ler valor do formulário
     const sideRadio = document.querySelector('input[name="rsvp-side"]:checked');
     if (sideRadio) {
-      // ✅ CRÍTICO: Converter side1 -> noivo, side2 -> noiva
-      if (sideRadio.value === 'side1') {
-        side = 'noivo';
-      } else if (sideRadio.value === 'side2') {
-        side = 'noiva';
-      } else {
-        side = sideRadio.value; // Fallback para valores diretos
-      }
+      side = sideRadio.value;
     }
   } else {
-    // Se não permite escolher lado, usar valor padrão 'noivo'
-    side = 'noivo';
+    side = '';
   }
   
   const wantsGift = document.querySelector('input[name="rsvp-wants-gift"]:checked')?.value === 'yes';
@@ -3070,7 +3105,8 @@ function sendRealtimeNotification(rsvpData) {
   // Só notificar se o owner estiver online (logado)
   if (Store.currentUser && Store.currentUser.id === ownerUserId) {
     const attending = rsvpData.attending ? 'confirmou presença' : 'disse que não vai';
-    const side = rsvpData.side === 'noiva' ? '👰 Noiva' : '🤵 Noivo';
+    const side = getSideLabel(rsvpData.side, event);
+    const sideText = side ? side + ' - ' : '';
     
     // Criar notificação visual atraente
     const notif = document.createElement('div');
@@ -3083,7 +3119,7 @@ function sendRealtimeNotification(rsvpData) {
           <div class="flex-1">
             <p class="font-bold text-sm">Nova Confirmação!</p>
             <p class="text-xs opacity-90">${rsvpData.guest_name}</p>
-            <p class="text-xs opacity-90">${side} - ${attending}</p>
+            <p class="text-xs opacity-90">${sideText}${attending}</p>
             <p class="text-xs opacity-75 mt-1">📅 ${event.title}</p>
           </div>
         </div>
@@ -3819,6 +3855,8 @@ function editConfirmationModal(confIndex) {
   if (!ev || confIndex < 0 || confIndex >= ev.confirmations.length) return;
 
   const conf = ev.confirmations[confIndex];
+  const sideNames = getEventSideNames(ev);
+  const selectedSide = getSideBucket(conf.side, ev);
   
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -3846,15 +3884,15 @@ function editConfirmationModal(confIndex) {
         </div>
         
         <div>
-          <label class="block text-sm font-semibold text-gray-600 mb-2">Lado</label>
+          <label class="block text-sm font-semibold text-gray-600 mb-2">Grupo</label>
           <div class="flex gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="edit-conf-side" value="noivo" ${conf.side === 'noivo' ? 'checked' : ''} class="accent-teal-500">
-              <span class="text-sm">🤵 Noivo</span>
+              <input type="radio" name="edit-conf-side" value="side1" ${selectedSide === 'side1' ? 'checked' : ''} class="accent-teal-500">
+              <span class="text-sm">${escapeHTML(sideNames.side1)}</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="edit-conf-side" value="noiva" ${conf.side === 'noiva' ? 'checked' : ''} class="accent-teal-500">
-              <span class="text-sm">👰 Noiva</span>
+              <input type="radio" name="edit-conf-side" value="side2" ${selectedSide === 'side2' ? 'checked' : ''} class="accent-teal-500">
+              <span class="text-sm">${escapeHTML(sideNames.side2)}</span>
             </label>
           </div>
         </div>
@@ -4793,7 +4831,7 @@ async function exportSupabaseSchema() {
             event_id: 'TEXT FOREIGN KEY - ID do evento',
             guest_name: 'TEXT NOT NULL - Nome do convidado',
             attending: 'TEXT - "yes" ou "no" - Confirmação de presença',
-            side: 'TEXT - Lado do casal: "noivo" ou "noiva"',
+            side: 'TEXT - Grupo/lado escolhido pelo convidado',
             companions: 'TEXT - Lista de acompanhantes (separados por |)',
             kids: 'TEXT - Lista de crianças (separados por |)',
             wants_gift: 'TEXT - "yes" ou "no" - Quer presentear?',
@@ -6164,19 +6202,19 @@ async function executeRepairCorruptedData(modal) {
       // ✅ VERIFICAR 2: side1_name com JSON ou objeto
       if (event.side1_name && typeof event.side1_name === 'string' && event.side1_name.startsWith('{')) {
         addLog(`  ❌ side1_name CORROMPIDO (JSON): ${event.side1_name.substring(0, 50)}...`);
-        updateData.side1_name = 'Noivo';
+        updateData.side1_name = 'Grupo 1';
         needsUpdate = true;
         fixed++;
-        addLog(`  ✅ Restaurado para: "Noivo"`);
+        addLog(`  ✅ Restaurado para: "Grupo 1"`);
       }
       
       // ✅ VERIFICAR 3: side2_name com JSON ou objeto
       if (event.side2_name && typeof event.side2_name === 'string' && event.side2_name.startsWith('{')) {
         addLog(`  ❌ side2_name CORROMPIDO (JSON): ${event.side2_name.substring(0, 50)}...`);
-        updateData.side2_name = 'Noiva';
+        updateData.side2_name = 'Grupo 2';
         needsUpdate = true;
         fixed++;
-        addLog(`  ✅ Restaurado para: "Noiva"`);
+        addLog(`  ✅ Restaurado para: "Grupo 2"`);
       }
       
       // ✅ VERIFICAR 4: cover_image com espaços extras ou "id. " no filename
