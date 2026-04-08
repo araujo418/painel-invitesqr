@@ -185,7 +185,7 @@ function controlarLado(ativo) {
       <form onsubmit="handleCreateEvent(event)">
        <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
        <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-4 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
-        <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
+        <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-cover">
        </div><input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
@@ -471,7 +471,7 @@ async function fetchEventForGuest(eventId) {
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
     const eventData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     if (!eventData || eventData.length === 0) {
@@ -580,7 +580,7 @@ async function fetchUserDataForOrganizer(userId) {
   try {
     // ✅ OTIMIZAÇÃO: Um único JOIN para trazer eventos + presentes + RSVPs
     // Selecionar TODOS os campos necessários incluindo cover_image, max_companions, max_kids, event_code
-    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at)`);
+    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     console.log('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
@@ -661,7 +661,6 @@ async function fetchUserDataForOrganizer(userId) {
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
           message: rsvp.message || '',
-          ownerReply: rsvp.owner_reply || '',
           createdAt: rsvp.created_at || new Date().toISOString(),
           updatedAt: rsvp.updated_at || new Date().toISOString()
         }))
@@ -973,11 +972,12 @@ async function handleLogin(e) {
     await new Promise(r => setTimeout(r, 300));
     
     // ✅ CARREGA 1: TODAS AS CONTAS
-    const allAccounts = await supabaseRequest(`accounts?select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+    const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
     
     Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
       phone: u.phone,
+      password: u.password,
       role: u.role || 'user',
       status: u.status || 'active',
       eventLimit: u.event_limit || null,
@@ -988,7 +988,7 @@ async function handleLogin(e) {
     console.log('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at)&limit=500&order=date.desc`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
     
     console.log('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
@@ -1046,7 +1046,6 @@ async function handleLogin(e) {
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
           message: rsvp.message || '',
-          ownerReply: rsvp.owner_reply || '',
         }))
       };
     });
@@ -1081,10 +1080,6 @@ function handleLogout() {
   sessionStorage.removeItem('authToken');
   sessionStorage.removeItem('userId');
   localStorage.removeItem('lastUserPhone');
-  localStorage.removeItem('adminImpersonatingUserId');
-  localStorage.removeItem('adminImpersonatingUserPhone');
-  localStorage.removeItem('adminOriginalUserId');
-  localStorage.removeItem('adminOriginalUserPhone');
   Router.go('home');
   toast('Desconectado com sucesso.');
 }
@@ -1711,7 +1706,7 @@ function renderEventDetails() {
   if (coverImage && coverImage.trim() !== '' && coverImage.startsWith('http')) {
     const img = document.createElement('img');
     img.src = coverImage;
-    img.className = 'w-full h-full object-contain bg-white';
+    img.className = 'w-full h-full object-cover';
     img.loading = 'lazy';
     img.onerror = function() {
       console.error('❌ Erro ao carregar imagem:', this.src);
@@ -1848,12 +1843,8 @@ function renderEventDetails() {
       if (hasReservedGift && isOwner) {
         removeGiftBtn = '<button class="text-yellow-500 hover:text-yellow-600 transition p-1" title="Remover presente reservado" onclick="removeGiftReservation(\'' + reservedGift.id + '\')"><i data-lucide="gift" class="w-5 h-5"></i></button>';
       }
-      let replyMessageBtn = '';
-      if (c.message && isOwner) {
-        replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(' + idx + ')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
-      }
       
-      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + (c.side === 'noivo' ? '🤵 Noivo' : '👰 Noiva') + ((c.companions || []).length ? ' · Acomp: ' + c.companions.join(', ') : '') + ((c.kids || []).length ? ' · Crianças: ' + c.kids.join(', ') : '') + (hasReservedGift ? ' · 🎁 ' + reservedGift.name : '') + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
+      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + (c.side === 'noivo' ? '🤵 Noivo' : '👰 Noiva') + ((c.companions || []).length ? ' · Acomp: ' + c.companions.join(', ') : '') + ((c.kids || []).length ? ' · Crianças: ' + c.kids.join(', ') : '') + (hasReservedGift ? ' · 🎁 ' + reservedGift.name : '') + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
     }).join('');
   }
 
@@ -2008,66 +1999,276 @@ function downloadGiftsPDF() {
 function downloadPDF() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
-
-  const confirmed = (ev.confirmations || []).filter(c => c.attending === true || c.attending === 'yes');
-  if (confirmed.length === 0) {
-    toast('Ainda nao ha convidados confirmados para exportar.');
-    return;
-  }
-
-  const enumerated = confirm('Quer baixar a lista enumerada?\n\nOK = com numeros\nCancelar = apenas nomes');
-  const generatedAt = new Date().toLocaleString('pt-PT');
-  const names = confirmed.map(conf => formatGuestWithCompanions(conf));
-  const lines = names.map((name, index) => enumerated ? `${index + 1}. ${name}` : name);
-
-  const JsPDF = window.jspdf && window.jspdf.jsPDF;
-  if (!JsPDF) {
-    const text = `${ev.title}\nGerado em: ${generatedAt}\n\n${lines.join('\n')}`;
-    const element = document.createElement('pre');
-    element.style.whiteSpace = 'pre-wrap';
-    element.style.fontFamily = 'Arial, sans-serif';
-    element.textContent = text;
-    html2pdf().set({
-      margin: 12,
-      filename: `${ev.title.replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.pdf`,
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(element).save();
-    toast('PDF gerado.');
-    return;
-  }
-
-  const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const margin = 18;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  let y = 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(ev.title || 'Evento', margin, y);
-  y += 8;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text('Gerado em: ' + generatedAt, margin, y);
-  y += 12;
-
-  doc.setFontSize(12);
-  lines.forEach(line => {
-    const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
-    wrapped.forEach(part => {
-      if (y > pageHeight - 18) {
-        doc.addPage();
-        y = 20;
+  
+  // 📌 Obter timestamp do último download (se existir)
+  const lastDownloadKey = `last_download_${ev.id}`;
+  const lastDownloadTime = localStorage.getItem(lastDownloadKey);
+  
+  // ✅ CRÍTICO: Se é o PRIMEIRO download, guardar todos os timestamps atuais
+  if (!lastDownloadTime) {
+    // Primeira vez que baixa - marcar todos como "antigos"
+    ev.confirmations.forEach(conf => {
+      if (!conf.createdAt) {
+        conf.createdAt = new Date(Date.now() - 86400000).toISOString(); // Ontem
       }
-      doc.text(part, margin, y);
-      y += 7;
+      if (!conf.updatedAt) {
+        conf.updatedAt = conf.createdAt;
+      }
     });
+  }
+  
+  const nowTime = Date.now();
+  
+  // Guardar novo timestamp
+  localStorage.setItem(lastDownloadKey, nowTime);
+  
+  // 📌 Determinar quais confirmações são NOVAS (após último download)
+  const isNewConfirmation = (conf) => {
+    if (!lastDownloadTime) return false; // Primeiro download, nenhuma é nova
+    const confTime = new Date(conf.updatedAt || conf.createdAt).getTime();
+    return confTime > parseInt(lastDownloadTime);
+  };
+  
+  // Separar confirmações por status
+  const confirmed = (ev.confirmations || []).filter(c => c.attending);
+  const declined = (ev.confirmations || []).filter(c => !c.attending);
+  
+  // ✅ PASSO 1: Calcular PESSOAS por lado (convidados PRINCIPAIS)
+  let confirmedByNoivo = confirmed.filter(c => c.side === 'noivo' || c.side === 'side1').length;
+  let confirmedByNoiva = confirmed.filter(c => c.side === 'noiva' || c.side === 'side2').length;
+  
+  // ✅ PASSO 2: Contar acompanhantes por lado
+  let companionsByNoivo = 0;
+  let companionsByNoiva = 0;
+  confirmed.forEach(c => {
+    if (c.companions && c.companions.length > 0) {
+      if (c.side === 'noivo' || c.side === 'side1') {
+        companionsByNoivo += c.companions.length;
+      }
+      if (c.side === 'noiva' || c.side === 'side2') {
+        companionsByNoiva += c.companions.length;
+      }
+    }
   });
+  
+  // ✅ PASSO 3: TOTAL de pessoas por lado (principal + acompanhantes)
+  const noivo = confirmedByNoivo + companionsByNoivo;
+  const noiva = confirmedByNoiva + companionsByNoiva;
+  
+  // Calcular totais
+  const totalPeople = confirmed.reduce((sum, c) => sum + 1 + (c.companions || []).length + (c.kids || []).length, 0);
+  const totalGiftsWanted = confirmed.filter(c => c.wantsGift).length;
 
-  doc.save(`${ev.title.replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.pdf`);
-  toast('PDF de convidados gerado.');
+  // Gerar HTML do PDF
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Confirmações de Presença</title>
+      <style>
+        * { font-family: 'Quicksand', Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background: white; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #007f9f; padding-bottom: 20px; }
+        .header h1 { margin: 0 0 5px 0; color: #007f9f; font-size: 28px; }
+        .header p { margin: 5px 0; color: #666; font-size: 14px; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-box { background: #f0f9fb; border-left: 4px solid #007f9f; padding: 15px; border-radius: 4px; }
+        .stat-box strong { display: block; font-size: 20px; color: #007f9f; }
+        .stat-box span { display: block; font-size: 12px; color: #666; margin-top: 5px; }
+        .section { margin-bottom: 30px; }
+        .section-title { background: #007f9f; color: white; padding: 12px 15px; border-radius: 4px 4px 0 0; font-weight: bold; font-size: 16px; }
+        .section-content { border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; }
+        .guest-item { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .guest-item:last-child { border-bottom: none; }
+        .guest-name { font-weight: 600; color: #333; }
+        .guest-new { background: #dcfce7; display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; color: #166534; margin-left: 8px; font-weight: 600; }
+        .guest-details { font-size: 13px; color: #666; margin-top: 4px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>✓ Confirmações de Presença</h1>
+        <p><strong>${ev.title}</strong></p>
+        <p>${formatDate(ev.date)} às ${ev.time}</p>
+        <p style="font-size: 12px; color: #999;">Relatório gerado em ${new Date().toLocaleDateString('pt-PT')} às ${new Date().toLocaleTimeString('pt-PT')}</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-box">
+          <strong>${confirmed.length}</strong>
+          <span>Confirmados</span>
+        </div>
+        <div class="stat-box">
+          <strong>${declined.length}</strong>
+          <span>Não Comparecem</span>
+        </div>
+        <div class="stat-box">
+          <strong>${totalPeople}</strong>
+          <span>Total de Pessoas</span>
+        </div>
+      </div>
+  `;
+
+  // CONFIRMADOS - NOIVA PRIMEIRO, DEPOIS NOIVO
+  if (confirmed.length > 0) {
+    htmlContent += `
+      <div class="section">
+        <div class="section-title">🎉 CONFIRMARAM PRESENÇA (${confirmed.length})</div>
+        <div class="section-content">
+    `;
+
+    // Agrupar confirmações por lado - NOIVA PRIMEIRO, DEPOIS NOIVO
+    const confirmedNoiva = confirmed.filter(c => c.side === 'noiva' || c.side === 'side2');
+    const confirmedNoivo = confirmed.filter(c => c.side === 'noivo' || c.side === 'side1');
+
+    // Lado da Noiva PRIMEIRO
+    if (confirmedNoiva.length > 0) {
+      htmlContent += `<div style="background: #f9fafb; padding: 12px 15px; font-weight: 600; color: #007f9f; border-bottom: 1px solid #eee;">👰 Convidados da Noiva (${confirmedNoiva.length})</div>`;
+      confirmedNoiva.forEach(conf => {
+        const isNew = isNewConfirmation(conf);
+        const guestLine = formatGuestWithCompanions(conf);
+        htmlContent += `
+          <div class="guest-item">
+            <div class="guest-name">
+              ${guestLine}
+              ${isNew ? '<span class="guest-new">✓ NOVO</span>' : ''}
+            </div>
+            ${conf.kids && conf.kids.length > 0 ? `<div class="guest-details">Crianças: ${conf.kids.join(', ')}</div>` : ''}
+          </div>
+        `;
+      });
+    } else {
+      htmlContent += `<div style="background: #f9fafb; padding: 12px 15px; font-weight: 600; color: #007f9f; border-bottom: 1px solid #eee;">👰 Convidados da Noiva (0)</div>
+        <div style="padding: 12px 15px; color: #999; font-style: italic;">Nenhum convidado da noiva confirmou presença</div>`;
+    }
+
+    // Lado do Noivo DEPOIS
+    if (confirmedNoivo.length > 0) {
+      htmlContent += `<div style="background: #f9fafb; padding: 12px 15px; font-weight: 600; color: #007f9f; border-bottom: 1px solid #eee;">🤵 Convidados do Noivo (${confirmedNoivo.length})</div>`;
+      confirmedNoivo.forEach(conf => {
+        const isNew = isNewConfirmation(conf);
+        const guestLine = formatGuestWithCompanions(conf);
+        htmlContent += `
+          <div class="guest-item">
+            <div class="guest-name">
+              ${guestLine}
+              ${isNew ? '<span class="guest-new">✓ NOVO</span>' : ''}
+            </div>
+            ${conf.kids && conf.kids.length > 0 ? `<div class="guest-details">Crianças: ${conf.kids.join(', ')}</div>` : ''}
+          </div>
+        `;
+      });
+    } else {
+      htmlContent += `<div style="background: #f9fafb; padding: 12px 15px; font-weight: 600; color: #007f9f; border-bottom: 1px solid #eee;">🤵 Convidados do Noivo (0)</div>
+        <div style="padding: 12px 15px; color: #999; font-style: italic;">Nenhum convidado do noivo confirmou presença</div>`;
+    }
+
+    htmlContent += `
+        </div>
+      </div>
+    `;
+  }
+
+  // NÃO COMPARECEM
+  if (declined.length > 0) {
+    htmlContent += `
+      <div class="section">
+        <div class="section-title">✗ NÃO COMPARECEM (${declined.length})</div>
+        <div class="section-content">
+    `;
+    
+    declined.forEach(conf => {
+      const isNew = isNewConfirmation(conf);
+      htmlContent += `
+        <div class="guest-item">
+          <div class="guest-name">
+            ${conf.name}
+            ${isNew ? '<span class="guest-new">✓ NOVO</span>' : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    htmlContent += `
+        </div>
+      </div>
+    `;
+  }
+
+  // PRESENTES (SE PERMITIDOS)
+  if (ev.allowGifts && ev.gifts && ev.gifts.length > 0) {
+    const reserved = ev.gifts.filter(g => g.reserved).length;
+    const available = ev.gifts.length - reserved;
+
+    htmlContent += `
+      <div class="section">
+        <div class="section-title">🎁 PRESENTES (${reserved}/${ev.gifts.length} escolhidos)</div>
+        <div class="section-content">
+          <div style="padding: 12px 15px; background: #f0f9fb; border-bottom: 1px solid #ddd;">
+            <strong style="color: #007f9f;">${reserved} presentes escolhidos</strong> | <strong>${available} disponíveis</strong>
+          </div>
+    `;
+
+    // Agrupar por categoria
+    const giftCategories = {};
+    ev.gifts.forEach(g => {
+      const cat = g.category || 'Sem categoria';
+      if (!giftCategories[cat]) giftCategories[cat] = [];
+      giftCategories[cat].push(g);
+    });
+
+    Object.keys(giftCategories).sort().forEach(cat => {
+      htmlContent += `<div style="background: #fafafa; padding: 10px 15px; font-weight: 600; font-size: 13px; color: #007f9f; border-bottom: 1px solid #eee;">${cat}</div>`;
+      
+      giftCategories[cat].forEach(gift => {
+        htmlContent += `
+          <div class="guest-item" style="padding: 10px 15px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 16px; height: 16px; border-radius: 50%; background: ${gift.reserved ? '#10b981' : '#e5e7eb'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">
+                ${gift.reserved ? '✓' : '○'}
+              </span>
+              <span>${gift.name}</span>
+              ${gift.reserved ? `<span style="color: #10b981; font-size: 12px; font-weight: 600;">→ ${gift.reservedBy}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    });
+
+    htmlContent += `
+        </div>
+      </div>
+    `;
+  }
+
+  htmlContent += `
+      <div class="footer">
+        <p>📅 Evento: ${ev.title}</p>
+        <p>© Created By AdKira 2026</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Converter HTML para PDF
+  const element = document.createElement('div');
+  element.innerHTML = htmlContent;
+  
+  const opt = {
+    margin: 10,
+    filename: `${ev.title.replace(/\s+/g, '_')}_confirmacoes_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+  toast('✓ PDF de confirmações gerado com sucesso!');
 }
+
 function manageGifts() { Router.go('gifts'); }
 
 function editEvent() {
@@ -2385,7 +2586,7 @@ function renderGuestView() {
   if (coverImage && coverImage.trim() !== '' && coverImage.startsWith('http')) {
     const img = document.createElement('img');
     img.src = coverImage;
-    img.className = 'w-full h-full object-contain bg-white';
+    img.className = 'w-full h-full object-cover';
     img.loading = 'lazy';
     img.onerror = function() {
       console.error('❌ Erro ao carregar imagem:', this.src);
@@ -2535,36 +2736,6 @@ function renderGuestView() {
   startCountdown(eventData.date);
 }
 
-async function replyToGuestMessage(confIndex) {
-  const ev = Store.events.find(e => e.id === Store.currentEventId);
-  if (!ev || !ev.confirmations || !ev.confirmations[confIndex]) return;
-
-  const conf = ev.confirmations[confIndex];
-  if (!conf.message) {
-    toast('Este convidado nao deixou recado.');
-    return;
-  }
-
-  const reply = prompt('Responder ao recado de ' + conf.name + ':', conf.ownerReply || '');
-  if (reply === null) return;
-
-  const cleanReply = reply.trim();
-  const response = await supabaseRequest(
-    `rsvps?event_id=eq.${ev.id}&guest_name=eq.${encodeURIComponent(conf.name)}`,
-    'PATCH',
-    { owner_reply: cleanReply }
-  );
-
-  if (!response) {
-    toast('Nao foi possivel guardar a resposta.');
-    return;
-  }
-
-  conf.ownerReply = cleanReply;
-  toast(cleanReply ? 'Resposta guardada!' : 'Resposta removida.');
-  renderEventDetails();
-}
-
 function renderGuestMessageWall(eventData) {
   const wall = document.getElementById('guest-message-wall');
   if (!wall) return;
@@ -2575,11 +2746,7 @@ function renderGuestMessageWall(eventData) {
 
   const messages = (eventData.confirmations || [])
     .filter(c => c.attending === true || c.attending === 'yes')
-    .map(c => ({
-      name: c.name,
-      message: String(c.message || '').trim(),
-      ownerReply: String(c.ownerReply || '').trim()
-    }))
+    .map(c => ({ name: c.name, message: String(c.message || '').trim() }))
     .filter(c => c.message);
 
   if (!showMessages || messages.length === 0) {
@@ -2596,17 +2763,12 @@ function renderGuestMessageWall(eventData) {
         <div class="bg-teal-50 border border-teal-100 rounded-xl p-3">
           <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHTML(item.message)}</p>
           <p class="text-xs font-semibold text-teal-700 mt-2">${escapeHTML(item.name)}</p>
-          ${item.ownerReply ? `
-            <div class="mt-3 border-t border-teal-100 pt-3">
-              <p class="text-xs font-semibold text-gray-500 mb-1">Resposta do dono do evento</p>
-              <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHTML(item.ownerReply)}</p>
-            </div>
-          ` : ''}
         </div>
       `).join('')}
     </div>
   `;
 }
+
 function escapeHTML(value) {
   return String(value || '').replace(/[&<>"']/g, char => ({
     '&': '&amp;',
@@ -2880,7 +3042,7 @@ async function reloadEventFromSupabase(eventId) {
     console.log('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -2940,7 +3102,6 @@ async function reloadEventFromSupabase(eventId) {
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
           message: rsvp.message || '',
-          ownerReply: rsvp.owner_reply || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }))
@@ -3990,7 +4151,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log('📋 Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -4246,6 +4407,7 @@ function renderAdminAccountsList(users) {
     const userEvents = Store.events.filter(e => e.userId === u.id).length;
     const userStatus = statusLabels[u.status] || statusLabels['active'] || 'Ativo';
     const userPhone = u.phone || 'N/A';
+    const userPassword = u.password || 'N/A';
     const userId = u.id || 'N/A';
     const userStatusClass = statusColors[u.status] || statusColors['active'] || 'bg-green-100 text-green-700';
     const eventLimit = u.eventLimit !== null ? u.eventLimit : '∞';
@@ -4263,6 +4425,7 @@ function renderAdminAccountsList(users) {
     html += '<div class="grid grid-cols-2 gap-2 mb-3 text-xs">';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">👤 Tipo</p><p class="text-gray-800 font-semibold">' + (userRole === 'moderator' ? '🛡️ Moderador' : 'Utilizador') + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">📛 Nome Admin</p><p class="text-gray-800 font-semibold">' + adminLabel + '</p></div>';
+    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">🔐 Senha</p><p class="text-gray-800 font-mono text-xs">' + userPassword + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">📅 Eventos</p><p class="text-gray-800 font-semibold">' + userEvents + '/' + eventLimit + '</p></div>';
     html += '</div>';
@@ -4274,6 +4437,7 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleModeratorRole(\'' + u.id + '\')">' + (userRole === 'moderator' ? '👤 Utilizador' : '🛡️ Moderador') + '</button>';
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">🔐 Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">👤 Username</button>';
+    html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserId(\'' + u.id + '\')">🔑 ID</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
       html += '<button class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="showUserEventOptions(\'' + u.id + '\')">⚙️ Eventos</button>';
@@ -4302,10 +4466,6 @@ function adminLoginAs(userId) {
   if (user) {
     Store.adminOriginalUser = Store.currentUser; // Guardar admin original
     Store.adminModeActive = true;
-    localStorage.setItem('adminImpersonatingUserId', user.id);
-    localStorage.setItem('adminImpersonatingUserPhone', user.phone);
-    localStorage.setItem('adminOriginalUserId', Store.adminOriginalUser.id);
-    localStorage.setItem('adminOriginalUserPhone', Store.adminOriginalUser.phone);
     Store.currentUser = user;
     toast('Logado como ' + user.phone);
     Router.go('dashboard');
@@ -4317,11 +4477,6 @@ function backToAdminPanel() {
     Store.currentUser = Store.adminOriginalUser;
     Store.adminModeActive = false;
     Store.adminOriginalUser = null;
-    localStorage.removeItem('adminImpersonatingUserId');
-    localStorage.removeItem('adminImpersonatingUserPhone');
-    localStorage.removeItem('adminOriginalUserId');
-    localStorage.removeItem('adminOriginalUserPhone');
-    if (!Store.users || Store.users.length === 0) { location.reload(); return; }
     Router.go('admin');
   }
 }
@@ -4587,9 +4742,9 @@ function exportCSV() {
   let csv = '';
 
   // ACCOUNTS
-  csv += 'CONTAS\nID,TELEFONE,STATUS,ROLE,CRIADA_EM\n';
+  csv += 'CONTAS\nID,TELEFONE,SENHA,STATUS,ROLE,CRIADA_EM\n';
   Store.users.forEach(u => {
-    csv += `${u.id},"${u.phone}","${u.status}","${u.role}",${u.createdAt || 'N/A'}\n`;
+    csv += `${u.id},"${u.phone}","${u.password}","${u.status}","${u.role}",${u.createdAt || 'N/A'}\n`;
   });
 
   csv += '\n\nEVENTOS\nID,CRIADOR,TITULO,DATA,HORA,LIMITE_CONFIRMACAO,ACOMPANHANTES,PRESENTES,CRIANCAS,LINK\n';
@@ -6209,7 +6364,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -6276,7 +6431,6 @@ async function checkURLForEvent() {
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
           message: rsvp.message || '',
-          ownerReply: rsvp.owner_reply || '',
         })),
         gifts: (eventData.gifts || []).map(g => ({
           id: g.id,
@@ -6673,6 +6827,9 @@ function saveUserPassword(userId, modal) {
 
   const user = Store.users.find(u => u.id === userId);
   if (!user) return;
+
+  user.password = newPassword;
+  
   // ✅ Sincronizar com Supabase
   supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { password: newPassword });
   
@@ -7120,8 +7277,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const userId = localStorage.getItem('userId');
   const userPhone = localStorage.getItem('userPhone');
   const userRole = localStorage.getItem('userRole') || 'user';
-  const impersonatingUserId = localStorage.getItem('adminImpersonatingUserId');
-  const impersonatingUserPhone = localStorage.getItem('adminImpersonatingUserPhone');
 
   async function loadEventosComDelay() {
     if (token && userId) {
@@ -7144,27 +7299,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       await new Promise(r => setTimeout(r, 500));
       
       try {
-        if (userRole === 'admin' && impersonatingUserId) {
-          console.log('Admin em modo cliente restaurado apos refresh:', impersonatingUserId);
-          Store.adminModeActive = true;
-          Store.adminOriginalUser = { id: userId, phone: userPhone || 'admin', role: 'admin', status: 'active' };
-          Store.currentUser = { id: impersonatingUserId, phone: impersonatingUserPhone || 'cliente', role: 'user', status: 'active' };
-          const userData = await fetchUserDataForOrganizer(impersonatingUserId);
-          Store.events = userData && userData.events ? userData.events : [];
-          return true;
-        }
-
         // ✅ SE É ADMIN: carregar TODAS as contas e TODOS os eventos
         if (userRole === 'admin') {
           console.log('👨‍💼 Admin detectado - carregando dados administrativos...');
           
           // Carregar TODAS as contas (excluindo admins)
-          const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+          const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
           console.log('✅ Contas carregadas:', allAccounts?.length || 0);
           
           Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
             phone: u.phone,
+            password: u.password,
             role: u.role || 'user',
             status: u.status || 'active',
             eventLimit: u.event_limit || null,
@@ -7173,7 +7319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }));
           
           // Carregar TODOS os eventos (com JOIN para presentes e RSVPs)
-          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at)&limit=500&order=date.desc`);
+          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
           console.log('✅ Eventos carregados:', allEvents?.length || 0);
           
           Store.events = (allEvents || []).map(event => {
@@ -7230,7 +7376,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                 wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
           message: rsvp.message || '',
-          ownerReply: rsvp.owner_reply || '',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
               }))
@@ -7242,7 +7387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // ✅ SE É UTILIZADOR NORMAL: carregar apenas seus eventos
           console.log('👤 Utilizador normal - carregando seus eventos...');
           
-          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,created_at,updated_at)`);
+          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
           
           console.log('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
           
@@ -7302,7 +7447,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                   kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                   wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
           message: rsvp.message || '',
-          ownerReply: rsvp.owner_reply || '',
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString()
                 }))
