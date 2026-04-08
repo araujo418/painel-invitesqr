@@ -431,6 +431,13 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         statusText: response.statusText,
         body: text.substring(0, 200)
       });
+      if (response.status === 400 && text.includes('owner_reply') && text.includes('does not exist')) {
+        console.warn('Coluna owner_reply ainda nao existe. Repetindo consulta sem owner_reply.');
+        const fallbackEndpoint = endpoint.replace(/,owner_reply/g, '');
+        if (fallbackEndpoint !== endpoint) {
+          return supabaseRequest(fallbackEndpoint, method, body);
+        }
+      }
       return null;
     }
     
