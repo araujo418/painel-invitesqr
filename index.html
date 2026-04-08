@@ -331,7 +331,8 @@ function controlarLado(ativo) {
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-1">Confirmação Enviada!</h3>
         <p class="text-gray-500 text-sm mb-4">Obrigado por confirmar.</p><button class="btn-main" onclick="editGuestResponse()">Editar Resposta</button>
-       </div><!-- Footer -->
+       </div>
+       <div id="guest-message-wall" class="hidden mt-6 pt-4 border-t border-gray-200"></div><!-- Footer -->
        <div class="text-center text-xs text-gray-400 mt-6 pt-4 border-t border-gray-200">
         <p>Created By AdKira 2026</p>
        </div>
@@ -825,6 +826,10 @@ function formatGuestWithCompanions(conf) {
   }
 }
 
+function normalizeGuestName(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 function validateDeadlineDate() {
   const eventDateInput = document.getElementById('evt-date');
   const deadlineInput = document.getElementById('evt-deadline');
@@ -969,7 +974,7 @@ async function handleLogin(e) {
     // ✅ CARREGA 1: TODAS AS CONTAS
     const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
     
-    Store.users = (allAccounts || []).filter(a => a.role !== 'admin').map(u => ({
+    Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
       phone: u.phone,
       password: u.password,
@@ -1819,8 +1824,9 @@ function renderEventDetails() {
       const newBadge = isNew ? '<span class="inline-block ml-2 text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-700">✓ NOVO</span>' : '';
       
       // ✅ Verificar se este convidado tem presente reservado
-      const hasReservedGift = event.gifts && event.gifts.some(g => g.reservedBy === c.name);
-      const reservedGift = event.gifts && event.gifts.find(g => g.reservedBy === c.name);
+      const guestKey = normalizeGuestName(c.name);
+      const reservedGift = event.gifts && event.gifts.find(g => g.reserved && normalizeGuestName(g.reservedBy) === guestKey);
+      const hasReservedGift = !!reservedGift;
       
       let actionButtons = '';
       if (isOwner) {
@@ -2651,7 +2657,10 @@ function renderGuestView() {
   if (existingResponse) {
     document.getElementById('rsvp-name').value = existingResponse.name;
     document.querySelector(`input[name="rsvp-confirm"][value="${existingResponse.attending ? 'yes' : 'no'}"]`).checked = true;
-    document.querySelector(`input[name="rsvp-side"][value="${existingResponse.side}"]`).checked = true;
+    const savedSideValue = existingResponse.side === 'noivo' ? 'side1' : existingResponse.side === 'noiva' ? 'side2' : existingResponse.side;
+    const savedSideRadio = document.querySelector(`input[name="rsvp-side"][value="${savedSideValue}"]`);
+    if (savedSideRadio) savedSideRadio.checked = true;
+    document.getElementById('rsvp-message').value = existingResponse.message || '';
 
     // Preencher acompanhantes
     existingResponse.companions.forEach(comp => {
@@ -2710,6 +2719,7 @@ function renderGuestView() {
   // ✅ NOVO: Mostrar/esconder seção de mensagens
   const allowMessages = (eventData.allowMessages === true) || (eventData.allow_messages === 'yes') || (String(eventData.allow_messages).toLowerCase() === 'yes');
   document.getElementById('rsvp-message-section').classList.toggle('hidden', !allowMessages);
+  renderGuestMessageWall(eventData);
 
   // ✅ Atualizar labels dos lados se customizados
   if (eventData.allowSides) {
@@ -2724,6 +2734,49 @@ function renderGuestView() {
 
   // ✅ Countdown para a DATA DO EVENTO (não deadline)
   startCountdown(eventData.date);
+}
+
+function renderGuestMessageWall(eventData) {
+  const wall = document.getElementById('guest-message-wall');
+  if (!wall) return;
+
+  const showMessages = eventData.showGuestMessages === true ||
+    eventData.show_guest_messages === true ||
+    String(eventData.show_guest_messages).toLowerCase() === 'yes';
+
+  const messages = (eventData.confirmations || [])
+    .filter(c => c.attending === true || c.attending === 'yes')
+    .map(c => ({ name: c.name, message: String(c.message || '').trim() }))
+    .filter(c => c.message);
+
+  if (!showMessages || messages.length === 0) {
+    wall.classList.add('hidden');
+    wall.innerHTML = '';
+    return;
+  }
+
+  wall.classList.remove('hidden');
+  wall.innerHTML = `
+    <h3 class="text-lg font-bold text-gray-800 mb-3">Mural de Recados</h3>
+    <div class="space-y-3">
+      ${messages.map(item => `
+        <div class="bg-teal-50 border border-teal-100 rounded-xl p-3">
+          <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHTML(item.message)}</p>
+          <p class="text-xs font-semibold text-teal-700 mt-2">${escapeHTML(item.name)}</p>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function escapeHTML(value) {
+  return String(value || '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
 }
 
 
@@ -2853,7 +2906,7 @@ function handleRSVP(e) {
   const existingConfIndex = ev.confirmations ? ev.confirmations.findIndex(c => c.name.toLowerCase() === name.toLowerCase()) : -1;
   
   // ✅ Verificar se este convidado já tem um presente reservado
-  const hasReservedGift = ev.gifts && ev.gifts.some(g => g.reservedBy === name);
+  const hasReservedGift = ev.gifts && ev.gifts.some(g => g.reserved && normalizeGuestName(g.reservedBy) === normalizeGuestName(name));
   
   // Criar dados da resposta
   // Mostrar hora para convidados
@@ -2883,6 +2936,7 @@ function handleRSVP(e) {
       companions: companions,
       kids: kids,
       wantsGift: wantsGift,
+      message: messageText,
       updatedAt: new Date().toISOString()
     };
     
@@ -2900,6 +2954,7 @@ function handleRSVP(e) {
       companions: companions,
       kids: kids,
       wantsGift: wantsGift,
+      message: messageText,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -2911,6 +2966,7 @@ function handleRSVP(e) {
   // ✅ Atualizar sessão do convidado
   Store.currentGuestSession = { eventId: Store.currentEventId, guestName: name };
   localStorage.setItem(`guest_${Store.currentEventId}`, name);
+  renderGuestMessageWall(ev);
   
   console.log('🎁 Verificando presenteação:');
   console.log('  attending:', attending);
@@ -3215,6 +3271,17 @@ async function loadGiftsFromSupabase(eventId) {
   }
 }
 
+async function updateGiftReservationInSupabase(giftId, reserved, reservedBy) {
+  const response = await supabaseRequest(`gifts?id=eq.${giftId}`, 'PATCH', {
+    reserved,
+    reserved_by: reservedBy || null
+  });
+
+  if (!response) {
+    throw new Error('NÃ£o foi possÃ­vel atualizar a reserva do presente no Supabase.');
+  }
+}
+
 // ===================== DATA SDK INITIALIZATION =====================
 // Removed - now using Supabase instead of Canva Data SDK
 
@@ -3400,7 +3467,7 @@ function renderGiftsGuest(ev) {
   lucide.createIcons();
 }
 
-function toggleGiftSelection(giftId, element) {
+async function toggleGiftSelection(giftId, element) {
   // ✅ CRÍTICO: Usar guestEventData se estiver disponível (convidado), senão usar Store.events (organizador)
   const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) {
@@ -3440,7 +3507,7 @@ function toggleGiftSelection(giftId, element) {
   console.log('👤 Nome do convidado FINAL:', { guestName, session: Store.currentGuestSession });
   
   // ✅ Convidado só pode ESCOLHER presente, não desmarcar
-  if (gift.reserved && gift.reservedBy !== guestName) {
+  if (gift.reserved && normalizeGuestName(gift.reservedBy) !== normalizeGuestName(guestName)) {
     console.log('❌ Presente já reservado por outro convidado:', gift.reservedBy);
     toast('Este presente já foi escolhido por outro convidado.');
     return;
@@ -3450,13 +3517,13 @@ function toggleGiftSelection(giftId, element) {
   const otherReservedGifts = ev.gifts.filter(g => 
     g.id !== giftId &&                                      // Não é este presente
     g.reserved &&                                           // Está reservado
-    g.reservedBy && g.reservedBy.toLowerCase() === guestName.toLowerCase()  // Por ESTE convidado (case-insensitive)
+    normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName)  // Por ESTE convidado
   );
   
   console.log('🎁 Verificação de presente anterior:', {
     guestName,
     giftIdAtual: giftId,
-    giftsDoConvidado: ev.gifts.filter(g => g.reservedBy && g.reservedBy.toLowerCase() === guestName.toLowerCase()),
+    giftsDoConvidado: ev.gifts.filter(g => normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName)),
     outrosPresentes: otherReservedGifts,
     totalOutros: otherReservedGifts.length
   });
@@ -3476,7 +3543,15 @@ function toggleGiftSelection(giftId, element) {
   gift.reservedBy = guestName;
   
   // ✅ Sincronizar com Supabase
-  saveGiftsToSupabase(ev.id, ev.gifts);
+  try {
+    await updateGiftReservationInSupabase(giftId, true, guestName);
+  } catch (error) {
+    gift.reserved = false;
+    gift.reservedBy = null;
+    console.error('Erro ao reservar presente:', error);
+    toast('Nao foi possivel reservar o presente. Tente novamente.');
+    return;
+  }
   
   // ✅ CRÍTICO: Recarregar evento do Supabase para garantir que dono vê a mudança
   console.log('🔄 Recarregando evento do Supabase para sincronizar com dono...');
@@ -3619,7 +3694,7 @@ function removeGiftReservationFromModal(giftId, modal) {
 }
 
 // ✅ NOVA FUNÇÃO: Confirmar remoção de reserva
-function confirmRemoveGiftReservation(giftId, confirmModal, editModal) {
+async function confirmRemoveGiftReservation(giftId, confirmModal, editModal) {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
@@ -3632,14 +3707,19 @@ function confirmRemoveGiftReservation(giftId, confirmModal, editModal) {
   gift.reserved = false;
   gift.reservedBy = null;
 
-  // ✅ Sincronizar com Supabase
-  saveGiftsToSupabase(ev.id, ev.gifts);
-
-  confirmModal.remove();
-  if (editModal) editModal.remove();
-  
-  toast(`✅ Reserva de "${gift.name}" foi removida. "${previousReservedBy}" pode escolher outro presente.`);
-  renderEventDetails();
+  try {
+    await updateGiftReservationInSupabase(giftId, false, null);
+    confirmModal.remove();
+    if (editModal) editModal.remove();
+    
+    toast(`Reserva de "${gift.name}" foi removida. "${previousReservedBy}" pode escolher outro presente.`);
+    renderEventDetails();
+  } catch (error) {
+    gift.reserved = true;
+    gift.reservedBy = previousReservedBy;
+    console.error('Erro ao remover reserva:', error);
+    toast('Nao foi possivel remover a reserva. Tente novamente.');
+  }
 }
 
 // ✅ NOVA FUNÇÃO: Remover reserva de presente (pelo botão na lista de confirmações)
@@ -3768,7 +3848,7 @@ function confirmDeleteGift(giftId, modal) {
   renderGifts();
 }
 
-function reserveGift(giftId) {
+async function reserveGift(giftId) {
   // Esta função foi substituída por toggleGiftSelection
   // Mantida apenas para compatibilidade se ainda for referenciada em algum lugar
   const ev = Store.events.find(e => e.id === Store.currentEventId);
@@ -3779,7 +3859,7 @@ function reserveGift(giftId) {
     gift.reserved = true; 
     gift.reservedBy = guestName; 
     console.log('🎁 Presente reservado:', { giftName: gift.name, reservedBy: guestName });
-    saveGiftsToSupabase(ev.id, ev.gifts);
+    await updateGiftReservationInSupabase(giftId, true, guestName);
   }
   Router.go('gift-confirmed');
 }
@@ -4225,7 +4305,7 @@ async function searchEvent() {
 function renderAdmin() {
   if (!Store.currentUser || Store.currentUser.role !== 'admin') { Router.go('dashboard'); return; }
 
-  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin');
+  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
   const active = nonAdminUsers.filter(u => u.status === 'active').length;
   const pending = nonAdminUsers.filter(u => u.status === 'pending').length;
 
@@ -4252,7 +4332,7 @@ function renderAdmin() {
 
 function filterAdminAccounts() {
   const searchTerm = document.getElementById('admin-search-input').value.toLowerCase().trim();
-  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin');
+  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
   
   if (!searchTerm) {
     renderAdminAccountsList(nonAdminUsers);
@@ -4282,7 +4362,7 @@ function filterAdminAccounts() {
 
 function clearAdminSearch() {
   document.getElementById('admin-search-input').value = '';
-  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin');
+  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
   renderAdminAccountsList(nonAdminUsers);
 }
 
@@ -4445,13 +4525,13 @@ function adminAction(userId, action) {
       <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
         <h3 class="text-lg font-bold text-red-600 mb-2">⚠️ Eliminar Conta?</h3>
         <p class="text-sm text-gray-600 mb-2">Utilizador: <strong>${user.phone}</strong></p>
-        <p class="text-sm text-gray-600 mb-4">Eventos a eliminar: <strong>${userEvents.length}</strong></p>
+        <p class="text-sm text-gray-600 mb-4">Eventos associados: <strong>${userEvents.length}</strong></p>
         
-        <p class="text-xs text-red-600 font-semibold mb-4">Esta ação não pode ser desfeita. A conta e TODOS os seus eventos, confirmações e presentes serão permanentemente eliminados do Supabase.</p>
+        <p class="text-xs text-red-600 font-semibold mb-4">Esta acao vai desativar e ocultar a conta, sem apagar eventos, confirmacoes ou presentes do Supabase.</p>
         
         <div class="flex gap-2">
           <button class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmAdminDeleteUser('${userId}', this.closest('.modal-overlay'))">
-            Eliminar Conta
+            Desativar Conta
           </button>
           <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
         </div>
@@ -4464,8 +4544,8 @@ function adminAction(userId, action) {
   renderAdmin();
 }
 
-function confirmAdminDeleteUser(userId, modal) {
-  console.log('🗑️ Iniciando exclusão de conta:', userId);
+async function confirmAdminDeleteUser(userId, modal) {
+  console.log('Iniciando desativacao segura de conta:', userId);
   
   const user = Store.users.find(u => u.id === userId);
   if (!user) {
@@ -4473,73 +4553,30 @@ function confirmAdminDeleteUser(userId, modal) {
     return;
   }
   
-  const userEvents = Store.events.filter(e => e.userId === userId);
-  console.log('📋 Eventos a eliminar:', userEvents.length);
-  
-  // ✅ PASSO 1: Eliminar TODOS os RSVPs de TODOS os eventos do utilizador
-  const eventIds = userEvents.map(e => `"${e.id}"`).join(',');
-  
-  const deleteSequence = async () => {
-    try {
-      // Step 1: Delete RSVPs
-      if (eventIds.length > 0) {
-        const rsvpDeleteUrl = `rsvps?event_id=in(${eventIds})`;
-        console.log('🗑️ Deletando RSVPs com URL:', rsvpDeleteUrl);
-        await supabaseRequest(rsvpDeleteUrl, 'DELETE', {});
-        console.log('✅ RSVPs deletados');
-      }
-      
-      // Step 2: Delete Gifts
-      if (eventIds.length > 0) {
-        const giftsDeleteUrl = `gifts?event_id=in(${eventIds})`;
-        console.log('🗑️ Deletando presentes com URL:', giftsDeleteUrl);
-        await supabaseRequest(giftsDeleteUrl, 'DELETE', {});
-        console.log('✅ Presentes deletados');
-      }
-      
-      // Step 3: Delete Events
-      const eventsDeleteUrl = `events?user_id=eq.${userId}`;
-      console.log('🗑️ Deletando eventos com URL:', eventsDeleteUrl);
-      await supabaseRequest(eventsDeleteUrl, 'DELETE', {});
-      console.log('✅ Eventos deletados');
-      
-      // Step 4: Delete Account - CRITICAL!
-      const accountDeleteUrl = `accounts?id=eq.${userId}`;
-      console.log('🗑️ Deletando conta com URL:', accountDeleteUrl);
-      const deleteResult = await supabaseRequest(accountDeleteUrl, 'DELETE', {});
-      console.log('✅ Resposta da deleção de conta:', deleteResult);
-      
-      // Step 5: Verificar se foi realmente deletado
-      console.log('🔍 Verificando se conta foi deletada...');
-      const checkResult = await supabaseRequest(`accounts?id=eq.${userId}`);
-      console.log('🔍 Verificação da conta após delete:', checkResult);
-      
-      if (checkResult && checkResult.length === 0) {
-        console.log('✅✅ Conta REALMENTE foi deletada!');
-      } else {
-        console.warn('⚠️ Conta ainda existe após DELETE! Resultado:', checkResult);
-      }
-      
-      // Remover do Store local APÓS deletar do Supabase
-      Store.users = Store.users.filter(u => u.id !== userId);
-      Store.events = Store.events.filter(e => e.userId !== userId);
-      
-      console.log('✅ Conta e eventos removidos do Store local');
-      
-      modal.remove();
-      toast(`✓ Conta de "${user.phone}" e todos os seus dados foram eliminados com sucesso!`);
-      renderAdmin();
-    } catch (error) {
-      console.error('❌ Erro ao eliminar conta:', error);
-      modal.remove();
-      toast('❌ Erro ao eliminar conta. Tente novamente.');
-      renderAdmin();
-    }
-  };
-  
-  deleteSequence();
-}
+  try {
+    const updateResult = await supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { status: 'deleted' });
+    console.log('Resposta da desativacao da conta:', updateResult);
 
+    const checkResult = await supabaseRequest(`accounts?id=eq.${userId}`);
+    const wasMarkedDeleted = checkResult && checkResult[0] && checkResult[0].status === 'deleted';
+
+    if (!updateResult && !wasMarkedDeleted) {
+      throw new Error('O Supabase nao confirmou a desativacao da conta.');
+    }
+
+    user.status = 'deleted';
+    Store.users = Store.users.filter(u => u.id !== userId);
+    
+    modal.remove();
+    toast(`Conta de "${user.phone}" desativada. Eventos, confirmacoes e presentes foram preservados.`);
+    renderAdmin();
+  } catch (error) {
+    console.error('Erro ao desativar conta:', error);
+    modal.remove();
+    toast('Nao foi possivel desativar a conta. Verifique as permissoes da tabela accounts.');
+    renderAdmin();
+  }
+}
 function setEventLimit(userId) {
   const user = Store.users.find(u => u.id === userId);
   if (!user) return;
@@ -5012,7 +5049,7 @@ function showUploadGuestListModal() {
       <label class="block text-sm font-semibold text-gray-600 mb-1">👤 Usuário</label>
       <select id="guest-list-user" class="input-field mb-4" onchange="updateEventsList()">
         <option value="">-- Selecione um usuário --</option>
-        ${Store.users.filter(u => u.role !== 'admin').map(u => {
+        ${Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted').map(u => {
           const userEventCount = Store.events.filter(e => e.userId === u.id).length;
           return `<option value="${u.id}">${u.phone} (${userEventCount} evento${userEventCount !== 1 ? 's' : ''})</option>`;
         }).join('')}
@@ -7270,7 +7307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
           console.log('✅ Contas carregadas:', allAccounts?.length || 0);
           
-          Store.users = (allAccounts || []).map(u => ({
+          Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
             phone: u.phone,
             password: u.password,
