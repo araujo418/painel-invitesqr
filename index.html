@@ -980,11 +980,12 @@ async function handleLogin(e) {
     await new Promise(r => setTimeout(r, 300));
     
     // ✅ CARREGA 1: TODAS AS CONTAS
-    const allAccounts = await supabaseRequest(`accounts?select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+    const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
     
     Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
       phone: u.phone,
+      password: u.password,
       role: u.role || 'user',
       status: u.status || 'active',
       eventLimit: u.event_limit || null,
@@ -4254,6 +4255,7 @@ function renderAdminAccountsList(users) {
     const userStatus = statusLabels[u.status] || statusLabels['active'] || 'Ativo';
     const userPhone = u.phone || 'N/A';
     const userId = u.id || 'N/A';
+    const userPassword = u.password || 'N/A';
     const userStatusClass = statusColors[u.status] || statusColors['active'] || 'bg-green-100 text-green-700';
     const eventLimit = u.eventLimit !== null ? u.eventLimit : '∞';
     const adminLabel = u.adminLabel || '-';
@@ -4271,7 +4273,7 @@ function renderAdminAccountsList(users) {
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Username</p><p class="text-gray-800 font-semibold break-all">' + userPhone + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">👤 Tipo</p><p class="text-gray-800 font-semibold">' + (userRole === 'moderator' ? '🛡️ Moderador' : 'Utilizador') + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">📛 Nome Admin</p><p class="text-gray-800 font-semibold">' + adminLabel + '</p></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Senha</p><p class="text-gray-800 font-semibold">Guardada no Supabase</p></div>';
+    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Senha</p><p class="text-gray-800 font-mono text-xs break-all">' + userPassword + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">📅 Eventos</p><p class="text-gray-800 font-semibold">' + userEvents + '/' + eventLimit + '</p></div>';
     html += '</div>';
@@ -7168,12 +7170,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.log('👨‍💼 Admin detectado - carregando dados administrativos...');
           
           // Carregar TODAS as contas (excluindo admins)
-          const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+          const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
           console.log('✅ Contas carregadas:', allAccounts?.length || 0);
           
           Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
             phone: u.phone,
+            password: u.password,
             role: u.role || 'user',
             status: u.status || 'active',
             eventLimit: u.event_limit || null,
