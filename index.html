@@ -3,8 +3,9 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RSVP Event Manager</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17">
+  <title>Confirmação de Presença</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
 // ===================== CONTROLO DINÂMICO DO LADO =====================
 function controlarLado(ativo) {
   const radios = document.querySelectorAll('input[name="rsvp-side"]');
@@ -31,7 +32,8 @@ function controlarLado(ativo) {
   }
 }
 
-</script>
+
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
@@ -100,9 +102,8 @@ function controlarLado(ativo) {
     html, body { height: 100%; margin: 0; }
   </style>
   <style>body { box-sizing: border-box; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
- </head>
+
+</head>
  <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
   <div id="app-root" class="h-full w-full overflow-auto">
    <!-- ========== SCREEN: HOME ========== -->
@@ -469,7 +470,7 @@ async function fetchEventForGuest(eventId) {
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
     const eventData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     if (!eventData || eventData.length === 0) {
@@ -543,13 +544,20 @@ async function fetchEventForGuest(eventId) {
       allow_sides: event.allow_sides,
       side1_name: event.side1_name,
       side2_name: event.side2_name,
+      show_time: event.show_time,
+      showTime: String(event.show_time).toLowerCase() === 'yes' || event.show_time === true,
+      allow_messages: event.allow_messages,
+      allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
+      show_guest_messages: event.show_guest_messages,
+      showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
       confirmations: (event.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
         companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
         kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
-        wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
+        wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+        message: rsvp.message || ''
       })),
       // ✅ Presentes vêm diretamente do JOIN
       gifts: (event.gifts || []).map(g => ({
@@ -571,7 +579,7 @@ async function fetchUserDataForOrganizer(userId) {
   try {
     // ✅ OTIMIZAÇÃO: Um único JOIN para trazer eventos + presentes + RSVPs
     // Selecionar TODOS os campos necessários incluindo cover_image, max_companions, max_kids, event_code
-    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)`);
+    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     console.log('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
@@ -651,6 +659,7 @@ async function fetchUserDataForOrganizer(userId) {
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+          message: rsvp.message || '',
           createdAt: rsvp.created_at || new Date().toISOString(),
           updatedAt: rsvp.updated_at || new Date().toISOString()
         }))
@@ -974,7 +983,7 @@ async function handleLogin(e) {
     console.log('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)&limit=500&order=date.desc`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
     
     console.log('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
@@ -1007,6 +1016,14 @@ async function handleLogin(e) {
         allow_kids: event.allow_kids,
         allowSides: String(event.allow_sides).toLowerCase() === 'yes',
         allow_sides: event.allow_sides,
+      side1_name: event.side1_name,
+      side2_name: event.side2_name,
+      show_time: event.show_time,
+      showTime: String(event.show_time).toLowerCase() === 'yes' || event.show_time === true,
+      allow_messages: event.allow_messages,
+      allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
+      show_guest_messages: event.show_guest_messages,
+      showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
         cover: event.cover_image,
         cover_image: event.cover_image,
         gifts: (event.gifts || []).map(g => ({
@@ -1022,7 +1039,8 @@ async function handleLogin(e) {
           side: rsvp.side ?? null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
-          wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
+          wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+          message: rsvp.message || '',
         }))
       };
     });
@@ -2968,7 +2986,7 @@ async function reloadEventFromSupabase(eventId) {
     console.log('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -3003,6 +3021,14 @@ async function reloadEventFromSupabase(eventId) {
         allow_kids: event.allow_kids,
         allowSides: String(event.allow_sides).toLowerCase() === 'yes',
         allow_sides: event.allow_sides,
+      side1_name: event.side1_name,
+      side2_name: event.side2_name,
+      show_time: event.show_time,
+      showTime: String(event.show_time).toLowerCase() === 'yes' || event.show_time === true,
+      allow_messages: event.allow_messages,
+      allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
+      show_guest_messages: event.show_guest_messages,
+      showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
         cover: event.cover_image,
         cover_image: event.cover_image,
         gifts: (event.gifts || []).map(g => ({
@@ -3019,6 +3045,7 @@ async function reloadEventFromSupabase(eventId) {
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
           wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+          message: rsvp.message || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }))
@@ -4044,7 +4071,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log('📋 Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -4154,13 +4181,22 @@ async function searchEvent() {
       max_kids: maxKds,
       allowSides: String(found.allow_sides).toLowerCase() === 'yes',
       allow_sides: found.allow_sides,
+      side1_name: found.side1_name,
+      side2_name: found.side2_name,
+      show_time: found.show_time,
+      showTime: String(found.show_time).toLowerCase() === 'yes' || found.show_time === true,
+      allow_messages: found.allow_messages,
+      allowMessages: String(found.allow_messages).toLowerCase() === 'yes' || found.allow_messages === true,
+      show_guest_messages: found.show_guest_messages,
+      showGuestMessages: String(found.show_guest_messages).toLowerCase() === 'yes' || found.show_guest_messages === true,
       confirmations: (found.rsvps || []).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
         companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
         kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
-        wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
+        wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+        message: rsvp.message || ''
       })),
       gifts: (found.gifts || []).map(g => ({
         id: g.id,
@@ -6291,7 +6327,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,rsvps(guest_name,attending,side,companions,kids,wants_gift),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -6342,13 +6378,22 @@ async function checkURLForEvent() {
         max_kids: maxKds,
         allowSides: String(eventData.allow_sides).toLowerCase() === 'yes',
         allow_sides: eventData.allow_sides,
+        side1_name: eventData.side1_name,
+        side2_name: eventData.side2_name,
+        show_time: eventData.show_time,
+        showTime: String(eventData.show_time).toLowerCase() === 'yes' || eventData.show_time === true,
+        allow_messages: eventData.allow_messages,
+        allowMessages: String(eventData.allow_messages).toLowerCase() === 'yes' || eventData.allow_messages === true,
+        show_guest_messages: eventData.show_guest_messages,
+        showGuestMessages: String(eventData.show_guest_messages).toLowerCase() === 'yes' || eventData.show_guest_messages === true,
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
           companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
           kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
-          wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes'
+          wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+          message: rsvp.message || '',
         })),
         gifts: (eventData.gifts || []).map(g => ({
           id: g.id,
@@ -7237,7 +7282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }));
           
           // Carregar TODOS os eventos (com JOIN para presentes e RSVPs)
-          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)&limit=500&order=date.desc`);
+          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
           console.log('✅ Eventos carregados:', allEvents?.length || 0);
           
           Store.events = (allEvents || []).map(event => {
@@ -7269,6 +7314,14 @@ document.addEventListener('DOMContentLoaded', async () => {
               allow_kids: event.allow_kids,
               allowSides: String(event.allow_sides).toLowerCase() === 'yes',
               allow_sides: event.allow_sides,
+      side1_name: event.side1_name,
+      side2_name: event.side2_name,
+      show_time: event.show_time,
+      showTime: String(event.show_time).toLowerCase() === 'yes' || event.show_time === true,
+      allow_messages: event.allow_messages,
+      allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
+      show_guest_messages: event.show_guest_messages,
+      showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
               cover: event.cover_image,
               cover_image: event.cover_image,
               gifts: (event.gifts || []).map(g => ({
@@ -7285,6 +7338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
                 kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                 wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+          message: rsvp.message || '',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
               }))
@@ -7296,7 +7350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // ✅ SE É UTILIZADOR NORMAL: carregar apenas seus eventos
           console.log('👤 Utilizador normal - carregando seus eventos...');
           
-          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift)`);
+          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
           
           console.log('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
           
@@ -7331,6 +7385,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 allow_kids: event.allow_kids,
                 allowSides: String(event.allow_sides).toLowerCase() === 'yes',
                 allow_sides: event.allow_sides,
+      side1_name: event.side1_name,
+      side2_name: event.side2_name,
+      show_time: event.show_time,
+      showTime: String(event.show_time).toLowerCase() === 'yes' || event.show_time === true,
+      allow_messages: event.allow_messages,
+      allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
+      show_guest_messages: event.show_guest_messages,
+      showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
                 cover: event.cover_image,
                 cover_image: event.cover_image,
                 gifts: (event.gifts || []).map(g => ({
@@ -7347,6 +7409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   companions: rsvp.companions ? rsvp.companions.split('|').filter(Boolean) : [],
                   kids: rsvp.kids ? rsvp.kids.split('|').filter(Boolean) : [],
                   wantsGift: rsvp.wants_gift === true || rsvp.wants_gift === 'yes',
+          message: rsvp.message || '',
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString()
                 }))
@@ -7392,6 +7455,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('✅ Aplicação pronta!');
 });
 
-</script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9dddb3f653e11b23',t:'MTc3Mzc2ODM5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</script></body>
 </html>
