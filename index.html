@@ -2657,11 +2657,22 @@ function renderGuestMessageWall(eventData) {
     return;
   }
 
+  const pageSize = 5;
+  const eventKey = eventData.id || Store.currentEventId || 'guest-event';
+  if (Store.guestMessageWallEventId !== eventKey) {
+    Store.guestMessageWallEventId = eventKey;
+    Store.guestMessageWallPage = 0;
+  }
+  const totalPages = Math.max(1, Math.ceil(messages.length / pageSize));
+  Store.guestMessageWallPage = Math.min(Math.max(Store.guestMessageWallPage || 0, 0), totalPages - 1);
+  const currentPage = Store.guestMessageWallPage;
+  const visibleMessages = messages.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+
   wall.classList.remove('hidden');
   wall.innerHTML = `
     <h3 class="text-lg font-bold text-gray-800 mb-3">Mural de Recados</h3>
     <div class="space-y-3">
-      ${messages.map(item => `
+      ${visibleMessages.map(item => `
         <div class="bg-teal-50 border border-teal-100 rounded-xl p-3">
           <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHTML(item.message)}</p>
           <p class="text-xs font-semibold text-teal-700 mt-2">${escapeHTML(item.name)}</p>
@@ -2674,8 +2685,23 @@ function renderGuestMessageWall(eventData) {
         </div>
       `).join('')}
     </div>
+    ${totalPages > 1 ? `
+      <div class="flex items-center justify-between gap-3 mt-4">
+        <button type="button" class="btn-outline text-sm ${currentPage === 0 ? 'invisible' : ''}" onclick="changeGuestMessageWallPage(-1)">Anterior</button>
+        <span class="text-xs text-gray-500">Página ${currentPage + 1} de ${totalPages}</span>
+        <button type="button" class="btn-outline text-sm ${currentPage >= totalPages - 1 ? 'invisible' : ''}" onclick="changeGuestMessageWallPage(1)">Próximo</button>
+      </div>
+    ` : ''}
   `;
 }
+
+function changeGuestMessageWallPage(direction) {
+  const eventData = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  if (!eventData) return;
+  Store.guestMessageWallPage = Math.max(0, (Store.guestMessageWallPage || 0) + direction);
+  renderGuestMessageWall(eventData);
+}
+
 function escapeHTML(value) {
   return String(value || '').replace(/[&<>"']/g, char => ({
     '&': '&amp;',
