@@ -426,11 +426,6 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     
     if (!response.ok) {
       const text = await response.text();
-      console.error(`❌ Supabase error (${response.status}):`, {
-        status: response.status,
-        statusText: response.statusText,
-        body: text.substring(0, 200)
-      });
       if (response.status === 400 && text.includes('owner_reply') && text.includes('does not exist')) {
         console.warn('Coluna owner_reply ainda nao existe. Repetindo consulta sem owner_reply.');
         const fallbackEndpoint = endpoint.replace(/,owner_reply/g, '');
@@ -447,6 +442,11 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           return supabaseRequest(fallbackEndpoint, method, body);
         }
       }
+      console.error(`Supabase error (${response.status}):`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: text.substring(0, 200)
+      });
       return null;
     }
     
