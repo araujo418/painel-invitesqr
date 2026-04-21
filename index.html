@@ -100,6 +100,40 @@ function controlarLado(ativo) {
       color: #000; border-radius: 0.75rem; padding: 0.5rem 0.75rem; text-align: center; min-width: 60px;
     }
     html, body { height: 100%; margin: 0; }
+    @media (max-width: 640px) {
+      #screen-home .page-transition,
+      #screen-register .page-transition,
+      #screen-login .page-transition,
+      #screen-dashboard .page-transition,
+      #screen-create-event .page-transition,
+      #screen-event-details .page-transition,
+      #screen-guest .page-transition,
+      #screen-gifts .page-transition,
+      #screen-gift-confirmed .page-transition,
+      #screen-not-found .page-transition {
+        width: 100%;
+        max-width: none !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+      #screen-home .page-transition > .w-full,
+      #screen-register .page-transition > .w-full,
+      #screen-login .page-transition > .w-full {
+        width: 100%;
+        max-width: none !important;
+      }
+      #screen-home .bg-white,
+      #screen-register .bg-white,
+      #screen-login .bg-white,
+      #screen-create-event .bg-white,
+      #screen-event-details .bg-white,
+      #screen-guest .bg-white,
+      #screen-gifts .bg-white,
+      #screen-gift-confirmed .bg-white,
+      #screen-not-found .bg-white {
+        width: 100%;
+      }
+    }
   </style>
   <style>body { box-sizing: border-box; }</style>
 
@@ -215,6 +249,7 @@ function controlarLado(ativo) {
          <span class="text-sm font-semibold text-gray-700">Permitir presentes</span>
          <div id="sw-gifts" class="switch active" onclick="toggleSwitch(this)"></div>
         </div>
+        <p class="text-xs text-gray-500 pl-1">Se quiser um evento apenas para presentes, crie normalmente e partilhe o "Link Só Presentes" no painel do evento.</p>
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Permitir crianças</span>
          <div id="sw-kids" class="switch" onclick="toggleSwitch(this, 'kids-extra')"></div>
@@ -264,6 +299,13 @@ function controlarLado(ativo) {
        <div class="flex gap-2 mb-4">
         <input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
        </div>
+       <div id="detail-gifts-link-wrap" class="hidden mb-4">
+        <label class="text-xs font-semibold text-gray-500">Link Só Presentes</label>
+        <div class="flex gap-2 mt-1">
+         <input id="detail-gifts-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink('detail-gifts-link')"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Use este link quando quiser receber apenas escolhas de presentes, sem confirmação de presença.</p>
+       </div>
        <div id="detail-rsvp-toggle" class="flex items-center gap-2 mb-4 hidden">
         <label class="text-xs font-semibold text-gray-600">Permitir confirmação de presença</label>
         <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
@@ -289,6 +331,7 @@ function controlarLado(ativo) {
        <p id="guest-date" class="text-gray-500 text-center text-sm mb-2"></p>
        <p id="guest-deadline-text" class="text-center text-sm text-teal-600 font-semibold mb-4"></p><!-- Countdown -->
        <div class="flex justify-center gap-3 mb-6" id="guest-countdown"></div><!-- RSVP Form -->
+       <div id="rsvp-closed-notice" class="hidden rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center text-sm text-amber-800 mb-6"></div>
        <form id="rsvp-form" onsubmit="handleRSVP(event)">
         <label class="block text-sm font-semibold text-gray-600 mb-1">Confirma presença?</label>
         <div class="flex gap-3 mb-3">
@@ -819,6 +862,75 @@ function formatDate(d) {
   if (!d) return '';
   const parts = d.split('-');
   return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+function parseDateTimeValue(value, options = {}) {
+  if (!value) return null;
+  const clean = String(value).trim();
+  if (!clean) return null;
+
+  const endOfDay = options.endOfDay === true;
+  const defaultTime = endOfDay ? '23:59:59' : (options.defaultTime || '00:00:00');
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    return new Date(`${clean}T${defaultTime}`);
+  }
+
+  const normalized = clean.replace(' ', 'T');
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) {
+    return new Date(`${normalized}:00`);
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+    return new Date(normalized);
+  }
+
+  const parsed = new Date(clean);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getEventStartAt(eventData) {
+  if (!eventData || !eventData.date) return null;
+  return parseDateTimeValue(`${eventData.date} ${eventData.time || '00:00'}`);
+}
+
+function getRSVPDeadlineAt(eventData) {
+  if (!eventData) return null;
+  const rawDeadline = eventData.confirm_by_date || eventData.deadline || eventData.date;
+  if (!rawDeadline) return null;
+  return parseDateTimeValue(rawDeadline, { endOfDay: !String(rawDeadline).trim().includes(' ') });
+}
+
+function getRSVPCloseInfo(eventData) {
+  const now = new Date();
+  const eventStartAt = getEventStartAt(eventData);
+  const deadlineAt = getRSVPDeadlineAt(eventData);
+
+  let cutoffAt = deadlineAt || eventStartAt;
+  if (deadlineAt && eventStartAt && eventStartAt < deadlineAt) {
+    cutoffAt = eventStartAt;
+  }
+
+  const closedByDeadline = deadlineAt ? now > deadlineAt : false;
+  const closedByEvent = eventStartAt ? now > eventStartAt : false;
+  const closed = closedByDeadline || closedByEvent;
+  const reason = closedByEvent ? 'event' : 'deadline';
+
+  return {
+    closed,
+    reason,
+    cutoffAt,
+    deadlineAt,
+    eventStartAt
+  };
+}
+
+function getRSVPClosedMessage(eventData) {
+  const closeInfo = getRSVPCloseInfo(eventData);
+  if (!closeInfo.closed) return '';
+  if (closeInfo.reason === 'event') {
+    return 'As confirmações estão encerradas porque a data do evento já passou.';
+  }
+  return 'As confirmações estão encerradas porque o prazo limite já foi atingido.';
 }
 
 // ✅ Formatar convidado com acompanhantes no formato "Nome e Acompanhante"
@@ -1785,7 +1897,9 @@ function renderEventDetails() {
   
   const eventCode = event.eventCode || event.id;
   const eventURL = 'https://araujo418.github.io/painel-invitesqr/?event=' + eventCode;
+  const giftsOnlyURL = eventURL + '&gifts=only';
   document.getElementById('detail-link').value = eventURL;
+  document.getElementById('detail-gifts-link').value = giftsOnlyURL;
 
   const ownerUserId = event.userId || event.user_id;
   const isOwner = Store.currentUser && Store.currentUser.id === ownerUserId;
@@ -1807,6 +1921,7 @@ function renderEventDetails() {
   document.getElementById('btn-manage-gifts').classList.toggle('hidden', !event.allowGifts);
   document.getElementById('btn-upload-gifts').classList.toggle('hidden', !event.allowGifts);
   document.getElementById('btn-download-gifts-pdf').classList.toggle('hidden', !event.allowGifts);
+  document.getElementById('detail-gifts-link-wrap').classList.toggle('hidden', !event.allowGifts);
   
   const editBtn = document.querySelector('button:has(i[data-lucide="edit"])');
   if (editBtn) editBtn.parentElement.parentElement.querySelector('button:has(i[data-lucide="edit"])').classList.toggle('hidden', !(isOwner || isAdmin));
@@ -1925,10 +2040,10 @@ function renderEventDetails() {
   lucide.createIcons();
 }
 
-function copyEventLink() {
-  const link = document.getElementById('detail-link').value;
+function copyEventLink(inputId = 'detail-link') {
+  const link = document.getElementById(inputId).value;
   navigator.clipboard.writeText(link).then(() => toast('Link copiado!')).catch(() => {
-    document.getElementById('detail-link').select();
+    document.getElementById(inputId).select();
     toast('Selecione e copie o link.');
   });
 }
@@ -2552,14 +2667,32 @@ function renderGuestView() {
   
   document.getElementById('guest-deadline-text').textContent = 'Favor confirmar até ' + formatDate(deadlineDateOnly);
 
+  const closeInfo = getRSVPCloseInfo(eventData);
+  const closedNotice = document.getElementById('rsvp-closed-notice');
+  const formEl = document.getElementById('rsvp-form');
+  const successEl = document.getElementById('rsvp-success');
+  const countdownEl = document.getElementById('guest-countdown');
+
+  if (closeInfo.closed) {
+    closedNotice.textContent = getRSVPClosedMessage(eventData);
+    closedNotice.classList.remove('hidden');
+    formEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+    countdownEl.classList.add('hidden');
+    return;
+  }
+
+  closedNotice.classList.add('hidden');
+  countdownEl.classList.remove('hidden');
+
   // Verificar se há resposta anterior do convidado
   const guestName = localStorage.getItem(`guest_${Store.currentEventId}`);
   const existingResponse = guestName ? eventData.confirmations.find(c => c.name.toLowerCase() === guestName.toLowerCase()) : null;
 
   // Reset form state
-  document.getElementById('rsvp-form').classList.remove('hidden');
-  document.getElementById('rsvp-success').classList.add('hidden');
-  document.getElementById('rsvp-form').reset();
+  formEl.classList.remove('hidden');
+  successEl.classList.add('hidden');
+  formEl.reset();
   document.getElementById('rsvp-companions-list').innerHTML = '';
   document.getElementById('rsvp-kids-list').innerHTML = '';
 
@@ -2644,7 +2777,7 @@ function renderGuestView() {
   }
 
   // ✅ Countdown para a DATA DO EVENTO (não deadline)
-  startCountdown(eventData.date);
+  startCountdown(closeInfo.cutoffAt || eventData.date);
 }
 
 async function replyToGuestMessage(confIndex) {
@@ -2763,7 +2896,13 @@ function startCountdown(deadline) {
   const container = document.getElementById('guest-countdown');
 
   function update() {
-    const target = new Date(deadline + 'T23:59:59');
+    const target = deadline instanceof Date
+      ? deadline
+      : parseDateTimeValue(deadline, { endOfDay: !String(deadline || '').includes(' ') });
+    if (!target || Number.isNaN(target.getTime())) {
+      container.innerHTML = '';
+      return;
+    }
     const now = new Date();
     let diff = Math.max(0, target - now);
     const d = Math.floor(diff / 86400000); diff -= d * 86400000;
@@ -2843,6 +2982,13 @@ function handleRSVP(e) {
   if (!ev) {
     console.error('❌ Evento não encontrado em Store.guestEventData ou Store.events');
     toast('Erro: evento não encontrado. Recarregue a página.');
+    return;
+  }
+
+  const closeInfo = getRSVPCloseInfo(ev);
+  if (closeInfo.closed) {
+    toast(getRSVPClosedMessage(ev));
+    renderGuestView();
     return;
   }
 
@@ -6428,6 +6574,9 @@ async function checkURLForEvent() {
       console.log('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
       console.log('  Código final do evento:', finalEventCode);
       console.log('  Allow Sides:', normalizedEvent.allowSides);
+      if (giftsOnly && normalizedEvent.allowGifts) {
+        return 'gifts';
+      }
       return 'guest';
     }
     
