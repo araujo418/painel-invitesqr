@@ -264,40 +264,6 @@ function controlarLado(ativo) {
        <div class="flex gap-2 mb-4">
         <input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
        </div>
-       <div id="detail-embed-section" class="hidden mb-6">
-        <div class="rounded-2xl border border-teal-100 bg-teal-50/70 p-4">
-         <div class="mb-4">
-          <p class="text-sm font-bold text-gray-800">Embeds do Evento</p>
-          <p class="text-xs text-gray-500 mt-1">Copie o iframe e cole no teu site para mostrar a página do convidado ou só a contagem regressiva.</p>
-         </div>
-         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div class="bg-white rounded-2xl border border-gray-100 p-4">
-           <p class="text-sm font-semibold text-gray-800 mb-1">Página do convidado</p>
-           <p class="text-xs text-gray-500 mb-3">Mostra a página completa de confirmação dentro de um iframe.</p>
-           <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Link</label>
-           <div class="flex gap-2 mb-3">
-            <input id="detail-guest-embed-link" class="input-field text-sm" readonly>
-            <button type="button" class="btn-main px-3 text-sm flex-shrink-0" onclick="copyFieldValue('detail-guest-embed-link','Link do embed copiado!')"><i data-lucide="copy" class="w-4 h-4"></i></button>
-           </div>
-           <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Iframe</label>
-           <textarea id="detail-guest-embed-code" class="input-field text-xs h-28 p-3 resize-none" readonly></textarea>
-           <button type="button" class="btn-outline text-sm mt-3 w-full" onclick="copyFieldValue('detail-guest-embed-code','Código embed copiado!')">Copiar código embed</button>
-          </div>
-          <div class="bg-white rounded-2xl border border-gray-100 p-4">
-           <p class="text-sm font-semibold text-gray-800 mb-1">Contagem regressiva</p>
-           <p class="text-xs text-gray-500 mb-3">Mostra apenas o título do evento, a data e a countdown.</p>
-           <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Link</label>
-           <div class="flex gap-2 mb-3">
-            <input id="detail-countdown-embed-link" class="input-field text-sm" readonly>
-            <button type="button" class="btn-main px-3 text-sm flex-shrink-0" onclick="copyFieldValue('detail-countdown-embed-link','Link da countdown copiado!')"><i data-lucide="copy" class="w-4 h-4"></i></button>
-           </div>
-           <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Iframe</label>
-           <textarea id="detail-countdown-embed-code" class="input-field text-xs h-28 p-3 resize-none" readonly></textarea>
-           <button type="button" class="btn-outline text-sm mt-3 w-full" onclick="copyFieldValue('detail-countdown-embed-code','Código da countdown copiado!')">Copiar código embed</button>
-          </div>
-         </div>
-        </div>
-       </div>
        <div id="detail-rsvp-toggle" class="flex items-center gap-2 mb-4 hidden">
         <label class="text-xs font-semibold text-gray-600">Permitir confirmação de presença</label>
         <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
@@ -313,13 +279,13 @@ function controlarLado(ativo) {
     </div>
    </section><!-- ========== SCREEN: GUEST VIEW (RSVP) ========== -->
    <section id="screen-guest" class="page-section hidden">
-    <div id="guest-shell" class="page-transition w-full max-w-md mx-auto px-4 py-8">
-     <div id="guest-card" class="bg-white rounded-2xl shadow-md overflow-hidden">
+    <div class="page-transition w-full max-w-md mx-auto px-4 py-8">
+     <div class="bg-white rounded-2xl shadow-md overflow-hidden">
       <div id="guest-cover" class="w-full h-40 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center">
        <i data-lucide="calendar-heart" class="w-14 h-14 text-white/60"></i>
       </div>
       <div class="p-6">
-        <h2 id="guest-title" class="text-xl font-bold text-gray-800 text-center mb-1"></h2>
+       <h2 id="guest-title" class="text-xl font-bold text-gray-800 text-center mb-1"></h2>
        <p id="guest-date" class="text-gray-500 text-center text-sm mb-2"></p>
        <p id="guest-deadline-text" class="text-center text-sm text-teal-600 font-semibold mb-4"></p><!-- Countdown -->
        <div class="flex justify-center gap-3 mb-6" id="guest-countdown"></div><!-- RSVP Form -->
@@ -367,7 +333,7 @@ function controlarLado(ativo) {
         <p class="text-gray-500 text-sm mb-4">Obrigado por confirmar.</p><button class="btn-main" onclick="editGuestResponse()">Editar Resposta</button>
        </div>
        <div id="guest-message-wall" class="hidden mt-6 pt-4 border-t border-gray-200"></div><!-- Footer -->
-       <div id="guest-footer" class="text-center text-xs text-gray-400 mt-6 pt-4 border-t border-gray-200">
+       <div class="text-center text-xs text-gray-400 mt-6 pt-4 border-t border-gray-200">
         <p>Created By AdKira 2026</p>
        </div>
       </div>
@@ -773,7 +739,6 @@ const Store = {
   currentUser: null, // Apenas { id, phone, role } - SEM PASSWORD
   currentEventId: null,
   countdownInterval: null,
-  embedMode: null,
   adminModeActive: false,
   adminOriginalUser: null,
   guestResponses: {},
@@ -817,131 +782,6 @@ function togglePassVisibility(inputId, btn) {
   inp.type = isPass ? 'text' : 'password';
   btn.innerHTML = isPass ? '<i data-lucide="eye-off" class="w-5 h-5"></i>' : '<i data-lucide="eye" class="w-5 h-5"></i>';
   lucide.createIcons();
-}
-
-function getPublicEventBaseUrl() {
-  const fallback = 'https://araujo418.github.io/painel-invitesqr/';
-  const protocol = window.location.protocol || '';
-  if (protocol === 'http:' || protocol === 'https:') {
-    return `${window.location.origin}${window.location.pathname}`;
-  }
-  return fallback;
-}
-
-function buildEventUrl(eventCode, extraParams = {}) {
-  const params = new URLSearchParams({ event: eventCode });
-  Object.entries(extraParams).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.set(key, value);
-    }
-  });
-  return `${getPublicEventBaseUrl()}?${params.toString()}`;
-}
-
-function escapeAttribute(value) {
-  return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-function buildEmbedCode(url, title, height) {
-  return `<iframe src="${escapeAttribute(url)}" title="${escapeAttribute(title)}" width="100%" height="${height}" style="border:0;width:100%;max-width:100%;border-radius:16px;overflow:hidden;background:#ffffff;" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-}
-
-function copyFieldValue(fieldId, successMessage = 'Copiado!') {
-  const field = document.getElementById(fieldId);
-  if (!field) return;
-  const value = field.value || field.textContent || '';
-  navigator.clipboard.writeText(value).then(() => toast(successMessage)).catch(() => {
-    if (typeof field.select === 'function') {
-      field.focus();
-      field.select();
-    }
-    toast('Selecione e copie manualmente.');
-  });
-}
-
-function updateEventEmbedSection(event, canManageEmbeds) {
-  const embedSection = document.getElementById('detail-embed-section');
-  if (!embedSection) return;
-
-  embedSection.classList.toggle('hidden', !canManageEmbeds);
-  if (!canManageEmbeds) return;
-
-  const eventCode = event.eventCode || event.id;
-  const guestUrl = buildEventUrl(eventCode, { embed: 'guest' });
-  const countdownUrl = buildEventUrl(eventCode, { embed: 'countdown' });
-
-  document.getElementById('detail-guest-embed-link').value = guestUrl;
-  document.getElementById('detail-countdown-embed-link').value = countdownUrl;
-  document.getElementById('detail-guest-embed-code').value = buildEmbedCode(guestUrl, `Página do convidado - ${event.title}`, 760);
-  document.getElementById('detail-countdown-embed-code').value = buildEmbedCode(countdownUrl, `Contagem regressiva - ${event.title}`, 320);
-}
-
-function applyGuestEmbedMode(eventData) {
-  const embedMode = Store.embedMode;
-  const shell = document.getElementById('guest-shell');
-  const card = document.getElementById('guest-card');
-  const cover = document.getElementById('guest-cover');
-  const form = document.getElementById('rsvp-form');
-  const success = document.getElementById('rsvp-success');
-  const wall = document.getElementById('guest-message-wall');
-  const footer = document.getElementById('guest-footer');
-  const countdown = document.getElementById('guest-countdown');
-  const deadline = document.getElementById('guest-deadline-text');
-  const title = document.getElementById('guest-title');
-  const date = document.getElementById('guest-date');
-  const backBtn = document.getElementById('guest-back-btn');
-  const isGuestEmbed = embedMode === 'guest';
-  const isCountdownEmbed = embedMode === 'countdown';
-  const isEmbed = isGuestEmbed || isCountdownEmbed;
-  const showTimeRaw = eventData.show_time !== undefined ? eventData.show_time : eventData.showTime;
-  const showTime = String(showTimeRaw).toLowerCase() === 'yes' || showTimeRaw === true;
-
-  if (shell) shell.style.cssText = isEmbed ? 'width:100%;max-width:none;margin:0;padding:0;' : '';
-  if (card) card.style.cssText = isEmbed ? 'border-radius:0;box-shadow:none;border:1px solid rgba(20,184,166,0.16);' : '';
-  if (footer) footer.style.display = isEmbed ? 'none' : '';
-  if (backBtn) backBtn.classList.toggle('hidden', isEmbed || !Store.viewingAsGuestFromOrganizer);
-
-  if (!isEmbed) {
-    if (cover) cover.style.display = '';
-    if (form) form.style.display = '';
-    if (success) success.style.display = '';
-    if (wall) wall.style.display = '';
-    if (countdown) countdown.className = 'flex justify-center gap-3 mb-6';
-    if (deadline) deadline.textContent = 'Favor confirmar até ' + formatDate((eventData.confirm_by_date || eventData.deadline || eventData.date).split(' ')[0]);
-    if (title) title.style.fontSize = '';
-    if (date) date.style.marginBottom = '';
-    return;
-  }
-
-  if (cover) cover.style.display = isCountdownEmbed ? 'none' : '';
-  if (footer) footer.style.display = 'none';
-  if (wall) {
-    wall.classList.add('hidden');
-    wall.innerHTML = '';
-  }
-
-  if (isCountdownEmbed) {
-    if (form) {
-      form.classList.add('hidden');
-      form.style.display = 'none';
-    }
-    if (success) {
-      success.classList.add('hidden');
-      success.style.display = 'none';
-    }
-    if (deadline) deadline.textContent = showTime && eventData.time ? `Faltam para ${formatDate(eventData.date)} às ${eventData.time}` : `Faltam para ${formatDate(eventData.date)}`;
-    if (countdown) countdown.className = 'flex justify-center gap-3 mb-0 flex-wrap';
-    if (title) title.style.fontSize = '1.5rem';
-    if (date) date.style.marginBottom = '1rem';
-    return;
-  }
-
-  if (form) form.style.display = '';
-  if (success) success.style.display = '';
-  if (deadline) deadline.textContent = 'Favor confirmar até ' + formatDate((eventData.confirm_by_date || eventData.deadline || eventData.date).split(' ')[0]);
-  if (countdown) countdown.className = 'flex justify-center gap-3 mb-6';
-  if (title) title.style.fontSize = '';
-  if (date) date.style.marginBottom = '';
 }
 
 function toggleSwitch(el, extraId) {
@@ -1944,13 +1784,12 @@ function renderEventDetails() {
   document.getElementById('detail-date').textContent = formatDate(event.date) + ' às ' + event.time;
   
   const eventCode = event.eventCode || event.id;
-  const eventURL = buildEventUrl(eventCode);
+  const eventURL = 'https://araujo418.github.io/painel-invitesqr/?event=' + eventCode;
   document.getElementById('detail-link').value = eventURL;
 
   const ownerUserId = event.userId || event.user_id;
   const isOwner = Store.currentUser && Store.currentUser.id === ownerUserId;
   const isAdmin = Store.currentUser && Store.currentUser.role === 'admin';
-  updateEventEmbedSection(event, isOwner || isAdmin);
 
   document.getElementById('detail-rsvp-toggle').classList.toggle('hidden', !isOwner);
   
@@ -2108,7 +1947,6 @@ function toggleRSVPAllowed() {
 function viewAsGuest() { 
   // ✅ Guardar que viemos da visualização de organizador
   Store.viewingAsGuestFromOrganizer = true;
-  Store.embedMode = null;
   Router.go('guest'); 
 }
 
@@ -2805,8 +2643,6 @@ function renderGuestView() {
     document.querySelector('input[name="rsvp-side"][value="side2"]').value = 'side2';
   }
 
-  applyGuestEmbedMode(eventData);
-
   // ✅ Countdown para a DATA DO EVENTO (não deadline)
   startCountdown(eventData.date);
 }
@@ -2927,11 +2763,7 @@ function startCountdown(deadline) {
   const container = document.getElementById('guest-countdown');
 
   function update() {
-    const currentEvent = Store.guestEventData || Store.events.find(event => event.id === Store.currentEventId) || null;
-    const showTimeRaw = currentEvent && currentEvent.show_time !== undefined ? currentEvent.show_time : currentEvent?.showTime;
-    const showTime = String(showTimeRaw).toLowerCase() === 'yes' || showTimeRaw === true;
-    const timePart = showTime && currentEvent?.time ? `${currentEvent.time}:00` : '23:59:59';
-    const target = new Date(`${deadline}T${timePart}`);
+    const target = new Date(deadline + 'T23:59:59');
     const now = new Date();
     let diff = Math.max(0, target - now);
     const d = Math.floor(diff / 86400000); diff -= d * 86400000;
@@ -2952,7 +2784,6 @@ function backFromGuestView() {
   // Limpar flag
   Store.viewingAsGuestFromOrganizer = false;
   Store.guestEventData = null;
-  Store.embedMode = null;
   
   // Voltar para detalhes do evento
   Router.go('event-details');
@@ -6501,10 +6332,8 @@ async function checkURLForEvent() {
   const params = new URLSearchParams(window.location.search);
   const eventCode = params.get('event');
   const giftsOnly = params.get('gifts') === 'only';
-  const embedMode = params.get('embed');
-  Store.embedMode = embedMode === 'guest' || embedMode === 'countdown' ? embedMode : null;
   
-  console.log('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly, 'Embed mode:', Store.embedMode);
+  console.log('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
   
   if (eventCode) {
     console.log('📍 Event code encontrado na URL:', eventCode);
