@@ -350,7 +350,7 @@ function controlarLado(ativo) {
          </div>
         </div>
         <div id="rsvp-message-section" class="hidden mb-3">
-         <label class="block text-sm font-semibold text-gray-600 mb-1">Deixar um Recado</label> <textarea id="rsvp-message" class="input-field text-sm h-20 p-2" placeholder="Deixe um recado para o organizador..."></textarea>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Deixar um Recado</label> <textarea id="rsvp-message" class="input-field text-sm h-20 p-2" maxlength="500" placeholder="Deixe um recado para o organizador..."></textarea>
          <p class="text-xs text-gray-400 mt-1">Máximo 500 caracteres</p>
         </div>
         <div id="rsvp-companions-section" class="hidden mb-3">
@@ -418,12 +418,23 @@ function controlarLado(ativo) {
       <h1 class="text-2xl font-bold text-gray-800">Painel Administrativo</h1><button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition" onclick="handleLogout()"> <span class="flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Sair</span> </button>
      </div>
      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
-     <h3 class="font-bold text-gray-700 mb-3">Contas Registradas</h3><!-- Search Box -->
-     <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-      <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="🔍 Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
-      </div>
+     <div class="flex gap-2 mb-4">
+      <button id="admin-tab-contas" class="btn-main px-4 text-sm" onclick="mudarAdminTab('contas')">Contas</button>
+      <button id="admin-tab-antigos" class="btn-outline px-4 text-sm" onclick="mudarAdminTab('antigos')">🗑️ Eventos Antigos <span id="admin-antigos-badge" class="hidden bg-red-500 text-white rounded-full px-2 py-0.5 text-xs ml-1"></span></button>
      </div>
-     <div id="admin-accounts" class="space-y-3"></div>
+     <div id="admin-view-contas">
+      <h3 class="font-bold text-gray-700 mb-3">Contas Registradas</h3><!-- Search Box -->
+      <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+       <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="🔍 Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
+       </div>
+      </div>
+      <div id="admin-accounts" class="space-y-3"></div>
+     </div>
+     <div id="admin-view-antigos" class="hidden">
+      <h3 class="font-bold text-gray-700 mb-1">Eventos com mais de 1 mês</h3>
+      <p class="text-xs text-gray-500 mb-3">Contas cujo evento já passou há mais de 1 mês. Eliminar remove tudo: conta, evento(s), confirmações e fotos — do site e do Supabase, sem possibilidade de recuperar.</p>
+      <div id="admin-antigos-lista" class="space-y-3"></div>
+     </div>
     </div>
    </section>
   </div><!-- Toast container -->
@@ -432,6 +443,26 @@ function controlarLado(ativo) {
 // ===================== SUPABASE CONFIG =====================
 const SUPABASE_URL = 'https://sjjezhvfdblilqqthxtl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqamV6aHZmZGJsaWxxcXRoeHRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMzgzMTEsImV4cCI6MjA4ODgxNDMxMX0.SdZ6MdXHJs8mYOoANBK9Yg386L9CB7STtgrofJtgEhI';
+
+// ▼ NOVO: apaga o ficheiro de imagem de capa no Supabase Storage.
+// cover_image guarda um URL público (.../storage/v1/object/public/BUCKET/FICHEIRO);
+// apagar só a linha da tabela events NÃO apaga o ficheiro em si — é preciso
+// chamar a API de Storage à parte.
+async function deleteEventCoverImage(coverImageUrl) {
+  if (!coverImageUrl) return;
+  try {
+    const marcador = '/storage/v1/object/public/';
+    const idx = coverImageUrl.indexOf(marcador);
+    if (idx === -1) return;
+    const caminho = coverImageUrl.slice(idx + marcador.length); // ex: event-covers/event_xxx_123.jpg
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${caminho}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+  } catch (e) {
+    console.warn('Não foi possível apagar a imagem de capa:', e);
+  }
+}
 
 async function supabaseRequest(endpoint, method = 'GET', body = null) {
   const headers = {
@@ -816,6 +847,21 @@ function toast(msg) {
   t.textContent = msg;
   document.getElementById('toast-container').appendChild(t);
   setTimeout(() => t.remove(), 2600);
+}
+
+// ▼ NOVO: valida nomes de convidado/acompanhante — no máximo 3 nomes, sem
+// vírgulas (usadas para tentar meter várias pessoas no mesmo campo), mas
+// aceita pontos (ex: "Sr. João Silva", "Exm. Maria").
+function validarNomePessoa(nome, contexto) {
+  if (!nome) return { ok: true, msg: '' };
+  if (nome.includes(',')) {
+    return { ok: false, msg: `❌ Não use vírgulas no ${contexto}. Para tratamentos, use ponto — ex: "Sr. João Silva".` };
+  }
+  const palavras = nome.split(/\s+/).filter(Boolean);
+  if (palavras.length > 3) {
+    return { ok: false, msg: `❌ O ${contexto} só pode ter até 3 nomes. Se forem várias pessoas, adicione-as em campos separados.` };
+  }
+  return { ok: true, msg: '' };
 }
 
 // ===================== HELPERS =====================
@@ -3014,10 +3060,23 @@ function handleRSVP(e) {
   const kids = [...document.querySelectorAll('[data-kid]')].map(i => i.value.trim()).filter(Boolean);
   const messageText = document.getElementById('rsvp-message')?.value?.trim() || '';
 
+  // ▼ NOVO: valida o nome do convidado e de cada acompanhante (máx. 3 nomes,
+  // sem vírgulas) — impede meter várias pessoas no mesmo campo.
+  const valNome = validarNomePessoa(name, 'seu nome');
+  if (!valNome.ok) { toast(valNome.msg); return; }
+  for (const comp of companions) {
+    const valComp = validarNomePessoa(comp, 'nome do acompanhante');
+    if (!valComp.ok) { toast(valComp.msg); return; }
+  }
+
   console.log('📝 Processando RSVP:', { name, attending, side, companions, kids });
 
   // ✅ CRÍTICO: Verificar se JÁ EXISTE resposta anterior para este convidado
-  const existingConfIndex = ev.confirmations ? ev.confirmations.findIndex(c => c.name.toLowerCase() === name.toLowerCase()) : -1;
+  // Usa o nome ORIGINAL (guardado na sessão antes de qualquer edição), não o
+  // nome novo do campo — senão, mudar o próprio nome ao editar cria uma
+  // confirmação nova em vez de actualizar a antiga (ficava duplicado).
+  const nomeOriginalSessao = Store.currentGuestSession?.guestName || name;
+  const existingConfIndex = ev.confirmations ? ev.confirmations.findIndex(c => c.name.toLowerCase() === nomeOriginalSessao.toLowerCase()) : -1;
   
   // ✅ Verificar se este convidado já tem um presente reservado
   const hasReservedGift = ev.gifts && ev.gifts.some(g => g.reserved && normalizeGuestName(g.reservedBy) === normalizeGuestName(name));
@@ -3055,7 +3114,7 @@ function handleRSVP(e) {
     };
     
     // ✅ Atualizar no Supabase
-    saveRSVPToSupabase(eventData, true);
+    saveRSVPToSupabase(eventData, true, nomeOriginalSessao);
   } else {
     // ✅ NOVO - fazer INSERT
     console.log('✨ Adicionando nova resposta');
@@ -3110,12 +3169,14 @@ function handleRSVP(e) {
 }
 
 // ✅ Salvar RSVP no Supabase
-async function saveRSVPToSupabase(data, isUpdate) {
+async function saveRSVPToSupabase(data, isUpdate, nomeOriginal) {
   try {
     if (isUpdate) {
-      // Atualizar registro existente
+      // Atualizar registro existente — filtra pelo nome ORIGINAL (antes da
+      // edição), porque data.guest_name já pode ser o nome novo/corrigido.
+      const nomeFiltro = nomeOriginal || data.guest_name;
       const response = await supabaseRequest(
-        `rsvps?event_id=eq.${data.event_id}&guest_name=eq.${encodeURIComponent(data.guest_name)}`,
+        `rsvps?event_id=eq.${data.event_id}&guest_name=eq.${encodeURIComponent(nomeFiltro)}`,
         'PATCH',
         data
       );
@@ -4443,9 +4504,147 @@ function renderAdmin() {
 
   // Limpar input de busca
   document.getElementById('admin-search-input').value = '';
-  
+
   renderAdminAccountsList(nonAdminUsers);
+  atualizarBadgeEventosAntigos();
   lucide.createIcons();
+}
+
+// ▼ NOVO: aba de eventos/contas antigas (evento já passou há mais de 1 mês)
+function obterContasComEventosAntigos() {
+  const umMesAtras = new Date();
+  umMesAtras.setMonth(umMesAtras.getMonth() - 1);
+
+  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
+  const resultado = [];
+  nonAdminUsers.forEach(u => {
+    const eventosDoUser = Store.events.filter(e => e.user_id === u.id || e.userId === u.id);
+    if (eventosDoUser.length === 0) return;
+    const maisRecente = eventosDoUser.reduce((mais, e) => {
+      const d = new Date(e.date);
+      return (!mais || d > new Date(mais.date)) ? e : mais;
+    }, null);
+    if (maisRecente && new Date(maisRecente.date) < umMesAtras) {
+      resultado.push({ user: u, eventos: eventosDoUser });
+    }
+  });
+  return resultado;
+}
+
+function atualizarBadgeEventosAntigos() {
+  const badge = document.getElementById('admin-antigos-badge');
+  if (!badge) return;
+  const n = obterContasComEventosAntigos().length;
+  if (n > 0) { badge.textContent = n; badge.classList.remove('hidden'); }
+  else badge.classList.add('hidden');
+}
+
+function mudarAdminTab(tab) {
+  const btnContas = document.getElementById('admin-tab-contas');
+  const btnAntigos = document.getElementById('admin-tab-antigos');
+  const viewContas = document.getElementById('admin-view-contas');
+  const viewAntigos = document.getElementById('admin-view-antigos');
+  if (tab === 'antigos') {
+    btnContas.className = 'btn-outline px-4 text-sm';
+    btnAntigos.className = 'btn-main px-4 text-sm';
+    viewContas.classList.add('hidden');
+    viewAntigos.classList.remove('hidden');
+    renderAdminEventosAntigos();
+  } else {
+    btnContas.className = 'btn-main px-4 text-sm';
+    btnAntigos.className = 'btn-outline px-4 text-sm';
+    viewContas.classList.remove('hidden');
+    viewAntigos.classList.add('hidden');
+  }
+}
+
+function renderAdminEventosAntigos() {
+  const el = document.getElementById('admin-antigos-lista');
+  const contas = obterContasComEventosAntigos();
+  atualizarBadgeEventosAntigos();
+
+  if (contas.length === 0) {
+    el.innerHTML = `
+      <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+        <i data-lucide="check-circle" class="w-12 h-12 text-green-300 mx-auto mb-3"></i>
+        <p class="text-gray-500">Nenhuma conta com eventos há mais de 1 mês.</p>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  el.innerHTML = contas.map(({ user, eventos }) => {
+    const linhasEventos = eventos.map(e => {
+      const dataFmt = e.date ? new Date(e.date).toLocaleDateString('pt-PT') : '—';
+      const nConf = (e.confirmations || []).length;
+      return `<div class="text-xs text-gray-500">📅 ${escapeHTML(e.title || 'Sem título')} — ${dataFmt} · ${nConf} confirmação${nConf===1?'':'ões'}</div>`;
+    }).join('');
+    return `
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <div>
+            <div class="font-bold text-gray-800">${escapeHTML(user.phone || user.username || 'Conta')}</div>
+            ${linhasEventos}
+          </div>
+          <button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition flex-shrink-0" onclick="pedirConfirmacaoEliminarContaAntiga('${user.id}')">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function pedirConfirmacaoEliminarContaAntiga(userId) {
+  const conta = Store.users.find(u => u.id === userId);
+  if (!conta) return;
+  const eventos = Store.events.filter(e => e.user_id === userId || e.userId === userId);
+  const totalConf = eventos.reduce((s, e) => s + (e.confirmations || []).length, 0);
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-bold text-red-600 mb-2">⚠️ Eliminar conta e tudo o que tem?</h3>
+      <p class="text-sm text-gray-600 mb-2">Conta: <strong>${escapeHTML(conta.phone || conta.username || 'Conta')}</strong></p>
+      <p class="text-sm text-gray-600 mb-2">Eventos: <strong>${eventos.length}</strong> · Confirmações: <strong>${totalConf}</strong></p>
+      <p class="text-xs text-red-600 font-semibold mb-4">Isto elimina PERMANENTEMENTE, do Supabase: a conta, o(s) evento(s), todas as confirmações, nomes, datas e fotos de capa. Não é possível recuperar depois.</p>
+      <div class="flex gap-2">
+        <button class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmarEliminarContaAntiga('${userId}', this.closest('.modal-overlay'))">
+          Eliminar Tudo
+        </button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function confirmarEliminarContaAntiga(userId, modal) {
+  const btn = modal.querySelector('button.bg-red-500');
+  const origHtml = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = 'A eliminar...';
+  try {
+    const eventos = Store.events.filter(e => e.user_id === userId || e.userId === userId);
+    for (const ev of eventos) {
+      await supabaseRequest(`rsvps?event_id=eq.${ev.id}`, 'DELETE', {});
+      await supabaseRequest(`gifts?event_id=eq.${ev.id}`, 'DELETE', {});
+      if (ev.cover_image) await deleteEventCoverImage(ev.cover_image);
+      await supabaseRequest(`events?id=eq.${ev.id}`, 'DELETE', {});
+    }
+    await supabaseRequest(`accounts?id=eq.${userId}`, 'DELETE', {});
+
+    Store.events = Store.events.filter(e => e.user_id !== userId && e.userId !== userId);
+    Store.users = Store.users.filter(u => u.id !== userId);
+
+    modal.remove();
+    toast('✓ Conta e todos os dados eliminados com sucesso!');
+    renderAdminEventosAntigos();
+  } catch (e) {
+    console.error('Erro ao eliminar conta antiga:', e);
+    btn.disabled = false; btn.innerHTML = origHtml;
+    toast('❌ Erro ao eliminar. Tente novamente.');
+  }
 }
 
 function filterAdminAccounts() {
