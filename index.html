@@ -153,7 +153,7 @@ function controlarLado(ativo) {
       <h1 id="home-title" class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-2">Confirmação de Presença</h1>
       <p id="home-subtitle" class="text-gray-500 text-center mb-8 text-lg">Crie e gerencie seus eventos facilmente</p><!-- Buttons -->
       <div class="flex flex-col gap-3 mb-8">
-       <button class="btn-main text-lg" onclick="Router.go('register')">Criar Conta</button> <button class="btn-outline text-lg" onclick="Router.go('login')">Entrar</button>
+       <button class="btn-outline text-lg w-full" onclick="Router.go('login')">Entrar</button>
       </div><!-- Search Card -->
       <div class="bg-white rounded-2xl shadow-md p-5">
        <label class="block text-sm font-semibold text-gray-600 mb-2">Buscar Evento</label>
@@ -418,17 +418,26 @@ function controlarLado(ativo) {
       <h1 class="text-2xl font-bold text-gray-800">Painel Administrativo</h1><button class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition" onclick="handleLogout()"> <span class="flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Sair</span> </button>
      </div>
      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
-     <div class="flex gap-2 mb-4">
+     <div class="flex gap-2 mb-4 flex-wrap">
       <button id="admin-tab-contas" class="btn-main px-4 text-sm" onclick="mudarAdminTab('contas')">Contas</button>
+      <button id="admin-tab-pendentes" class="btn-outline px-4 text-sm" onclick="mudarAdminTab('pendentes')">⏳ Por Aprovar <span id="admin-pendentes-badge" class="hidden bg-amber-500 text-white rounded-full px-2 py-0.5 text-xs ml-1"></span></button>
       <button id="admin-tab-antigos" class="btn-outline px-4 text-sm" onclick="mudarAdminTab('antigos')">🗑️ Eventos Antigos <span id="admin-antigos-badge" class="hidden bg-red-500 text-white rounded-full px-2 py-0.5 text-xs ml-1"></span></button>
      </div>
      <div id="admin-view-contas">
-      <h3 class="font-bold text-gray-700 mb-3">Contas Registradas</h3><!-- Search Box -->
+      <div class="flex items-center justify-between gap-2 mb-3">
+       <h3 class="font-bold text-gray-700">Contas Registradas</h3>
+       <button class="btn-main text-sm px-3 py-1.5" onclick="abrirCriarContaAdmin()">➕ Criar Conta</button>
+      </div><!-- Search Box -->
       <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
        <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="🔍 Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
        </div>
       </div>
       <div id="admin-accounts" class="space-y-3"></div>
+     </div>
+     <div id="admin-view-pendentes" class="hidden">
+      <h3 class="font-bold text-gray-700 mb-1">Contas por aprovar</h3>
+      <p class="text-xs text-gray-500 mb-3">Contas registadas que ainda aguardam aprovação para poderem entrar.</p>
+      <div id="admin-pendentes-lista" class="space-y-3"></div>
      </div>
      <div id="admin-view-antigos" class="hidden">
       <h3 class="font-bold text-gray-700 mb-1">Eventos com mais de 1 mês</h3>
@@ -822,6 +831,11 @@ const Store = {
 // ===================== ROUTER =====================
 const Router = {
   go(screen) {
+    // ▼ NOVO: o registo público foi desactivado — só o admin cria contas.
+    if (screen === 'register') {
+      toast('As contas só podem ser criadas pelo administrador.');
+      screen = 'home';
+    }
     document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
     const el = document.getElementById('screen-' + screen);
     if (el) {
@@ -4481,6 +4495,78 @@ async function searchEvent() {
 }
 
 // ===================== ADMIN =====================
+// ▼ NOVO: só o admin pode criar contas agora (o registo público foi
+// desactivado). Contas criadas aqui já ficam 'active' de imediato — não faz
+// sentido o admin ter de aprovar uma conta que ele próprio acabou de criar.
+function abrirCriarContaAdmin() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-bold text-gray-800 mb-4">➕ Criar Conta</h3>
+      <div class="space-y-3 mb-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label>
+          <input id="admin-new-phone" class="input-field" placeholder="Ex: 912345678">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+          <input id="admin-new-pass" type="text" class="input-field" placeholder="Mínimo 4 caracteres">
+        </div>
+      </div>
+      <p id="admin-new-account-error" class="text-red-500 text-sm mb-3 hidden"></p>
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="confirmarCriarContaAdmin(this.closest('.modal-overlay'))">Criar Conta</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function confirmarCriarContaAdmin(modal) {
+  const phone = document.getElementById('admin-new-phone').value.trim();
+  const pass = document.getElementById('admin-new-pass').value;
+  const errEl = document.getElementById('admin-new-account-error');
+
+  if (!phone) { errEl.textContent = 'Introduza o telefone/ID.'; errEl.classList.remove('hidden'); return; }
+  if (pass.length < 4) { errEl.textContent = 'Senha deve ter no mínimo 4 caracteres.'; errEl.classList.remove('hidden'); return; }
+
+  const btn = modal.querySelector('.btn-main');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'A criar...';
+
+  try {
+    const result = await supabaseRequest('accounts', 'POST', {
+      phone: phone,
+      password: pass,
+      role: 'user',
+      status: 'active', // ✅ já entra activa — foi o admin que criou
+      event_limit: null
+    });
+    if (result && result.length > 0) {
+      modal.remove();
+      toast(`✓ Conta "${phone}" criada e já activa!`);
+      const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+      Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
+        id: u.id, phone: u.phone, password: u.password, role: u.role || 'user',
+        status: u.status || 'active', eventLimit: u.event_limit || null,
+        adminLabel: u.admin_label || null, createdAt: u.created_at
+      }));
+      renderAdmin();
+    } else {
+      errEl.textContent = 'Erro ao criar conta. Telefone pode já estar em uso.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = orig;
+    }
+  } catch (e) {
+    console.error('Erro ao criar conta via admin:', e);
+    errEl.textContent = 'Erro ao criar conta. Tente novamente.';
+    errEl.classList.remove('hidden');
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
 function renderAdmin() {
   if (!Store.currentUser || Store.currentUser.role !== 'admin') { Router.go('dashboard'); return; }
 
@@ -4537,22 +4623,69 @@ function atualizarBadgeEventosAntigos() {
   const n = obterContasComEventosAntigos().length;
   if (n > 0) { badge.textContent = n; badge.classList.remove('hidden'); }
   else badge.classList.add('hidden');
+  atualizarBadgePendentes();
+}
+
+function atualizarBadgePendentes() {
+  const badge = document.getElementById('admin-pendentes-badge');
+  if (!badge) return;
+  const n = Store.users.filter(u => u.role !== 'admin' && u.status === 'pending').length;
+  if (n > 0) { badge.textContent = n; badge.classList.remove('hidden'); }
+  else badge.classList.add('hidden');
+}
+
+function renderAdminPendentes() {
+  const el = document.getElementById('admin-pendentes-lista');
+  const pendentes = Store.users.filter(u => u.role !== 'admin' && u.status === 'pending');
+  atualizarBadgePendentes();
+
+  if (pendentes.length === 0) {
+    el.innerHTML = `
+      <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+        <i data-lucide="check-circle" class="w-12 h-12 text-green-300 mx-auto mb-3"></i>
+        <p class="text-gray-500">Não há contas por aprovar.</p>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  el.innerHTML = pendentes.map(u => `
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="font-bold text-gray-800">${escapeHTML(u.phone || 'Conta')}</div>
+          <div class="text-xs text-gray-500">Criada em ${u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-PT') : '—'}</div>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <button class="text-xs bg-green-500 hover:bg-green-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminAction('${u.id}','approve')">✓ Aprovar</button>
+          <button class="text-xs bg-red-500 hover:bg-red-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminAction('${u.id}','delete')">Excluir</button>
+        </div>
+      </div>
+    </div>`).join('');
+  lucide.createIcons();
 }
 
 function mudarAdminTab(tab) {
   const btnContas = document.getElementById('admin-tab-contas');
+  const btnPendentes = document.getElementById('admin-tab-pendentes');
   const btnAntigos = document.getElementById('admin-tab-antigos');
   const viewContas = document.getElementById('admin-view-contas');
+  const viewPendentes = document.getElementById('admin-view-pendentes');
   const viewAntigos = document.getElementById('admin-view-antigos');
-  if (tab === 'antigos') {
-    btnContas.className = 'btn-outline px-4 text-sm';
+
+  [btnContas, btnPendentes, btnAntigos].forEach(b => b.className = 'btn-outline px-4 text-sm');
+  [viewContas, viewPendentes, viewAntigos].forEach(v => v.classList.add('hidden'));
+
+  if (tab === 'pendentes') {
+    btnPendentes.className = 'btn-main px-4 text-sm';
+    viewPendentes.classList.remove('hidden');
+    renderAdminPendentes();
+  } else if (tab === 'antigos') {
     btnAntigos.className = 'btn-main px-4 text-sm';
-    viewContas.classList.add('hidden');
     viewAntigos.classList.remove('hidden');
     renderAdminEventosAntigos();
   } else {
     btnContas.className = 'btn-main px-4 text-sm';
-    btnAntigos.className = 'btn-outline px-4 text-sm';
     viewContas.classList.remove('hidden');
     viewAntigos.classList.add('hidden');
   }
@@ -4620,23 +4753,42 @@ function pedirConfirmacaoEliminarContaAntiga(userId) {
   document.body.appendChild(modal);
 }
 
+// ▼ NOVO: elimina de vez uma conta e tudo o que lhe pertence (eventos,
+// confirmações, presentes, foto de capa) directamente no Supabase.
+// Verifica no fim, com uma nova consulta, que a conta realmente desapareceu —
+// nunca confia cegamente na resposta do pedido de eliminação. Isto corrige o
+// bug em que "Excluir" parecia funcionar mas a conta voltava a aparecer após
+// refresh: um DELETE/PATCH que não acerta em nenhuma linha (por exemplo por
+// causa de RLS) também devolve "sucesso" vazio da parte do Supabase — por
+// isso a única forma fiável de confirmar é reconsultar depois.
+async function eliminarContaCompleta(userId) {
+  const eventos = Store.events.filter(e => e.user_id === userId || e.userId === userId);
+  for (const ev of eventos) {
+    await supabaseRequest(`rsvps?event_id=eq.${ev.id}`, 'DELETE', {});
+    await supabaseRequest(`gifts?event_id=eq.${ev.id}`, 'DELETE', {});
+    if (ev.cover_image) await deleteEventCoverImage(ev.cover_image);
+    await supabaseRequest(`events?id=eq.${ev.id}`, 'DELETE', {});
+  }
+  await supabaseRequest(`accounts?id=eq.${userId}`, 'DELETE', {});
+
+  // ✅ Verificação real: confirma que a conta já não existe no Supabase
+  const check = await supabaseRequest(`accounts?id=eq.${userId}`);
+  const realmenteEliminada = !check || check.length === 0;
+
+  if (realmenteEliminada) {
+    Store.events = Store.events.filter(e => e.user_id !== userId && e.userId !== userId);
+    Store.users = Store.users.filter(u => u.id !== userId);
+  }
+  return realmenteEliminada;
+}
+
 async function confirmarEliminarContaAntiga(userId, modal) {
   const btn = modal.querySelector('button.bg-red-500');
   const origHtml = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = 'A eliminar...';
   try {
-    const eventos = Store.events.filter(e => e.user_id === userId || e.userId === userId);
-    for (const ev of eventos) {
-      await supabaseRequest(`rsvps?event_id=eq.${ev.id}`, 'DELETE', {});
-      await supabaseRequest(`gifts?event_id=eq.${ev.id}`, 'DELETE', {});
-      if (ev.cover_image) await deleteEventCoverImage(ev.cover_image);
-      await supabaseRequest(`events?id=eq.${ev.id}`, 'DELETE', {});
-    }
-    await supabaseRequest(`accounts?id=eq.${userId}`, 'DELETE', {});
-
-    Store.events = Store.events.filter(e => e.user_id !== userId && e.userId !== userId);
-    Store.users = Store.users.filter(u => u.id !== userId);
-
+    const ok = await eliminarContaCompleta(userId);
+    if (!ok) throw new Error('O Supabase não confirmou a eliminação da conta.');
     modal.remove();
     toast('✓ Conta e todos os dados eliminados com sucesso!');
     renderAdminEventosAntigos();
@@ -4853,11 +5005,11 @@ function adminAction(userId, action) {
         <p class="text-sm text-gray-600 mb-2">Utilizador: <strong>${user.phone}</strong></p>
         <p class="text-sm text-gray-600 mb-4">Eventos associados: <strong>${userEvents.length}</strong></p>
         
-        <p class="text-xs text-red-600 font-semibold mb-4">Esta acao vai desativar e ocultar a conta, sem apagar eventos, confirmacoes ou presentes do Supabase.</p>
+        <p class="text-xs text-red-600 font-semibold mb-4">Esta ação elimina PERMANENTEMENTE, do Supabase: a conta, o(s) evento(s), confirmações, presentes e fotos de capa. Não é possível recuperar depois.</p>
         
         <div class="flex gap-2">
           <button class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmAdminDeleteUser('${userId}', this.closest('.modal-overlay'))">
-            Desativar Conta
+            Eliminar Conta
           </button>
           <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
         </div>
@@ -4871,7 +5023,7 @@ function adminAction(userId, action) {
 }
 
 async function confirmAdminDeleteUser(userId, modal) {
-  console.log('Iniciando desativacao segura de conta:', userId);
+  console.log('Iniciando eliminação de conta:', userId);
   
   const user = Store.users.find(u => u.id === userId);
   if (!user) {
@@ -4879,28 +5031,21 @@ async function confirmAdminDeleteUser(userId, modal) {
     return;
   }
   
+  const btn = modal.querySelector('button.bg-red-500');
+  const origHtml = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = 'A eliminar...';
+
   try {
-    const updateResult = await supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { status: 'deleted' });
-    console.log('Resposta da desativacao da conta:', updateResult);
+    const ok = await eliminarContaCompleta(userId);
+    if (!ok) throw new Error('O Supabase não confirmou a eliminação da conta.');
 
-    const checkResult = await supabaseRequest(`accounts?id=eq.${userId}`);
-    const wasMarkedDeleted = checkResult && checkResult[0] && checkResult[0].status === 'deleted';
-
-    if (!updateResult && !wasMarkedDeleted) {
-      throw new Error('O Supabase nao confirmou a desativacao da conta.');
-    }
-
-    user.status = 'deleted';
-    Store.users = Store.users.filter(u => u.id !== userId);
-    
     modal.remove();
-    toast(`Conta de "${user.phone}" desativada. Eventos, confirmacoes e presentes foram preservados.`);
+    toast(`✓ Conta de "${user.phone}" e todos os dados eliminados com sucesso!`);
     renderAdmin();
   } catch (error) {
-    console.error('Erro ao desativar conta:', error);
-    modal.remove();
-    toast('Nao foi possivel desativar a conta. Verifique as permissoes da tabela accounts.');
-    renderAdmin();
+    console.error('Erro ao eliminar conta:', error);
+    btn.disabled = false; btn.innerHTML = origHtml;
+    toast('❌ Não foi possível eliminar a conta. Verifique as permissões da tabela accounts.');
   }
 }
 function setEventLimit(userId) {
