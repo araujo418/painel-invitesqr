@@ -4734,7 +4734,7 @@ async function eliminarContaCompleta(userId) {
   await supabaseRequest(`accounts?id=eq.${userId}`, 'DELETE', {});
 
   // ✅ Verificação real: confirma que a conta já não existe no Supabase
-  const check = await supabaseRequest(`accounts?id=eq.${userId}`);
+  const check = await supabaseRequest(`accounts?id=eq.${userId}&select=id`);
   const realmenteEliminada = !check || check.length === 0;
 
   if (realmenteEliminada) {
@@ -5222,7 +5222,7 @@ async function exportSupabaseSchema() {
     // 🎯 PASSO 1: Carregar TODAS as tabelas de dados
     console.log('📥 Carregando dados do Supabase...');
     
-    const accountsData = await supabaseRequest('accounts?select=*');
+    const accountsData = await supabaseRequest('accounts?select=id,phone,role,status,event_limit,admin_label,created_at');
     const eventsData = await supabaseRequest('events?select=*');
     const rsvpsData = await supabaseRequest('rsvps?select=*');
     const giftsData = await supabaseRequest('gifts?select=*');
@@ -5246,7 +5246,7 @@ async function exportSupabaseSchema() {
           columns: {
             id: 'TEXT PRIMARY KEY - Identificador único da conta',
             phone: 'TEXT UNIQUE NOT NULL - Telefone do utilizador (usado para login)',
-            password: 'TEXT NOT NULL - Senha do utilizador (armazenada em texto simples)',
+            password: 'TEXT NOT NULL - Hash bcrypt da senha (nunca exportado/lido diretamente; login via rpc_login)',
             role: 'TEXT DEFAULT "user" - Role do utilizador: "user" ou "admin"',
             status: 'TEXT DEFAULT "active" - Status: "active", "pending", "blocked"',
             event_limit: 'INTEGER NULL - Limite de eventos que pode criar (NULL = sem limite)',
