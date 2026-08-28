@@ -109,5 +109,51 @@
     }
   }
 
-  window.SecureAuth = { login, register, logout, getSession };
+  // ── Funções administrativas (usadas apenas pelo painel admin) ───────────
+  // Todas fazem o hash/gestão da password dentro do Postgres via RPC
+  // (SECURITY DEFINER); nenhuma password circula em texto simples nem é
+  // gravada diretamente pelo browser.
+
+  async function adminSetPassword(userId, newPassword) {
+    if (!userId || !newPassword) {
+      throw new Error('userId e nova senha são obrigatórios.');
+    }
+    return callRpc('rpc_admin_set_password', {
+      p_user_id: userId,
+      p_new_password: String(newPassword)
+    });
+  }
+
+  async function adminCreateAccount(phone, password, role, status, eventLimit) {
+    if (!phone || !password) {
+      throw new Error('Telefone e senha são obrigatórios.');
+    }
+    return callRpc('rpc_admin_create_account', {
+      p_phone: String(phone).trim(),
+      p_password: String(password),
+      p_role: role || 'user',
+      p_status: status || 'active',
+      p_event_limit: eventLimit ?? null
+    });
+  }
+
+  async function adminChangeAccountId(oldId, newId) {
+    if (!oldId || !newId) {
+      throw new Error('ID antigo e novo ID são obrigatórios.');
+    }
+    return callRpc('rpc_admin_change_account_id', {
+      p_old_id: oldId,
+      p_new_id: newId
+    });
+  }
+
+  window.SecureAuth = {
+    login,
+    register,
+    logout,
+    getSession,
+    adminSetPassword,
+    adminCreateAccount,
+    adminChangeAccountId
+  };
 })();

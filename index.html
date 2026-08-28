@@ -1164,7 +1164,7 @@ async function handleLogin(e) {
     Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
       phone: u.phone,
-      password: u.password,
+      // 🔒 password removida: nunca carregar o hash da senha para o navegador
       role: u.role || 'user',
       status: u.status || 'active',
       eventLimit: u.event_limit || null,
@@ -4508,7 +4508,7 @@ async function confirmarCriarContaAdmin(modal) {
       toast(`✓ Conta "${phone}" criada e já activa!`);
       const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
       Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
-        id: u.id, phone: u.phone, password: u.password, role: u.role || 'user',
+        id: u.id, phone: u.phone, role: u.role || 'user', // 🔒 password removida: nunca carregar o hash para o navegador
         status: u.status || 'active', eventLimit: u.event_limit || null,
         adminLabel: u.admin_label || null, createdAt: u.created_at
       }));
@@ -7389,38 +7389,18 @@ function saveUserId(userId, modal) {
   user.id = newId;
   
   // ✅ PASSO 3: Sincronizar utilizador no Supabase
-  // ⚠️ CRÍTICO: Deletar o registo antigo e criar um novo com o novo ID
+  // 🔒 SEGURO: rpc_admin_change_account_id faz tudo dentro do Postgres
+  // (cria a conta nova preservando o hash bcrypt real e apaga a antiga),
+  // sem nunca precisar de ler/copiar a senha aqui no navegador.
   console.log('🔄 Atualizando ID do utilizador no Supabase...');
-  
-  // Primeiro, copiar os dados do utilizador antigo
-  const userData = {
-    id: newId,
-    phone: user.phone,
-    password: user.password,
-    role: user.role,
-    status: user.status,
-    event_limit: user.eventLimit,
-    admin_label: user.adminLabel,
-    created_at: user.createdAt
-  };
 
-  // Inserir novo registo com novo ID
-  supabaseRequest('accounts', 'POST', userData).then(result => {
-    console.log('✅ Novo registo criado com ID:', newId);
-    
-    // Depois, deletar o registo antigo
-    supabaseRequest(`accounts?id=eq.${oldId}`, 'DELETE', {}).then(delResult => {
-      console.log('✅ Registo antigo deletado');
-      
-      modal.remove();
-      toast(`✓ ID alterado de "${oldId}" para "${newId}" e todos os ${userEvents.length} evento(s) foram atualizados!`);
-      renderAdmin();
-    }).catch(error => {
-      console.error('❌ Erro ao deletar registo antigo:', error);
-      toast('⚠️ ID criado mas registo antigo não foi deletado. Limpe manualmente no Supabase!');
-    });
+  SecureAuth.adminChangeAccountId(oldId, newId).then(() => {
+    console.log('✅ ID do utilizador atualizado no Supabase');
+    modal.remove();
+    toast(`✓ ID alterado de "${oldId}" para "${newId}" e todos os ${userEvents.length} evento(s) foram atualizados!`);
+    renderAdmin();
   }).catch(error => {
-    console.error('❌ Erro ao criar novo registo:', error);
+    console.error('❌ Erro ao alterar ID:', error);
     toast('❌ Erro ao alterar ID. Tente novamente.');
   });
 }
@@ -7757,7 +7737,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
             phone: u.phone,
-            password: u.password,
+            // 🔒 password removida: nunca carregar o hash da senha para o navegador
             role: u.role || 'user',
             status: u.status || 'active',
             eventLimit: u.event_limit || null,
