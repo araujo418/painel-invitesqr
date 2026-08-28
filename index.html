@@ -4499,13 +4499,10 @@ async function confirmarCriarContaAdmin(modal) {
   btn.disabled = true; btn.textContent = 'A criar...';
 
   try {
-    const result = await supabaseRequest('accounts', 'POST', {
-      phone: phone,
-      password: pass,
-      role: 'user',
-      status: 'active', // ✅ já entra activa — foi o admin que criou
-      event_limit: null
-    });
+    // ✅ SEGURO: a senha é encriptada dentro do Supabase (rpc_admin_create_account),
+    // nunca circula em texto simples nem é gravada diretamente aqui no browser.
+    const newAccount = await SecureAuth.adminCreateAccount(phone, pass, 'user', 'active', null);
+    const result = newAccount ? [newAccount] : null;
     if (result && result.length > 0) {
       modal.remove();
       toast(`✓ Conta "${phone}" criada e já activa!`);
@@ -7265,8 +7262,11 @@ function saveUserPassword(userId, modal) {
 
   const user = Store.users.find(u => u.id === userId);
   if (!user) return;
-  // ✅ Sincronizar com Supabase
-  supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { password: newPassword });
+  // ✅ SEGURO: a senha é encriptada dentro do Supabase (rpc_admin_set_password),
+  // nunca é gravada em texto simples aqui no browser.
+  SecureAuth.adminSetPassword(userId, newPassword).catch(err => {
+    toast('❌ Erro ao alterar senha: ' + (err.message || 'erro desconhecido'));
+  });
   
   modal.remove();
   toast('✓ Senha alterada com sucesso!');
