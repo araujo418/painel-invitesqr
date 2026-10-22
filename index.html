@@ -311,7 +311,7 @@ function controlarLado(ativo) {
         <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
        </div>
        <div class="flex flex-wrap gap-2 mb-6">
-        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
+        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-extra-fields" class="btn-outline text-sm hidden" onclick="adminEditExtraFields(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="list-plus" class="w-4 h-4"></i> Campos do RSVP</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
        </div><!-- Stats -->
        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
        <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
@@ -336,7 +336,10 @@ function controlarLado(ativo) {
         <label class="block text-sm font-semibold text-gray-600 mb-1">Confirma presença?</label>
         <div class="flex gap-3 mb-3">
          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="yes" class="accent-teal-500" required> <span class="text-sm">Sim</span></label> <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="rsvp-confirm" value="no" class="accent-teal-500"> <span class="text-sm">Não</span></label>
-        </div><label class="block text-sm font-semibold text-gray-600 mb-1">Seu Nome</label> <input id="rsvp-name" class="input-field mb-3" placeholder="Nome completo" required>
+        </div>
+        <div id="rsvp-name-wrap"><label class="block text-sm font-semibold text-gray-600 mb-1">Seu Nome</label> <input id="rsvp-name" class="input-field mb-3" placeholder="Nome completo" required></div>
+        <!-- ▼ NOVO: campos extra (Primeiro e último nome, Instituição, Cargo, ...) — activados pelo admin por evento -->
+        <div id="rsvp-extra-fields"></div>
         <div id="rsvp-default-side-section" class="hidden mb-3">
          <label class="block text-sm font-semibold text-gray-600 mb-1">Grupo do convidado</label>
          <div class="flex gap-3">
@@ -520,6 +523,27 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           return supabaseRequest(fallbackEndpoint, method, body);
         }
       }
+      // ▼ NOVO (campos extra do RSVP): se a coluna extra_fields ainda não existir
+      // em events, repete a consulta sem ela — o site continua a funcionar
+      // antes de o SQL ser corrido no Supabase.
+      const missingEventColumn = text.match(/column\s+events\.([a-zA-Z0-9_]+)\s+does not exist/i);
+      if (response.status === 400 && method === 'GET' && missingEventColumn) {
+        const fallbackEndpoint = endpoint.replace(new RegExp(`,${missingEventColumn[1]}(?=[,&)]|$)`, 'g'), '');
+        if (fallbackEndpoint !== endpoint) {
+          console.warn(`Coluna ${missingEventColumn[1]} nao existe em events. Repetindo consulta sem essa coluna.`);
+          return supabaseRequest(fallbackEndpoint, method, body);
+        }
+      }
+      // ▼ NOVO: em INSERT/UPDATE, se a coluna (ex: extra_data) ainda não existir,
+      // repete sem esse campo em vez de perder a confirmação inteira.
+      const missingWriteColumn = text.match(/Could not find the '([a-zA-Z0-9_]+)' column/i);
+      if (missingWriteColumn && body && typeof body === 'object' && !Array.isArray(body) && missingWriteColumn[1] in body) {
+        console.warn(`Coluna ${missingWriteColumn[1]} nao existe. Repetindo sem esse campo.`);
+        const fallbackBody = { ...body };
+        delete fallbackBody[missingWriteColumn[1]];
+        if (Object.keys(fallbackBody).length === 0) return null;
+        return supabaseRequest(endpoint, method, fallbackBody);
+      }
       const missingRsvpColumn = text.match(/column\s+rsvps_\d+\.([a-zA-Z0-9_]+)\s+does not exist/i);
       if (response.status === 400 && method === 'GET' && missingRsvpColumn && endpoint.includes('rsvps(')) {
         const missingColumn = missingRsvpColumn[1];
@@ -574,7 +598,7 @@ async function fetchEventForGuest(eventId) {
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
     const eventData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     if (!eventData || eventData.length === 0) {
@@ -654,7 +678,10 @@ async function fetchEventForGuest(eventId) {
       allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
       show_guest_messages: event.show_guest_messages,
       showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
+      extraFields: parseExtraFields(event.extra_fields),
+      extra_fields: event.extra_fields,
       confirmations: (event.rsvps || []).map(rsvp => ({
+        extraData: parseExtraData(rsvp.extra_data),
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
@@ -683,7 +710,7 @@ async function fetchUserDataForOrganizer(userId) {
   try {
     // ✅ OTIMIZAÇÃO: Um único JOIN para trazer eventos + presentes + RSVPs
     // Selecionar TODOS os campos necessários incluindo cover_image, max_companions, max_kids, event_code
-    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)`);
     
     console.log('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
@@ -756,7 +783,10 @@ async function fetchUserDataForOrganizer(userId) {
           reservedBy: g.reserved_by || null
         })),
         
+        extraFields: parseExtraFields(event.extra_fields),
+        extra_fields: event.extra_fields,
         confirmations: (event.rsvps || []).map(rsvp => ({
+          extraData: parseExtraData(rsvp.extra_data),
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -1175,7 +1205,7 @@ async function handleLogin(e) {
     console.log('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)&limit=500&order=date.desc`);
     
     console.log('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
@@ -1225,7 +1255,10 @@ async function handleLogin(e) {
           reserved: g.reserved || false,
           reservedBy: g.reserved_by || null
         })),
+        extraFields: parseExtraFields(event.extra_fields),
+        extra_fields: event.extra_fields,
         confirmations: (event.rsvps || []).map(rsvp => ({
+          extraData: parseExtraData(rsvp.extra_data),
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -1952,6 +1985,8 @@ function renderEventDetails() {
   if (editURLBtn) editURLBtn.parentElement.parentElement.classList.toggle('hidden', !isAdmin);
   
   document.getElementById('btn-delete-event').classList.toggle('hidden', !(isOwner || isAdmin));
+  // ▼ NOVO: só o admin (ou admin a ver como cliente) pode activar campos extra do RSVP
+  document.getElementById('btn-extra-fields').classList.toggle('hidden', !(isAdmin || Store.adminModeActive));
 
   const confirmations = event.confirmations || [];
   const confirmed = confirmations.filter(c => c.attending === true || c.attending === 'yes');
@@ -2053,6 +2088,7 @@ function renderEventDetails() {
         sideLabel,
         ((c.companions || []).length ? 'Acomp: ' + c.companions.join(', ') : ''),
         ((c.kids || []).length ? 'Crianças: ' + c.kids.join(', ') : ''),
+        escapeHTML(formatExtraDataSummary(c, event)),
         (hasReservedGift ? '🎁 ' + reservedGift.name : '')
       ].filter(Boolean).join(' · ');
       return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
@@ -2228,7 +2264,8 @@ function downloadPDF() {
 
   function makeLines(list) {
     return list.map((conf, index) => {
-      const name = formatGuestWithCompanions(conf);
+      const extras = formatExtraDataSummary(conf, ev, ' | ');
+      const name = formatGuestWithCompanions(conf) + (extras ? ' - ' + extras : '');
       return enumerated ? `${index + 1}. ${name}` : name;
     });
   }
@@ -2746,6 +2783,9 @@ function renderGuestView() {
     Store.currentGuestSession = { eventId: Store.currentEventId, guestName: existingResponse.name };
   }
 
+  // ▼ NOVO: campos extra activados pelo admin (Primeiro e último nome, Instituição, Cargo...)
+  renderGuestExtraFields(eventData, existingResponse);
+
   // ✅ CRITICAL: Mostrar/esconder sections baseado nos valores corretos do evento
   console.log('👤 Seções do formulário:');
   console.log('  allowCompanions:', eventData.allowCompanions, '→ Mostrar?', eventData.allowCompanions);
@@ -2910,6 +2950,336 @@ function escapeHTML(value) {
   }[char]));
 }
 
+// =====================================================================
+// ▼ NOVO: CAMPOS EXTRA DO RSVP (activados pelo admin, por evento)
+// ---------------------------------------------------------------------
+// Configuração guardada em events.extra_fields (jsonb, lista ordenada):
+//   [{ key, type, label, required, placeholder?, options? }, ...]
+// Respostas dos convidados guardadas em rsvps.extra_data (jsonb):
+//   { first_name, last_name, institution, position, ... }
+// Para disponibilizar uma nova opção a todos os eventos, basta acrescentar
+// uma entrada a RSVP_EXTRA_FIELD_CATALOG. O admin também pode criar opções
+// personalizadas directamente no painel (sem mexer no código).
+// =====================================================================
+const RSVP_EXTRA_FIELD_CATALOG = [
+  { key: 'first_last_name', type: 'first_last', label: 'Primeiro e último nome', defaultRequired: true,
+    description: 'Troca o campo "Seu Nome" por dois campos: Primeiro nome + Último nome.' },
+  { key: 'institution', type: 'text', label: 'Instituição', placeholder: 'Ex: Ministério da Saúde', defaultRequired: true },
+  { key: 'position', type: 'text', label: 'Cargo', placeholder: 'Ex: Director Geral', defaultRequired: true },
+  // ── Outras opções já prontas — o admin só tem de as activar ──
+  { key: 'phone', type: 'tel', label: 'Telefone', placeholder: 'Ex: 923 000 000', defaultRequired: false },
+  { key: 'email', type: 'email', label: 'E-mail', placeholder: 'Ex: nome@empresa.ao', defaultRequired: false },
+  { key: 'city', type: 'text', label: 'Província / Cidade', placeholder: 'Ex: Luanda', defaultRequired: false }
+];
+
+const RSVP_EXTRA_FIELD_TYPES = {
+  text: 'Texto curto',
+  textarea: 'Texto longo',
+  select: 'Lista de opções',
+  tel: 'Telefone',
+  email: 'E-mail'
+};
+
+function parseExtraFields(raw) {
+  let list = raw;
+  if (typeof list === 'string') {
+    try { list = JSON.parse(list); } catch (_) { list = []; }
+  }
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  return list
+    .filter(f => f && typeof f === 'object' && f.key && f.label)
+    .filter(f => { if (seen.has(f.key)) return false; seen.add(f.key); return true; })
+    .map(f => ({
+      key: String(f.key),
+      type: String(f.type || 'text'),
+      label: String(f.label),
+      required: f.required === true || f.required === 'yes',
+      placeholder: f.placeholder ? String(f.placeholder) : '',
+      options: Array.isArray(f.options) ? f.options.map(o => String(o).trim()).filter(Boolean) : []
+    }));
+}
+
+function parseExtraData(raw) {
+  let data = raw;
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch (_) { data = {}; }
+  }
+  return (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+}
+
+function getEventExtraFields(ev) {
+  if (!ev) return [];
+  if (Array.isArray(ev.extraFields)) return ev.extraFields;
+  return parseExtraFields(ev.extra_fields);
+}
+
+function eventUsesFirstLastName(ev) {
+  return getEventExtraFields(ev).some(f => f.type === 'first_last');
+}
+
+// Texto curto com os dados extra de uma confirmação (lista do organizador, PDF, CSV).
+function formatExtraDataSummary(conf, ev, separator = ' · ') {
+  const data = (conf && conf.extraData) || {};
+  const fields = getEventExtraFields(ev).filter(f => f.type !== 'first_last');
+  const usedKeys = new Set(fields.map(f => f.key).concat(['first_name', 'last_name']));
+  const parts = fields
+    .filter(f => String(data[f.key] || '').trim())
+    .map(f => f.label + ': ' + String(data[f.key]).trim());
+  // Dados de campos que entretanto foram desactivados continuam visíveis.
+  Object.keys(data).forEach(k => {
+    if (usedKeys.has(k) || !String(data[k] || '').trim()) return;
+    const cat = RSVP_EXTRA_FIELD_CATALOG.find(c => c.key === k);
+    parts.push((cat ? cat.label : k) + ': ' + String(data[k]).trim());
+  });
+  return parts.join(separator);
+}
+
+function buildExtraFieldInputHTML(field, value, idPrefix) {
+  const id = idPrefix + field.key;
+  const req = field.required ? ' required' : '';
+  const star = field.required ? ' <span class="text-red-500">*</span>' : '';
+  const val = escapeHTML(value || '');
+  const ph = escapeHTML(field.placeholder || '');
+  let input;
+  if (field.type === 'textarea') {
+    input = `<textarea id="${id}" data-xf-key="${escapeHTML(field.key)}" class="input-field text-sm h-20 p-2" maxlength="500" placeholder="${ph}"${req}>${val}</textarea>`;
+  } else if (field.type === 'select') {
+    const opts = (field.options || []).map(o => `<option value="${escapeHTML(o)}"${o === value ? ' selected' : ''}>${escapeHTML(o)}</option>`).join('');
+    input = `<select id="${id}" data-xf-key="${escapeHTML(field.key)}" class="input-field"${req}><option value="">Seleccione...</option>${opts}</select>`;
+  } else {
+    const type = field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : 'text';
+    input = `<input id="${id}" type="${type}" data-xf-key="${escapeHTML(field.key)}" class="input-field" maxlength="150" placeholder="${ph}" value="${val}"${req}>`;
+  }
+  return `<div class="mb-3"><label for="${id}" class="block text-sm font-semibold text-gray-600 mb-1">${escapeHTML(field.label)}${star}</label>${input}</div>`;
+}
+
+function buildFirstLastHTML(first, last, idPrefix) {
+  return `
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label for="${idPrefix}first_name" class="block text-sm font-semibold text-gray-600 mb-1">Primeiro nome <span class="text-red-500">*</span></label>
+        <input id="${idPrefix}first_name" class="input-field" maxlength="40" placeholder="Ex: Maria" value="${escapeHTML(first || '')}" required>
+      </div>
+      <div>
+        <label for="${idPrefix}last_name" class="block text-sm font-semibold text-gray-600 mb-1">Último nome <span class="text-red-500">*</span></label>
+        <input id="${idPrefix}last_name" class="input-field" maxlength="40" placeholder="Ex: Cataca" value="${escapeHTML(last || '')}" required>
+      </div>
+    </div>`;
+}
+
+function splitFirstLast(conf) {
+  const data = (conf && conf.extraData) || {};
+  if (data.first_name || data.last_name) return { first: data.first_name || '', last: data.last_name || '' };
+  const words = String((conf && conf.name) || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return { first: '', last: '' };
+  if (words.length === 1) return { first: words[0], last: '' };
+  return { first: words[0], last: words[words.length - 1] };
+}
+
+// Desenha os campos extra no ecrã de confirmação do convidado.
+function renderGuestExtraFields(eventData, existingResponse) {
+  const container = document.getElementById('rsvp-extra-fields');
+  const nameWrap = document.getElementById('rsvp-name-wrap');
+  const nameInput = document.getElementById('rsvp-name');
+  if (!container) return;
+
+  const fields = getEventExtraFields(eventData);
+  const usesFirstLast = fields.some(f => f.type === 'first_last');
+  const data = (existingResponse && existingResponse.extraData) || {};
+
+  if (nameWrap) nameWrap.classList.toggle('hidden', usesFirstLast);
+  if (nameInput) nameInput.required = !usesFirstLast;
+
+  container.innerHTML = fields.map(f => {
+    if (f.type === 'first_last') {
+      const parts = existingResponse ? splitFirstLast(existingResponse) : { first: '', last: '' };
+      return buildFirstLastHTML(parts.first, parts.last, 'rsvp-xf-');
+    }
+    return buildExtraFieldInputHTML(f, data[f.key], 'rsvp-xf-');
+  }).join('');
+}
+
+function validarParteNome(valor, rotulo) {
+  if (!valor) return `❌ Preencha o ${rotulo}.`;
+  if (valor.includes(',')) return `❌ Não use vírgulas no ${rotulo}.`;
+  if (valor.split(/\s+/).filter(Boolean).length > 2) return `❌ O ${rotulo} só pode ter até 2 palavras.`;
+  return '';
+}
+
+// Lê e valida os campos extra. Devolve { ok, msg, name, data }.
+function collectExtraFields(ev, idPrefix) {
+  const fields = getEventExtraFields(ev);
+  const data = {};
+  let name = null;
+  for (const f of fields) {
+    if (f.type === 'first_last') {
+      const first = (document.getElementById(idPrefix + 'first_name')?.value || '').trim().replace(/\s+/g, ' ');
+      const last = (document.getElementById(idPrefix + 'last_name')?.value || '').trim().replace(/\s+/g, ' ');
+      const err = validarParteNome(first, 'primeiro nome') || validarParteNome(last, 'último nome');
+      if (err) return { ok: false, msg: err };
+      data.first_name = first;
+      data.last_name = last;
+      name = first + ' ' + last;
+      continue;
+    }
+    const el = document.getElementById(idPrefix + f.key);
+    const val = (el?.value || '').trim();
+    if (f.required && !val) return { ok: false, msg: `❌ Preencha o campo "${f.label}".` };
+    if (val && f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      return { ok: false, msg: '❌ E-mail inválido.' };
+    }
+    if (val) data[f.key] = val.slice(0, f.type === 'textarea' ? 500 : 150);
+  }
+  return { ok: true, msg: '', name, data };
+}
+
+// ── ADMIN: activar / desactivar campos extra de um evento ──
+function adminEditExtraFields(eventId) {
+  const viewerIsAdmin = (Store.currentUser && Store.currentUser.role === 'admin') || Store.adminModeActive;
+  if (!viewerIsAdmin) { toast('Apenas o administrador pode alterar estes campos.'); return; }
+  const ev = Store.events.find(e => e.id === eventId);
+  if (!ev) { toast('Evento não encontrado.'); return; }
+
+  const current = getEventExtraFields(ev);
+  Store.extraFieldsDraft = {
+    eventId,
+    catalog: RSVP_EXTRA_FIELD_CATALOG.map(c => {
+      const active = current.find(f => f.key === c.key);
+      return { key: c.key, enabled: !!active, required: active ? active.required : !!c.defaultRequired };
+    }),
+    custom: current
+      .filter(f => !RSVP_EXTRA_FIELD_CATALOG.some(c => c.key === f.key))
+      .map(f => ({ ...f }))
+  };
+
+  document.querySelectorAll('.modal-overlay.xf-modal').forEach(m => m.remove());
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay xf-modal';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-lg w-full mx-4 overflow-y-auto" style="max-height:90vh">
+      <h3 class="text-lg font-bold text-gray-800 mb-1">Campos do formulário de confirmação</h3>
+      <p class="text-sm text-gray-500 mb-4">Evento: <strong>${escapeHTML(ev.title)}</strong></p>
+      <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Opções disponíveis</p>
+      <div id="xf-catalog" class="space-y-2 mb-5"></div>
+      <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Opções personalizadas</p>
+      <div id="xf-custom" class="space-y-2 mb-3"></div>
+      <div class="bg-gray-50 rounded-xl p-3 mb-5 border border-dashed border-gray-300">
+        <p class="text-sm font-semibold text-gray-700 mb-2">+ Criar outra opção</p>
+        <input id="xf-new-label" class="input-field text-sm mb-2" maxlength="60" placeholder="Nome do campo (ex: Número de BI, Mesa, Empresa...)">
+        <select id="xf-new-type" class="input-field text-sm mb-2" onchange="document.getElementById('xf-new-options-wrap').classList.toggle('hidden', this.value !== 'select')">
+          ${Object.entries(RSVP_EXTRA_FIELD_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <div id="xf-new-options-wrap" class="hidden mb-2">
+          <textarea id="xf-new-options" class="input-field text-sm h-20 p-2" placeholder="Uma opção por linha"></textarea>
+        </div>
+        <label class="flex items-center gap-2 text-xs text-gray-600 mb-2"><input type="checkbox" id="xf-new-required" class="accent-teal-500"> Obrigatório</label>
+        <button type="button" class="btn-outline text-sm w-full" onclick="addCustomExtraField()">Adicionar opção</button>
+      </div>
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="saveExtraFieldsConfig(this.closest('.modal-overlay'), this)">Guardar</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  renderExtraFieldsDraft();
+}
+
+function renderExtraFieldsDraft() {
+  const d = Store.extraFieldsDraft;
+  if (!d) return;
+  const catEl = document.getElementById('xf-catalog');
+  const custEl = document.getElementById('xf-custom');
+  if (!catEl || !custEl) return;
+
+  catEl.innerHTML = RSVP_EXTRA_FIELD_CATALOG.map((c, i) => {
+    const st = d.catalog[i];
+    const fixedRequired = c.type === 'first_last';
+    return `
+      <div class="flex items-start gap-3 p-3 rounded-xl border ${st.enabled ? 'border-teal-300 bg-teal-50' : 'border-gray-200'}">
+        <div class="switch ${st.enabled ? 'active' : ''} flex-shrink-0" onclick="Store.extraFieldsDraft.catalog[${i}].enabled = !Store.extraFieldsDraft.catalog[${i}].enabled; renderExtraFieldsDraft()"></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-gray-800">${escapeHTML(c.label)}</p>
+          ${c.description ? `<p class="text-xs text-gray-500">${escapeHTML(c.description)}</p>` : ''}
+          ${st.enabled && !fixedRequired ? `<label class="flex items-center gap-2 text-xs text-gray-600 mt-1"><input type="checkbox" class="accent-teal-500" ${st.required ? 'checked' : ''} onchange="Store.extraFieldsDraft.catalog[${i}].required = this.checked"> Obrigatório</label>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  custEl.innerHTML = d.custom.length === 0
+    ? '<p class="text-xs text-gray-400">Nenhuma opção personalizada.</p>'
+    : d.custom.map((f, i) => `
+      <div class="flex items-center gap-3 p-3 rounded-xl border border-teal-300 bg-teal-50">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-gray-800 truncate">${escapeHTML(f.label)}</p>
+          <p class="text-xs text-gray-500">${escapeHTML(RSVP_EXTRA_FIELD_TYPES[f.type] || f.type)}${f.type === 'select' ? ' — ' + escapeHTML(f.options.join(' / ')) : ''}</p>
+          <label class="flex items-center gap-2 text-xs text-gray-600 mt-1"><input type="checkbox" class="accent-teal-500" ${f.required ? 'checked' : ''} onchange="Store.extraFieldsDraft.custom[${i}].required = this.checked"> Obrigatório</label>
+        </div>
+        <button type="button" class="text-gray-400 hover:text-red-500 transition p-1" title="Remover" onclick="Store.extraFieldsDraft.custom.splice(${i}, 1); renderExtraFieldsDraft()"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      </div>`).join('');
+  lucide.createIcons();
+}
+
+function addCustomExtraField() {
+  const d = Store.extraFieldsDraft;
+  if (!d) return;
+  const label = document.getElementById('xf-new-label').value.trim();
+  const type = document.getElementById('xf-new-type').value;
+  const required = document.getElementById('xf-new-required').checked;
+  const options = document.getElementById('xf-new-options').value.split('\n').map(o => o.trim()).filter(Boolean);
+  if (!label) { toast('Escreva o nome do campo.'); return; }
+  if (type === 'select' && options.length < 2) { toast('Indique pelo menos 2 opções (uma por linha).'); return; }
+  const taken = RSVP_EXTRA_FIELD_CATALOG.concat(d.custom).some(f => f.label.toLowerCase() === label.toLowerCase());
+  if (taken) { toast('Já existe um campo com esse nome.'); return; }
+  d.custom.push({
+    key: 'custom_' + Date.now().toString(36),
+    type, label, required,
+    placeholder: '',
+    options: type === 'select' ? options : []
+  });
+  document.getElementById('xf-new-label').value = '';
+  document.getElementById('xf-new-options').value = '';
+  document.getElementById('xf-new-required').checked = false;
+  renderExtraFieldsDraft();
+}
+
+async function saveExtraFieldsConfig(modal, btn) {
+  const d = Store.extraFieldsDraft;
+  if (!d) return;
+  const config = [];
+  RSVP_EXTRA_FIELD_CATALOG.forEach((c, i) => {
+    const st = d.catalog[i];
+    if (!st.enabled) return;
+    const item = { key: c.key, type: c.type, label: c.label, required: c.type === 'first_last' ? true : !!st.required };
+    if (c.placeholder) item.placeholder = c.placeholder;
+    config.push(item);
+  });
+  d.custom.forEach(f => {
+    const item = { key: f.key, type: f.type, label: f.label, required: !!f.required };
+    if (f.placeholder) item.placeholder = f.placeholder;
+    if (f.type === 'select') item.options = f.options;
+    config.push(item);
+  });
+
+  if (btn) { btn.disabled = true; btn.textContent = 'A guardar...'; }
+  const result = await supabaseRequest(`events?id=eq.${encodeURIComponent(d.eventId)}`, 'PATCH', { extra_fields: config });
+  if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  if (!result) {
+    toast('❌ Não foi possível guardar. Confirme que o SQL dos campos extra já foi corrido no Supabase.');
+    return;
+  }
+
+  const parsed = parseExtraFields(config);
+  [Store.events.find(e => e.id === d.eventId), Store.guestEventData && Store.guestEventData.id === d.eventId ? Store.guestEventData : null]
+    .filter(Boolean)
+    .forEach(ev => { ev.extraFields = parsed; ev.extra_fields = config; });
+
+  Store.extraFieldsDraft = null;
+  modal.remove();
+  toast(config.length ? `✓ ${config.length} campo(s) extra activo(s) neste evento.` : '✓ Campos extra desactivados.');
+  if (!document.getElementById('screen-event-details').classList.contains('hidden')) renderEventDetails();
+}
+
 
 
 
@@ -3015,7 +3385,20 @@ function handleRSVP(e) {
   }
 
   const attending = document.querySelector('input[name="rsvp-confirm"]:checked').value === 'yes';
-  const name = document.getElementById('rsvp-name').value.trim();
+  let name = document.getElementById('rsvp-name').value.trim();
+
+  // ▼ NOVO: campos extra (activados pelo admin). Se "Primeiro e último nome"
+  // estiver activo, o nome do convidado passa a ser "Primeiro Último".
+  const extraFieldsCfg = getEventExtraFields(ev);
+  const usesFirstLast = extraFieldsCfg.some(f => f.type === 'first_last');
+  let extraData = {};
+  if (extraFieldsCfg.length > 0) {
+    const extra = collectExtraFields(ev, 'rsvp-xf-');
+    if (!extra.ok) { toast(extra.msg); return; }
+    extraData = extra.data;
+    if (extra.name) name = extra.name;
+  }
+  if (!name) { toast('❌ Preencha o seu nome.'); return; }
   
   // ✅ Determinar lado (pode ser customizado)
   const allowSides = (ev.allowSides === true) || (ev.allow_sides === 'yes') || (String(ev.allow_sides).toLowerCase() === 'yes');
@@ -3038,7 +3421,7 @@ function handleRSVP(e) {
 
   // ▼ NOVO: valida o nome do convidado e de cada acompanhante (máx. 3 nomes,
   // sem vírgulas) — impede meter várias pessoas no mesmo campo.
-  const valNome = validarNomePessoa(name, 'seu nome');
+  const valNome = usesFirstLast ? { ok: true } : validarNomePessoa(name, 'seu nome');
   if (!valNome.ok) { toast(valNome.msg); return; }
   for (const comp of companions) {
     const valComp = validarNomePessoa(comp, 'nome do acompanhante');
@@ -3073,6 +3456,8 @@ function handleRSVP(e) {
     message: messageText,
     updated_at: new Date().toISOString()
   };
+  // ▼ NOVO: só envia extra_data se o evento tiver campos extra activos
+  if (extraFieldsCfg.length > 0) eventData.extra_data = extraData;
 
   if (existingConfIndex !== -1 && ev.confirmations) {
     // ✅ JÁ EXISTE - fazer UPDATE
@@ -3086,6 +3471,7 @@ function handleRSVP(e) {
       kids: kids,
       wantsGift: wantsGift,
       message: messageText,
+      extraData: extraData,
       updatedAt: new Date().toISOString()
     };
     
@@ -3104,6 +3490,7 @@ function handleRSVP(e) {
       kids: kids,
       wantsGift: wantsGift,
       message: messageText,
+      extraData: extraData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -3193,7 +3580,7 @@ async function reloadEventFromSupabase(eventId) {
     console.log('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -3245,7 +3632,10 @@ async function reloadEventFromSupabase(eventId) {
           reserved: g.reserved || false,
           reservedBy: g.reserved_by || null
         })),
+        extraFields: parseExtraFields(event.extra_fields),
+        extra_fields: event.extra_fields,
         confirmations: (event.rsvps || []).map(rsvp => ({
+          extraData: parseExtraData(rsvp.extra_data),
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -4049,8 +4439,9 @@ function editConfirmationModal(confIndex) {
       <div class="space-y-3 mb-4">
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-1">Nome</label>
-          <input id="edit-conf-name" class="input-field" value="${conf.name}">
+          <input id="edit-conf-name" class="input-field" value="${escapeHTML(conf.name)}">
         </div>
+        ${getEventExtraFields(ev).filter(f => f.type !== 'first_last').map(f => buildExtraFieldInputHTML({ ...f, required: false }, (conf.extraData || {})[f.key], 'edit-xf-')).join('')}
         
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-2">Confirmação</label>
@@ -4158,10 +4549,29 @@ function saveConfirmationEdit(confIndex, modal) {
   if (!ev || confIndex < 0 || confIndex >= ev.confirmations.length) return;
 
   const conf = ev.confirmations[confIndex];
+  const nomeOriginal = conf.name;
   
   conf.name = document.getElementById('edit-conf-name').value.trim() || conf.name;
   conf.attending = document.querySelector('input[name="edit-conf-attending"]:checked').value === 'yes';
-  conf.side = document.querySelector('input[name="edit-conf-side"]:checked').value;
+  conf.side = document.querySelector('input[name="edit-conf-side"]:checked')?.value ?? conf.side;
+
+  // ▼ NOVO: campos extra (Instituição, Cargo, ...) editados pelo organizador
+  const extraCfg = getEventExtraFields(ev);
+  if (extraCfg.length > 0) {
+    const newExtra = { ...(conf.extraData || {}) };
+    extraCfg.filter(f => f.type !== 'first_last').forEach(f => {
+      const el = document.getElementById('edit-xf-' + f.key);
+      if (!el) return;
+      const val = el.value.trim();
+      if (val) newExtra[f.key] = val; else delete newExtra[f.key];
+    });
+    if (extraCfg.some(f => f.type === 'first_last') && conf.name !== nomeOriginal) {
+      const parts = splitFirstLast({ name: conf.name });
+      newExtra.first_name = parts.first;
+      newExtra.last_name = parts.last;
+    }
+    conf.extraData = newExtra;
+  }
   
   // Recolher acompanhantes atualizados - APENAS os que têm valor
   const companionInputs = document.querySelectorAll('#edit-companions-list [data-edit-companion], #edit-companions-list input[placeholder*="acompanhante"]');
@@ -4178,6 +4588,19 @@ function saveConfirmationEdit(confIndex, modal) {
     const val = input.value.trim();
     if (val) conf.kids.push(val);
   });
+
+  // ▼ NOVO: gravar a edição também no Supabase (antes só mudava no ecrã)
+  const patch = {
+    guest_name: conf.name,
+    attending: conf.attending,
+    side: conf.side || '',
+    companions: conf.companions.join('|'),
+    kids: conf.kids.join('|'),
+    updated_at: new Date().toISOString()
+  };
+  if (extraCfg.length > 0) patch.extra_data = conf.extraData || {};
+  supabaseRequest(`rsvps?event_id=eq.${ev.id}&guest_name=eq.${encodeURIComponent(nomeOriginal)}`, 'PATCH', patch)
+    .then(res => { if (!res) toast('⚠️ Alteração não foi gravada no servidor. Tente novamente.'); });
   
   modal.remove();
   toast('Confirmação atualizada!');
@@ -4306,7 +4729,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log('📋 Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -4424,7 +4847,10 @@ async function searchEvent() {
       allowMessages: String(found.allow_messages).toLowerCase() === 'yes' || found.allow_messages === true,
       show_guest_messages: found.show_guest_messages,
       showGuestMessages: String(found.show_guest_messages).toLowerCase() === 'yes' || found.show_guest_messages === true,
+      extraFields: parseExtraFields(found.extra_fields),
+      extra_fields: found.extra_fields,
       confirmations: (found.rsvps || []).map(rsvp => ({
+        extraData: parseExtraData(rsvp.extra_data),
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
@@ -5184,10 +5610,10 @@ function exportCSV() {
     csv += `${e.id},"${criador}","${e.title}","${e.date}","${e.time}","${e.deadline}",${e.allowCompanions},${e.allowGifts},${e.allowKids},"rsvp.app/evento/${e.id}"\n`;
   });
 
-  csv += '\n\nRSVPs - CONFIRMAÇÕES DE PRESENÇA\nEVENTO,CONVIDADO,CONFIRMACAO,LADO,ACOMPANHANTES,CRIANCAS\n';
+  csv += '\n\nRSVPs - CONFIRMAÇÕES DE PRESENÇA\nEVENTO,CONVIDADO,CONFIRMACAO,LADO,ACOMPANHANTES,CRIANCAS,CAMPOS_EXTRA\n';
   Store.events.forEach(e => {
     e.confirmations.forEach(c => {
-      csv += `${e.id},"${c.name}","${c.attending ? 'SIM' : 'NÃO'}","${c.side}","${c.companions.join('; ')}","${c.kids.join('; ')}"\n`;
+      csv += `${e.id},"${c.name}","${c.attending ? 'SIM' : 'NÃO'}","${c.side}","${c.companions.join('; ')}","${c.kids.join('; ')}","${formatExtraDataSummary(c, e, ' | ').replace(/"/g, '""')}"\n`;
     });
   });
 
@@ -6795,7 +7221,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -6854,7 +7280,10 @@ async function checkURLForEvent() {
         allowMessages: String(eventData.allow_messages).toLowerCase() === 'yes' || eventData.allow_messages === true,
         show_guest_messages: eventData.show_guest_messages,
         showGuestMessages: String(eventData.show_guest_messages).toLowerCase() === 'yes' || eventData.show_guest_messages === true,
+        extraFields: parseExtraFields(eventData.extra_fields),
+        extra_fields: eventData.extra_fields,
         confirmations: (eventData.rsvps || []).map(rsvp => ({
+          extraData: parseExtraData(rsvp.extra_data),
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -7472,6 +7901,9 @@ function showUserEventOptions(userId) {
           <button class="flex-1 text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminEditEventURL('${event.id}')">
             🔗 Alterar URL
           </button>
+          <button class="flex-1 text-xs bg-teal-500 hover:bg-teal-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminEditExtraFields('${event.id}')">
+            Campos RSVP${getEventExtraFields(event).length ? ' (' + getEventExtraFields(event).length + ')' : ''}
+          </button>
           <button class="flex-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminDeleteEvent('${event.id}', this.closest('.modal-overlay'))">
             Eliminar
           </button>
@@ -7746,7 +8178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }));
           
           // Carregar TODOS os eventos (com JOIN para presentes e RSVPs)
-          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
+          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)&limit=500&order=date.desc`);
           console.log('✅ Eventos carregados:', allEvents?.length || 0);
           
           Store.events = (allEvents || []).map(event => {
@@ -7795,7 +8227,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 reserved: g.reserved || false,
                 reservedBy: g.reserved_by || null
               })),
+              extraFields: parseExtraFields(event.extra_fields),
+              extra_fields: event.extra_fields,
               confirmations: (event.rsvps || []).map(rsvp => ({
+                extraData: parseExtraData(rsvp.extra_data),
                 name: rsvp.guest_name,
                 attending: rsvp.attending === true || rsvp.attending === 'yes',
                 side: rsvp.side ?? null,
@@ -7815,7 +8250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // ✅ SE É UTILIZADOR NORMAL: carregar apenas seus eventos
           console.log('👤 Utilizador normal - carregando seus eventos...');
           
-          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)`);
           
           console.log('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
           
@@ -7867,7 +8302,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                   reserved: g.reserved || false,
                   reservedBy: g.reserved_by || null
                 })),
+                extraFields: parseExtraFields(event.extra_fields),
+                extra_fields: event.extra_fields,
                 confirmations: (event.rsvps || []).map(rsvp => ({
+                  extraData: parseExtraData(rsvp.extra_data),
                   name: rsvp.guest_name,
                   attending: rsvp.attending === true || rsvp.attending === 'yes',
                   side: rsvp.side ?? null,
