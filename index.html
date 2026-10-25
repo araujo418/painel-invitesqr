@@ -299,6 +299,9 @@ function controlarLado(ativo) {
        <div class="flex gap-2 mb-4">
         <input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
        </div>
+       <p id="detail-link-note" class="hidden text-xs text-teal-700 font-semibold -mt-3 mb-4"></p>
+       <!-- ▼ NOVO: links próprios do convite (noiva/noivo, com/sem acompanhante...) -->
+       <div id="detail-rsvp-links" class="hidden mb-4"></div>
        <div id="detail-gifts-link-wrap" class="hidden mb-4">
         <label class="text-xs font-semibold text-gray-500">Link Só Presentes</label>
         <div class="flex gap-2 mt-1">
@@ -311,10 +314,11 @@ function controlarLado(ativo) {
         <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
        </div>
        <div class="flex flex-wrap gap-2 mb-6">
-        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-extra-fields" class="btn-outline text-sm hidden" onclick="adminEditExtraFields(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="list-plus" class="w-4 h-4"></i> Campos do RSVP</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
+        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-rsvp-links" class="btn-outline text-sm hidden" onclick="openRsvpLinksModal(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link-2" class="w-4 h-4"></i> <span id="btn-rsvp-links-text">Links do Convite</span></span> </button> <button id="btn-extra-fields" class="btn-outline text-sm hidden" onclick="adminEditExtraFields(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="list-plus" class="w-4 h-4"></i> Campos do RSVP</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
        </div><!-- Stats -->
        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
        <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
+       <div id="detail-conf-filter" class="hidden mb-3"></div>
        <div id="detail-confirmations"></div>
       </div>
      </div>
@@ -598,7 +602,7 @@ async function fetchEventForGuest(eventId) {
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
     const eventData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     if (!eventData || eventData.length === 0) {
@@ -679,9 +683,12 @@ async function fetchEventForGuest(eventId) {
       show_guest_messages: event.show_guest_messages,
       showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
       extraFields: parseExtraFields(event.extra_fields),
+      rsvpLinks: parseRsvpLinks(event.rsvp_links),
+      rsvp_links: event.rsvp_links,
       extra_fields: event.extra_fields,
       confirmations: (event.rsvps || []).map(rsvp => ({
         extraData: parseExtraData(rsvp.extra_data),
+        linkKey: rsvp.link_key || '',
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
@@ -710,7 +717,7 @@ async function fetchUserDataForOrganizer(userId) {
   try {
     // ✅ OTIMIZAÇÃO: Um único JOIN para trazer eventos + presentes + RSVPs
     // Selecionar TODOS os campos necessários incluindo cover_image, max_companions, max_kids, event_code
-    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)`);
+    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)`);
     
     console.log('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
@@ -772,6 +779,18 @@ async function fetchUserDataForOrganizer(userId) {
         allowKids: String(event.allow_kids).toLowerCase() === 'yes',
         allow_kids: event.allow_kids,
         
+        // ▼ NOVO: estes campos faltavam na sessão do cliente (lados, hora, recados)
+        allowSides: String(event.allow_sides).toLowerCase() === 'yes',
+        allow_sides: event.allow_sides,
+        side1_name: event.side1_name,
+        side2_name: event.side2_name,
+        show_time: event.show_time,
+        showTime: String(event.show_time).toLowerCase() === 'yes' || event.show_time === true,
+        allow_messages: event.allow_messages,
+        allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
+        show_guest_messages: event.show_guest_messages,
+        showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
+        
         cover: event.cover_image,
         cover_image: event.cover_image,
         
@@ -784,9 +803,12 @@ async function fetchUserDataForOrganizer(userId) {
         })),
         
         extraFields: parseExtraFields(event.extra_fields),
+        rsvpLinks: parseRsvpLinks(event.rsvp_links),
+        rsvp_links: event.rsvp_links,
         extra_fields: event.extra_fields,
         confirmations: (event.rsvps || []).map(rsvp => ({
           extraData: parseExtraData(rsvp.extra_data),
+          linkKey: rsvp.link_key || '',
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -1205,7 +1227,7 @@ async function handleLogin(e) {
     console.log('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)&limit=500&order=date.desc`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)&limit=500&order=date.desc`);
     
     console.log('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
@@ -1256,9 +1278,12 @@ async function handleLogin(e) {
           reservedBy: g.reserved_by || null
         })),
         extraFields: parseExtraFields(event.extra_fields),
+        rsvpLinks: parseRsvpLinks(event.rsvp_links),
+        rsvp_links: event.rsvp_links,
         extra_fields: event.extra_fields,
         confirmations: (event.rsvps || []).map(rsvp => ({
           extraData: parseExtraData(rsvp.extra_data),
+          linkKey: rsvp.link_key || '',
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -1987,6 +2012,13 @@ function renderEventDetails() {
   document.getElementById('btn-delete-event').classList.toggle('hidden', !(isOwner || isAdmin));
   // ▼ NOVO: só o admin (ou admin a ver como cliente) pode activar campos extra do RSVP
   document.getElementById('btn-extra-fields').classList.toggle('hidden', !(isAdmin || Store.adminModeActive));
+  // ▼ NOVO: links próprios — o admin activa; depois o cliente (dono) pode editar
+  const linksCfg = getEventRsvpLinks(event);
+  const canSeeLinksBtn = isAdmin || Store.adminModeActive || (isOwner && linksCfg.enabled);
+  document.getElementById('btn-rsvp-links').classList.toggle('hidden', !canSeeLinksBtn);
+  document.getElementById('btn-rsvp-links-text').textContent = linksCfg.enabled ? 'Editar Links' : 'Links do Convite';
+  renderRsvpLinksPanel(event);
+  renderConfLinkFilter(event);
 
   const confirmations = event.confirmations || [];
   const confirmed = confirmations.filter(c => c.attending === true || c.attending === 'yes');
@@ -2054,7 +2086,10 @@ function renderEventDetails() {
       return isNew;
     };
     
+    const linkFilter = getConfLinkFilter(event);
+    const linksOn = getEventRsvpLinks(event).enabled;
     confContainer.innerHTML = confirmations.map((c, idx) => {
+      if (!confMatchesLinkFilter(c, event, linkFilter)) return '';
       const isNew = isNewConfirmation(c);
       const newBadge = isNew ? '<span class="inline-block ml-2 text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-700">✓ NOVO</span>' : '';
       
@@ -2091,8 +2126,12 @@ function renderEventDetails() {
         escapeHTML(formatExtraDataSummary(c, event)),
         (hasReservedGift ? '🎁 ' + reservedGift.name : '')
       ].filter(Boolean).join(' · ');
-      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
+      const linkBadge = linksOn ? '<span class="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">' + escapeHTML(getRsvpLinkLabel(event, c.linkKey)) + '</span>' : '';
+      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p>' + linkBadge + '</div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
     }).join('');
+    if (!confContainer.innerHTML.trim()) {
+      confContainer.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma confirmação neste link.</p>';
+    }
   }
 
   lucide.createIcons();
@@ -2247,9 +2286,12 @@ function downloadPDF() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
-  const confirmed = (ev.confirmations || []).filter(c => c.attending === true || c.attending === 'yes');
+  // ▼ NOVO: se houver um link seleccionado no filtro, o PDF sai só desse link
+  const pdfLinkFilter = getConfLinkFilter(ev);
+  const pdfLinkLabel = pdfLinkFilter === null ? '' : (pdfLinkFilter === '__none' ? 'Sem link' : getRsvpLinkLabel(ev, pdfLinkFilter));
+  const confirmed = (ev.confirmations || []).filter(c => (c.attending === true || c.attending === 'yes') && confMatchesLinkFilter(c, ev, pdfLinkFilter));
   if (confirmed.length === 0) {
-    toast('Ainda nao ha convidados confirmados para exportar.');
+    toast(pdfLinkLabel ? 'Ainda nao ha convidados confirmados neste link.' : 'Ainda nao ha convidados confirmados para exportar.');
     return;
   }
 
@@ -2291,7 +2333,7 @@ function downloadPDF() {
 
   const JsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!JsPDF) {
-    const text = `${ev.title}\nGerado em: ${generatedAt}\n\n${textSections.join('\n\n')}`;
+    const text = `${ev.title}${pdfLinkLabel ? '\nLink: ' + pdfLinkLabel : ''}\nGerado em: ${generatedAt}\n\n${textSections.join('\n\n')}`;
     const element = document.createElement('pre');
     element.style.whiteSpace = 'pre-wrap';
     element.style.fontFamily = 'Arial, sans-serif';
@@ -2315,6 +2357,11 @@ function downloadPDF() {
   doc.setFontSize(16);
   doc.text(ev.title || 'Evento', margin, y);
   y += 8;
+  if (pdfLinkLabel) {
+    doc.setFontSize(12);
+    doc.text('Link: ' + pdfLinkLabel, margin, y);
+    y += 7;
+  }
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -2786,6 +2833,9 @@ function renderGuestView() {
   // ▼ NOVO: campos extra activados pelo admin (Primeiro e último nome, Instituição, Cargo...)
   renderGuestExtraFields(eventData, existingResponse);
 
+  // ▼ NOVO: link próprio do convite (lado fixo, com/sem acompanhante, crianças)
+  const activeLink = getGuestActiveLink(eventData);
+
   // ✅ CRITICAL: Mostrar/esconder sections baseado nos valores corretos do evento
   console.log('👤 Seções do formulário:');
   console.log('  allowCompanions:', eventData.allowCompanions, '→ Mostrar?', eventData.allowCompanions);
@@ -2807,7 +2857,16 @@ function renderGuestView() {
   // ✅ IMPORTANTE: Mostrar/esconder a seção de lados
   const customSideSection = document.getElementById('rsvp-side-section');
   
-  if (shouldShowSides) {
+  const linkFixesSide = !!(activeLink && activeLink.side);
+  document.querySelectorAll('input[name="rsvp-side"]').forEach(r => {
+    if (linkFixesSide) { r.required = false; r.checked = r.value === activeLink.side; }
+  });
+  if (linkFixesSide) {
+    // ▼ NOVO: o link já define o lado — o convidado não escolhe
+    customSideSection.classList.add('hidden');
+    const defaultSideSection = document.getElementById('rsvp-default-side-section');
+    if (defaultSideSection) defaultSideSection.classList.add('hidden');
+  } else if (shouldShowSides) {
     // ✅ Mostrar seção de lados customizada
     console.log('  ✅ MOSTRANDO seção de lados para o convidado');
     customSideSection.classList.remove('hidden');
@@ -2817,8 +2876,12 @@ function renderGuestView() {
     customSideSection.classList.add('hidden');
   }
   
-  document.getElementById('rsvp-companions-section').classList.toggle('hidden', !eventData.allowCompanions);
-  document.getElementById('rsvp-kids-section').classList.toggle('hidden', !eventData.allowKids);
+  const effAllowCompanions = activeLink ? activeLink.allowCompanions : eventData.allowCompanions;
+  const effAllowKids = activeLink ? activeLink.allowKids : eventData.allowKids;
+  if (!effAllowCompanions) document.getElementById('rsvp-companions-list').innerHTML = '';
+  if (!effAllowKids) document.getElementById('rsvp-kids-list').innerHTML = '';
+  document.getElementById('rsvp-companions-section').classList.toggle('hidden', !effAllowCompanions);
+  document.getElementById('rsvp-kids-section').classList.toggle('hidden', !effAllowKids);
   document.getElementById('rsvp-gifts-section').classList.toggle('hidden', !eventData.allowGifts);
   
   // ✅ NOVO: Mostrar/esconder seção de mensagens
@@ -3280,6 +3343,392 @@ async function saveExtraFieldsConfig(modal, btn) {
   if (!document.getElementById('screen-event-details').classList.contains('hidden')) renderEventDetails();
 }
 
+// =====================================================================
+// ▼ NOVO: LINKS PRÓPRIOS DO CONVITE (vários links, mesmo evento)
+// ---------------------------------------------------------------------
+// Cada link abre o MESMO ecrã de confirmação, mas com opções próprias
+// (lado já definido, com/sem acompanhante, crianças). Tudo cai no mesmo
+// evento e nos mesmos relatórios. Activado pelo admin só nos eventos dos
+// clientes que pedirem; depois o cliente pode editar os links.
+// Guardado em events.rsvp_links (jsonb):
+//   { enabled, default_key, links: [{ key, label, side, allow_companions,
+//     max_companions, allow_kids, max_kids }] }
+// Cada confirmação guarda o link usado em rsvps.link_key.
+// O link principal (?event=XXX, sem &l=) abre o link marcado como principal.
+// =====================================================================
+function parseRsvpLinks(raw) {
+  let cfg = raw;
+  if (typeof cfg === 'string') {
+    try { cfg = JSON.parse(cfg); } catch (_) { cfg = {}; }
+  }
+  if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) cfg = {};
+  const seen = new Set();
+  const links = (Array.isArray(cfg.links) ? cfg.links : [])
+    .filter(l => l && l.key && l.label && !seen.has(l.key) && seen.add(l.key))
+    .map(l => ({
+      key: String(l.key),
+      label: String(l.label),
+      side: l.side === 'side1' || l.side === 'side2' ? l.side : '',
+      allowCompanions: l.allow_companions === true || l.allow_companions === 'yes',
+      maxCompanions: Math.max(1, Math.min(20, parseInt(l.max_companions) || 1)),
+      allowKids: l.allow_kids === true || l.allow_kids === 'yes',
+      maxKids: Math.max(1, Math.min(20, parseInt(l.max_kids) || 1))
+    }));
+  const defaultKey = links.some(l => l.key === cfg.default_key) ? cfg.default_key : (links[0] ? links[0].key : null);
+  return { enabled: cfg.enabled === true && links.length > 0, defaultKey, links };
+}
+
+function serializeRsvpLinks(cfg) {
+  return {
+    enabled: !!cfg.enabled,
+    default_key: cfg.defaultKey || null,
+    links: cfg.links.map(l => ({
+      key: l.key,
+      label: l.label,
+      side: l.side || '',
+      allow_companions: !!l.allowCompanions,
+      max_companions: l.maxCompanions,
+      allow_kids: !!l.allowKids,
+      max_kids: l.maxKids
+    }))
+  };
+}
+
+function getEventRsvpLinks(ev) {
+  if (!ev) return { enabled: false, defaultKey: null, links: [] };
+  if (ev.rsvpLinks && Array.isArray(ev.rsvpLinks.links)) return ev.rsvpLinks;
+  return parseRsvpLinks(ev.rsvp_links);
+}
+
+// Link activo para o convidado (pelo &l= do URL; senão o link principal).
+function getGuestActiveLink(ev) {
+  const cfg = getEventRsvpLinks(ev);
+  if (!cfg.enabled) return null;
+  return cfg.links.find(l => l.key === Store.guestLinkKey)
+    || cfg.links.find(l => l.key === cfg.defaultKey)
+    || cfg.links[0] || null;
+}
+
+function getRsvpLinkLabel(ev, key) {
+  const cfg = getEventRsvpLinks(ev);
+  if (!cfg.enabled) return '';
+  if (!key) return 'Sem link';
+  const link = cfg.links.find(l => l.key === key);
+  return link ? link.label : 'Link removido';
+}
+
+function buildEventBaseURL(ev) {
+  return 'https://araujo418.github.io/painel-invitesqr/?event=' + (ev.eventCode || ev.event_code || ev.id);
+}
+
+function buildRsvpLinkURL(ev, link) {
+  return buildEventBaseURL(ev) + '&l=' + encodeURIComponent(link.key);
+}
+
+// Chaves aleatórias: o convidado não consegue adivinhar o link "com acompanhante"
+// a partir do link "sem acompanhante".
+function randomLinkKey(existing) {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let key;
+  do {
+    key = '';
+    for (let i = 0; i < 6; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
+  } while (existing && existing.includes(key));
+  return key;
+}
+
+function describeRsvpLink(ev, link) {
+  const names = getEventSideNames(ev);
+  return [
+    link.side ? 'Lado: ' + (link.side === 'side1' ? names.side1 : names.side2) : 'Convidado escolhe o lado',
+    link.allowCompanions ? 'Até ' + link.maxCompanions + ' acompanhante(s)' : 'Sem acompanhante',
+    link.allowKids ? 'Até ' + link.maxKids + ' criança(s)' : 'Sem crianças'
+  ].join(' · ');
+}
+
+// Painel no detalhe do evento: lista dos links com botão copiar.
+function renderRsvpLinksPanel(ev) {
+  const wrap = document.getElementById('detail-rsvp-links');
+  const mainNote = document.getElementById('detail-link-note');
+  if (!wrap) return;
+  const cfg = getEventRsvpLinks(ev);
+  if (!cfg.enabled) {
+    wrap.classList.add('hidden');
+    wrap.innerHTML = '';
+    if (mainNote) mainNote.classList.add('hidden');
+    return;
+  }
+  const def = cfg.links.find(l => l.key === cfg.defaultKey);
+  if (mainNote) {
+    mainNote.textContent = 'O link do evento abre o link: ' + (def ? def.label : '');
+    mainNote.classList.remove('hidden');
+  }
+  wrap.classList.remove('hidden');
+  wrap.innerHTML = `
+    <label class="text-xs font-semibold text-gray-500">Links do convite</label>
+    <div class="space-y-2 mt-1">
+      ${cfg.links.map((l, i) => `
+        <div class="rounded-xl border border-gray-200 p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <p class="text-sm font-semibold text-gray-800 truncate">${escapeHTML(l.label)}</p>
+            ${l.key === cfg.defaultKey ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 flex-shrink-0">PRINCIPAL</span>' : ''}
+          </div>
+          <p class="text-xs text-gray-500 mb-2">${escapeHTML(describeRsvpLink(ev, l))}</p>
+          <div class="flex gap-2">
+            <input id="detail-link-k${i}" class="input-field text-sm" readonly value="${escapeHTML(buildRsvpLinkURL(ev, l))}">
+            <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink('detail-link-k${i}')"><i data-lucide="copy" class="w-4 h-4"></i></button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function setConfLinkFilter(value) {
+  Store.confLinkFilter = { eventId: Store.currentEventId, key: value };
+  renderEventDetails();
+}
+
+function getConfLinkFilter(ev) {
+  const f = Store.confLinkFilter;
+  if (!f || f.eventId !== ev.id || f.key === '__all') return null;
+  if (!getEventRsvpLinks(ev).enabled) return null;
+  return f.key;
+}
+
+function confMatchesLinkFilter(conf, ev, filterKey) {
+  if (filterKey === null) return true;
+  const cfg = getEventRsvpLinks(ev);
+  const known = cfg.links.some(l => l.key === conf.linkKey);
+  if (filterKey === '__none') return !known;
+  return conf.linkKey === filterKey;
+}
+
+function renderConfLinkFilter(ev) {
+  const el = document.getElementById('detail-conf-filter');
+  if (!el) return;
+  const cfg = getEventRsvpLinks(ev);
+  if (!cfg.enabled) { el.innerHTML = ''; el.classList.add('hidden'); return; }
+  const current = getConfLinkFilter(ev) || '__all';
+  const confs = ev.confirmations || [];
+  const count = key => confs.filter(c => confMatchesLinkFilter(c, ev, key)).length;
+  const noneCount = count('__none');
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <select class="input-field text-sm" onchange="setConfLinkFilter(this.value)">
+      <option value="__all"${current === '__all' ? ' selected' : ''}>Todos os links (${confs.length})</option>
+      ${cfg.links.map(l => `<option value="${escapeHTML(l.key)}"${current === l.key ? ' selected' : ''}>${escapeHTML(l.label)} (${count(l.key)})</option>`).join('')}
+      ${noneCount ? `<option value="__none"${current === '__none' ? ' selected' : ''}>Sem link / link removido (${noneCount})</option>` : ''}
+    </select>
+    <p class="text-xs text-gray-400 mt-1">O "Baixar PDF" usa o link seleccionado.</p>`;
+}
+
+// ── Modal: configurar links (admin activa/cria; cliente edita) ──
+function openRsvpLinksModal(eventId) {
+  const ev = Store.events.find(e => e.id === eventId);
+  if (!ev) { toast('Evento não encontrado.'); return; }
+  const isAdminViewer = (Store.currentUser && Store.currentUser.role === 'admin') || Store.adminModeActive;
+  const isOwner = Store.currentUser && Store.currentUser.id === (ev.userId || ev.user_id);
+  const cfg = getEventRsvpLinks(ev);
+  if (!isAdminViewer && !(isOwner && cfg.enabled)) { toast('Os links próprios só podem ser activados pelo administrador.'); return; }
+
+  const names = getEventSideNames(ev);
+  const isDefaultNames = names.side1 === 'Grupo 1' && names.side2 === 'Grupo 2';
+  Store.rsvpLinksDraft = {
+    eventId,
+    isAdmin: isAdminViewer,
+    enabled: cfg.enabled || (isAdminViewer && cfg.links.length === 0),
+    defaultKey: cfg.defaultKey,
+    side1Name: isDefaultNames ? 'Noivo' : names.side1,
+    side2Name: isDefaultNames ? 'Noiva' : names.side2,
+    links: cfg.links.map(l => ({ ...l }))
+  };
+
+  document.querySelectorAll('.modal-overlay.lk-modal').forEach(m => m.remove());
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay lk-modal';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-lg w-full mx-4 overflow-y-auto" style="max-height:90vh">
+      <h3 class="text-lg font-bold text-gray-800 mb-1">Links do convite</h3>
+      <p class="text-sm text-gray-500 mb-4">Evento: <strong>${escapeHTML(ev.title)}</strong></p>
+      <div id="lk-body"></div>
+      <div class="flex gap-2 mt-5">
+        <button class="flex-1 btn-main" onclick="saveRsvpLinksConfig(this.closest('.modal-overlay'), this)">Guardar</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  if (isAdminViewer && Store.rsvpLinksDraft.links.length === 0) applyRsvpLinksTemplate(true);
+  renderRsvpLinksDraft();
+}
+
+function applyRsvpLinksTemplate(silent) {
+  const d = Store.rsvpLinksDraft;
+  if (!d) return;
+  if (!silent && d.links.length > 0 && !confirm('Substituir os links actuais pelo modelo dos 4 links?\n\nAs confirmações já recebidas pelos links antigos ficam como "link removido".')) return;
+  const keys = [];
+  const mk = (label, side, comp) => {
+    const key = randomLinkKey(keys); keys.push(key);
+    return { key, label, side, allowCompanions: comp, maxCompanions: 1, allowKids: false, maxKids: 1 };
+  };
+  const n1 = d.side1Name || 'Noivo';
+  const n2 = d.side2Name || 'Noiva';
+  d.links = [
+    mk(n2 + ' - com acompanhante', 'side2', true),
+    mk(n2 + ' - sem acompanhante', 'side2', false),
+    mk(n1 + ' - com acompanhante', 'side1', true),
+    mk(n1 + ' - sem acompanhante', 'side1', false)
+  ];
+  d.defaultKey = d.links[0].key;
+  d.enabled = true;
+  renderRsvpLinksDraft();
+}
+
+function addRsvpLinkDraft() {
+  const d = Store.rsvpLinksDraft;
+  if (!d) return;
+  if (d.links.length >= 12) { toast('Máximo de 12 links por evento.'); return; }
+  const key = randomLinkKey(d.links.map(l => l.key));
+  d.links.push({ key, label: 'Novo link', side: '', allowCompanions: false, maxCompanions: 1, allowKids: false, maxKids: 1 });
+  if (!d.defaultKey) d.defaultKey = key;
+  renderRsvpLinksDraft();
+}
+
+function removeRsvpLinkDraft(i) {
+  const d = Store.rsvpLinksDraft;
+  if (!d) return;
+  const removed = d.links.splice(i, 1)[0];
+  if (removed && d.defaultKey === removed.key) d.defaultKey = d.links[0] ? d.links[0].key : null;
+  renderRsvpLinksDraft();
+}
+
+function updateRsvpLinkDraft(i, field, value, rerender) {
+  const d = Store.rsvpLinksDraft;
+  if (!d || !d.links[i]) return;
+  if (field === 'maxCompanions' || field === 'maxKids') value = Math.max(1, Math.min(20, parseInt(value) || 1));
+  d.links[i][field] = value;
+  if (rerender) renderRsvpLinksDraft();
+}
+
+function renderRsvpLinksDraft() {
+  const d = Store.rsvpLinksDraft;
+  const body = document.getElementById('lk-body');
+  if (!d || !body) return;
+  const ev = Store.events.find(e => e.id === d.eventId);
+  const sideOpt = (val, cur, label) => `<option value="${val}"${cur === val ? ' selected' : ''}>${escapeHTML(label)}</option>`;
+
+  body.innerHTML = `
+    ${d.isAdmin ? `
+      <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 mb-4">
+        <div>
+          <p class="text-sm font-semibold text-gray-800">Activar links próprios neste evento</p>
+          <p class="text-xs text-gray-500">Desligado = o evento funciona com um único link, como antes.</p>
+        </div>
+        <div class="switch ${d.enabled ? 'active' : ''} flex-shrink-0" onclick="Store.rsvpLinksDraft.enabled = !Store.rsvpLinksDraft.enabled; renderRsvpLinksDraft()"></div>
+      </div>` : ''}
+    <div class="${d.enabled ? '' : 'opacity-50 pointer-events-none'}">
+      <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Nomes dos lados</p>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <input class="input-field text-sm" maxlength="30" value="${escapeHTML(d.side1Name)}" placeholder="Ex: Noivo" oninput="Store.rsvpLinksDraft.side1Name = this.value" onchange="renderRsvpLinksDraft()">
+        <input class="input-field text-sm" maxlength="30" value="${escapeHTML(d.side2Name)}" placeholder="Ex: Noiva" oninput="Store.rsvpLinksDraft.side2Name = this.value" onchange="renderRsvpLinksDraft()">
+      </div>
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-wide">Links</p>
+        ${d.isAdmin ? `<button type="button" class="text-teal-600 text-xs font-semibold hover:text-teal-700" onclick="applyRsvpLinksTemplate(false)">Usar modelo dos 4 links</button>` : ''}
+      </div>
+      <div class="space-y-3">
+        ${d.links.length === 0 ? '<p class="text-xs text-gray-400">Nenhum link criado.</p>' : ''}
+        ${d.links.map((l, i) => `
+          <div class="rounded-xl border ${l.key === d.defaultKey ? 'border-teal-400 bg-teal-50' : 'border-gray-200'} p-3">
+            <div class="flex gap-2 mb-2">
+              <input class="input-field text-sm font-semibold" maxlength="50" value="${escapeHTML(l.label)}" placeholder="Nome do link" oninput="updateRsvpLinkDraft(${i}, 'label', this.value)">
+              ${d.isAdmin ? `<button type="button" class="text-gray-400 hover:text-red-500 transition px-2" title="Remover link" onclick="removeRsvpLinkDraft(${i})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+            </div>
+            <label class="block text-xs text-gray-500 mb-1">Lado</label>
+            <select class="input-field text-sm mb-2" onchange="updateRsvpLinkDraft(${i}, 'side', this.value)">
+              ${sideOpt('', l.side, 'Convidado escolhe')}
+              ${sideOpt('side1', l.side, d.side1Name || 'Lado 1')}
+              ${sideOpt('side2', l.side, d.side2Name || 'Lado 2')}
+            </select>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-sm text-gray-700 min-w-0">Pode trazer acompanhante</span>
+              <div class="flex items-center gap-2">
+                ${l.allowCompanions ? `<input type="number" min="1" max="20" class="input-field text-sm py-1 text-center" style="width:64px;min-width:64px" value="${l.maxCompanions}" title="Máximo" onchange="updateRsvpLinkDraft(${i}, 'maxCompanions', this.value, true)">` : ''}
+                <div class="switch ${l.allowCompanions ? 'active' : ''} flex-shrink-0" onclick="updateRsvpLinkDraft(${i}, 'allowCompanions', ${!l.allowCompanions}, true)"></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-sm text-gray-700">Pode trazer crianças</span>
+              <div class="flex items-center gap-2">
+                ${l.allowKids ? `<input type="number" min="1" max="20" class="input-field text-sm py-1 text-center" style="width:64px;min-width:64px" value="${l.maxKids}" title="Máximo" onchange="updateRsvpLinkDraft(${i}, 'maxKids', this.value, true)">` : ''}
+                <div class="switch ${l.allowKids ? 'active' : ''} flex-shrink-0" onclick="updateRsvpLinkDraft(${i}, 'allowKids', ${!l.allowKids}, true)"></div>
+              </div>
+            </div>
+            <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <input type="radio" name="lk-default" class="accent-teal-500" ${l.key === d.defaultKey ? 'checked' : ''} onchange="Store.rsvpLinksDraft.defaultKey = '${l.key}'; renderRsvpLinksDraft()">
+              Link principal (o link normal do evento abre este)
+            </label>
+            ${ev ? `<p class="text-[11px] text-gray-400 mt-2 break-all">${escapeHTML(buildRsvpLinkURL(ev, l))}</p>` : ''}
+          </div>`).join('')}
+      </div>
+      ${d.isAdmin ? `<button type="button" class="btn-outline text-sm w-full mt-3" onclick="addRsvpLinkDraft()">+ Adicionar link</button>` : ''}
+    </div>`;
+  lucide.createIcons();
+}
+
+async function saveRsvpLinksConfig(modal, btn) {
+  const d = Store.rsvpLinksDraft;
+  if (!d) return;
+  const ev = Store.events.find(e => e.id === d.eventId);
+  if (!ev) return;
+
+  d.links.forEach(l => { l.label = String(l.label || '').trim(); });
+  const side1Name = String(d.side1Name || '').trim();
+  const side2Name = String(d.side2Name || '').trim();
+  if (d.enabled) {
+    if (d.links.length === 0) { toast('Crie pelo menos 1 link.'); return; }
+    if (d.links.some(l => !l.label)) { toast('Todos os links precisam de nome.'); return; }
+    const labels = d.links.map(l => l.label.toLowerCase());
+    if (new Set(labels).size !== labels.length) { toast('Há links com o mesmo nome.'); return; }
+    if (d.links.some(l => l.side) && (!side1Name || !side2Name)) { toast('Preencha os nomes dos dois lados.'); return; }
+  }
+  if (!d.links.some(l => l.key === d.defaultKey)) d.defaultKey = d.links[0] ? d.links[0].key : null;
+
+  const cfg = { enabled: d.enabled && d.links.length > 0, defaultKey: d.defaultKey, links: d.links };
+  const patch = { rsvp_links: serializeRsvpLinks(cfg) };
+  const usesSides = cfg.enabled && cfg.links.some(l => l.side);
+  if (usesSides) {
+    patch.allow_sides = 'yes';
+    patch.side1_name = side1Name;
+    patch.side2_name = side2Name;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'A guardar...'; }
+  const result = await supabaseRequest(`events?id=eq.${encodeURIComponent(d.eventId)}`, 'PATCH', patch);
+  if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  if (!result) {
+    toast('❌ Não foi possível guardar. Confirme que o SQL dos links já foi corrido no Supabase.');
+    return;
+  }
+
+  const parsed = parseRsvpLinks(patch.rsvp_links);
+  [ev, Store.guestEventData && Store.guestEventData.id === d.eventId ? Store.guestEventData : null]
+    .filter(Boolean)
+    .forEach(target => {
+      target.rsvpLinks = parsed;
+      target.rsvp_links = patch.rsvp_links;
+      if (usesSides) {
+        target.allowSides = true;
+        target.allow_sides = 'yes';
+        target.side1_name = side1Name;
+        target.side2_name = side2Name;
+      }
+    });
+
+  Store.rsvpLinksDraft = null;
+  modal.remove();
+  toast(parsed.enabled ? `✓ ${parsed.links.length} link(s) guardado(s).` : '✓ Links próprios desactivados.');
+  if (!document.getElementById('screen-event-details').classList.contains('hidden')) renderEventDetails();
+}
+
 
 
 
@@ -3343,7 +3792,9 @@ function addCompanionField() {
   const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
   const list = document.getElementById('rsvp-companions-list');
-  if (list.children.length >= ev.maxCompanions) { toast('Máximo de ' + ev.maxCompanions + ' acompanhantes.'); return; }
+  const lk = getGuestActiveLink(ev);
+  const maxC = lk ? (lk.allowCompanions ? lk.maxCompanions : 0) : ev.maxCompanions;
+  if (list.children.length >= maxC) { toast(maxC === 1 ? 'Máximo de 1 acompanhante.' : 'Máximo de ' + maxC + ' acompanhantes.'); return; }
   companionCount++;
   const div = document.createElement('div');
   div.className = 'flex gap-2 mb-2';
@@ -3357,7 +3808,9 @@ function addKidField() {
   const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
   const list = document.getElementById('rsvp-kids-list');
-  if (list.children.length >= ev.maxKids) { toast('Máximo de ' + ev.maxKids + ' crianças.'); return; }
+  const lk = getGuestActiveLink(ev);
+  const maxK = lk ? (lk.allowKids ? lk.maxKids : 0) : ev.maxKids;
+  if (list.children.length >= maxK) { toast(maxK === 1 ? 'Máximo de 1 criança.' : 'Máximo de ' + maxK + ' crianças.'); return; }
   kidCount++;
   const div = document.createElement('div');
   div.className = 'flex gap-2 mb-2';
@@ -3415,8 +3868,16 @@ function handleRSVP(e) {
   }
   
   const wantsGift = document.querySelector('input[name="rsvp-wants-gift"]:checked')?.value === 'yes';
-  const companions = [...document.querySelectorAll('[data-companion]')].map(i => i.value.trim()).filter(Boolean);
-  const kids = [...document.querySelectorAll('[data-kid]')].map(i => i.value.trim()).filter(Boolean);
+  let companions = [...document.querySelectorAll('[data-companion]')].map(i => i.value.trim()).filter(Boolean);
+  let kids = [...document.querySelectorAll('[data-kid]')].map(i => i.value.trim()).filter(Boolean);
+
+  // ▼ NOVO: regras do link próprio (lado fixo, limites de acompanhantes/crianças)
+  const activeLink = getGuestActiveLink(ev);
+  if (activeLink) {
+    if (activeLink.side) side = activeLink.side;
+    companions = activeLink.allowCompanions ? companions.slice(0, activeLink.maxCompanions) : [];
+    kids = activeLink.allowKids ? kids.slice(0, activeLink.maxKids) : [];
+  }
   const messageText = document.getElementById('rsvp-message')?.value?.trim() || '';
 
   // ▼ NOVO: valida o nome do convidado e de cada acompanhante (máx. 3 nomes,
@@ -3458,6 +3919,8 @@ function handleRSVP(e) {
   };
   // ▼ NOVO: só envia extra_data se o evento tiver campos extra activos
   if (extraFieldsCfg.length > 0) eventData.extra_data = extraData;
+  // ▼ NOVO: guarda por que link o convidado confirmou (só se o evento usar links)
+  if (activeLink) eventData.link_key = activeLink.key;
 
   if (existingConfIndex !== -1 && ev.confirmations) {
     // ✅ JÁ EXISTE - fazer UPDATE
@@ -3472,6 +3935,7 @@ function handleRSVP(e) {
       wantsGift: wantsGift,
       message: messageText,
       extraData: extraData,
+      linkKey: activeLink ? activeLink.key : (ev.confirmations[existingConfIndex].linkKey || ''),
       updatedAt: new Date().toISOString()
     };
     
@@ -3491,6 +3955,7 @@ function handleRSVP(e) {
       wantsGift: wantsGift,
       message: messageText,
       extraData: extraData,
+      linkKey: activeLink ? activeLink.key : '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -3580,7 +4045,7 @@ async function reloadEventFromSupabase(eventId) {
     console.log('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -3633,9 +4098,12 @@ async function reloadEventFromSupabase(eventId) {
           reservedBy: g.reserved_by || null
         })),
         extraFields: parseExtraFields(event.extra_fields),
+        rsvpLinks: parseRsvpLinks(event.rsvp_links),
+        rsvp_links: event.rsvp_links,
         extra_fields: event.extra_fields,
         confirmations: (event.rsvps || []).map(rsvp => ({
           extraData: parseExtraData(rsvp.extra_data),
+          linkKey: rsvp.link_key || '',
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -4729,7 +5197,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log('📋 Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -4848,9 +5316,12 @@ async function searchEvent() {
       show_guest_messages: found.show_guest_messages,
       showGuestMessages: String(found.show_guest_messages).toLowerCase() === 'yes' || found.show_guest_messages === true,
       extraFields: parseExtraFields(found.extra_fields),
+      rsvpLinks: parseRsvpLinks(found.rsvp_links),
+      rsvp_links: found.rsvp_links,
       extra_fields: found.extra_fields,
       confirmations: (found.rsvps || []).map(rsvp => ({
         extraData: parseExtraData(rsvp.extra_data),
+        linkKey: rsvp.link_key || '',
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
@@ -7207,6 +7678,8 @@ async function checkURLForEvent() {
   // ✅ NOVO: Suporta ?event=ABC&gifts=only para ir DIRETO para presentes
   const params = new URLSearchParams(window.location.search);
   const eventCode = params.get('event');
+  // ▼ NOVO: link próprio do convite (ex: &l=k7f2qa) — define as opções do convidado
+  Store.guestLinkKey = (params.get('l') || '').trim() || null;
   const giftsOnly = params.get('gifts') === 'only';
   
   console.log('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
@@ -7221,7 +7694,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -7281,9 +7754,12 @@ async function checkURLForEvent() {
         show_guest_messages: eventData.show_guest_messages,
         showGuestMessages: String(eventData.show_guest_messages).toLowerCase() === 'yes' || eventData.show_guest_messages === true,
         extraFields: parseExtraFields(eventData.extra_fields),
+        rsvpLinks: parseRsvpLinks(eventData.rsvp_links),
+        rsvp_links: eventData.rsvp_links,
         extra_fields: eventData.extra_fields,
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           extraData: parseExtraData(rsvp.extra_data),
+          linkKey: rsvp.link_key || '',
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -7904,6 +8380,9 @@ function showUserEventOptions(userId) {
           <button class="flex-1 text-xs bg-teal-500 hover:bg-teal-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminEditExtraFields('${event.id}')">
             Campos RSVP${getEventExtraFields(event).length ? ' (' + getEventExtraFields(event).length + ')' : ''}
           </button>
+          <button class="flex-1 text-xs bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="openRsvpLinksModal('${event.id}')">
+            Links${getEventRsvpLinks(event).enabled ? ' (' + getEventRsvpLinks(event).links.length + ')' : ''}
+          </button>
           <button class="flex-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminDeleteEvent('${event.id}', this.closest('.modal-overlay'))">
             Eliminar
           </button>
@@ -8178,7 +8657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }));
           
           // Carregar TODOS os eventos (com JOIN para presentes e RSVPs)
-          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)&limit=500&order=date.desc`);
+          const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)&limit=500&order=date.desc`);
           console.log('✅ Eventos carregados:', allEvents?.length || 0);
           
           Store.events = (allEvents || []).map(event => {
@@ -8228,9 +8707,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 reservedBy: g.reserved_by || null
               })),
               extraFields: parseExtraFields(event.extra_fields),
+              rsvpLinks: parseRsvpLinks(event.rsvp_links),
+              rsvp_links: event.rsvp_links,
               extra_fields: event.extra_fields,
               confirmations: (event.rsvps || []).map(rsvp => ({
                 extraData: parseExtraData(rsvp.extra_data),
+                linkKey: rsvp.link_key || '',
                 name: rsvp.guest_name,
                 attending: rsvp.attending === true || rsvp.attending === 'yes',
                 side: rsvp.side ?? null,
@@ -8250,7 +8732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // ✅ SE É UTILIZADOR NORMAL: carregar apenas seus eventos
           console.log('👤 Utilizador normal - carregando seus eventos...');
           
-          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,created_at,updated_at)`);
+          const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)`);
           
           console.log('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
           
@@ -8303,9 +8785,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                   reservedBy: g.reserved_by || null
                 })),
                 extraFields: parseExtraFields(event.extra_fields),
+                rsvpLinks: parseRsvpLinks(event.rsvp_links),
+                rsvp_links: event.rsvp_links,
                 extra_fields: event.extra_fields,
                 confirmations: (event.rsvps || []).map(rsvp => ({
                   extraData: parseExtraData(rsvp.extra_data),
+                  linkKey: rsvp.link_key || '',
                   name: rsvp.guest_name,
                   attending: rsvp.attending === true || rsvp.attending === 'yes',
                   side: rsvp.side ?? null,
