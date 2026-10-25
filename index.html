@@ -1319,6 +1319,7 @@ async function handleLogin(e) {
 function handleLogout() {
   // ✅ Limpar TUDO (localStorage mantém a sessão até logout manual)
   Store.currentUser = null;
+  try { SecureAuth.logout(); } catch (_) {}
   localStorage.removeItem('authToken');
   localStorage.removeItem('userId');
   localStorage.removeItem('userPhone');
@@ -8598,11 +8599,25 @@ function confirmToggleModeratorRole(userId, newRole, modal) {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Inicializando aplicação...');
   
-  // ✅ PASSO 1: Verificar token NO LOCALSTORAGE (persiste entre refreshes)
-  const token = localStorage.getItem('authToken');
-  const userId = localStorage.getItem('userId');
-  const userPhone = localStorage.getItem('userPhone');
-  const userRole = localStorage.getItem('userRole') || 'user';
+  // ✅ PASSO 1: Verificar sessão NO LOCALSTORAGE (persiste entre refreshes)
+  // ▼ CORRIGIDO: desde a mudança para o login seguro (SecureAuth), a sessão é
+  // guardada em "invitesqr_session" e já ninguém escrevia authToken/userId —
+  // por isso qualquer refresh mandava para o ecrã de login. Agora lê a sessão
+  // do SecureAuth (válida por 7 dias desde a última utilização).
+  const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+  let secureSession = null;
+  try { secureSession = window.SecureAuth ? SecureAuth.getSession() : null; } catch (_) {}
+  const secureSessionValid = !!(secureSession && secureSession.id && (!secureSession.ts || Date.now() - secureSession.ts < SESSION_MAX_AGE_MS));
+  if (secureSession && !secureSessionValid) {
+    try { SecureAuth.logout(); } catch (_) {}
+  }
+  if (secureSessionValid) {
+    try { localStorage.setItem('invitesqr_session', JSON.stringify({ ...secureSession, ts: Date.now() })); } catch (_) {}
+  }
+  const token = localStorage.getItem('authToken') || (secureSessionValid ? 'secure-session' : null);
+  const userId = localStorage.getItem('userId') || (secureSessionValid ? String(secureSession.id) : null);
+  const userPhone = localStorage.getItem('userPhone') || (secureSessionValid ? secureSession.phone : null);
+  const userRole = localStorage.getItem('userRole') || (secureSessionValid && secureSession.role) || 'user';
   const impersonatingUserId = localStorage.getItem('adminImpersonatingUserId');
   const impersonatingUserPhone = localStorage.getItem('adminImpersonatingUserPhone');
 
