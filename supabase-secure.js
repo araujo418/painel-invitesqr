@@ -22,7 +22,12 @@
   }
 
   const SESSION_KEY = 'invitesqr_session';
+  const APP_TOKEN_KEY = 'invitesqr_app_session_token';
   const ADMIN_TOKEN_KEY = 'invitesqr_admin_session_token';
+
+  function getAppToken() {
+    try { return sessionStorage.getItem(APP_TOKEN_KEY); } catch (_) { return null; }
+  }
 
   function getAdminToken() {
     try { return sessionStorage.getItem(ADMIN_TOKEN_KEY); } catch (_) { return null; }
@@ -71,6 +76,7 @@
     }
 
     clearAdminToken();
+    try { sessionStorage.removeItem(APP_TOKEN_KEY); } catch (_) {}
     const user = await callRpc('rpc_login', {
       p_phone: String(phone).trim(),
       p_password: String(password)
@@ -78,6 +84,11 @@
 
     if (!user || !user.id) {
       throw new Error('Conta não encontrada.');
+    }
+
+    if (user.app_session_token) {
+      try { sessionStorage.setItem(APP_TOKEN_KEY, user.app_session_token); }
+      catch (_) { throw new Error('Não foi possível guardar a sessão. Ative o armazenamento de sessão e entre novamente.'); }
     }
 
     if (user.role === 'admin' && user.admin_session_token) {
@@ -91,6 +102,7 @@
         id: user.id,
         phone: user.phone,
         role: user.role,
+        status: user.status,
         ts: Date.now()
       }));
     } catch (_) { /* localStorage pode falhar em modo privado; não é crítico */ }
@@ -112,9 +124,12 @@
   }
 
   function logout() {
+    const appToken = getAppToken();
+    if (appToken) callRpc('rpc_app_logout', { p_session_token: appToken }).catch(() => {});
     const token = getAdminToken();
     if (token) callRpc('rpc_admin_logout', { p_session_token: token }).catch(() => {});
     clearAdminToken();
+    try { sessionStorage.removeItem(APP_TOKEN_KEY); } catch (_) {}
     try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
   }
 
@@ -199,9 +214,63 @@
     throw new Error('Alterar o ID está desativado para preservar a conta e os eventos associados.');
   }
 
+  function rpcPublicEvent(eventCode) {
+    if (!eventCode) throw new Error('Código do evento em falta.');
+    return callRpc('rpc_public_get_event', { p_event_code: String(eventCode).trim() });
+  }
+
+  function rpcPublicRsvp(eventCode, payload, originalName = null) {
+    if (!eventCode || !payload) throw new Error('Dados do RSVP incompletos.');
+    return callRpc('rpc_public_upsert_rsvp', {
+      p_event_code: String(eventCode).trim(),
+      p_payload: payload,
+      p_original_name: originalName
+    });
+  }
+
+  function rpcPublicGiftReservation(eventCode, giftId, reserved, reservedBy) {
+    return callRpc('rpc_public_reserve_gift', {
+      p_event_code: String(eventCode || '').trim(),
+      p_gift_id: giftId,
+      p_reserved: !!reserved,
+      p_reserved_by: reservedBy || null
+    });
+  }
+
+  async function manageEventCover(action, eventId, fileName, blob) {
+    const token = getAppToken();
+    if (!token) throw new Error('Sessão expirada. Entre novamente para gerir a capa do evento.');
+    const headers = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'x-app-session-token': token,
+      'x-event-id': String(eventId || ''),
+      'x-action': action
+    };
+    let body = null;
+    if (action === 'upload') {
+      if (!(blob instanceof Blob)) throw new Error('Imagem inválida.');
+      headers['x-file-name'] = String(fileName || '');
+      headers['Content-Type'] = blob.type || 'image/jpeg';
+      body = blob;
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({ file_name: fileName });
+    }
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/manage-event-cover`, {
+      method: 'POST', headers, body
+    });
+    let result = {};
+    try { result = await response.json(); } catch (_) {}
+    if (!response.ok) throw new Error(result.error || 'Não foi possível gerir a imagem.');
+    return result;
+  }
+
   window.SecureAuth = {
     login, register, logout, getSession,
     adminSetPassword, adminCreateAccount, adminChangeAccountId,
-    getAdminSessionToken: getAdminToken, adminAccountsRequest
+    getAdminSessionToken: getAdminToken, getAppSessionToken: getAppToken,
+    adminAccountsRequest, rpcPublicEvent, rpcPublicRsvp, rpcPublicGiftReservation,
+    manageEventCover
   };
 })();

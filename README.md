@@ -1,23 +1,23 @@
 # Painel InvitesQR
 
-## Segurança do painel e do Supabase
+## Publicação da versão segura
 
-O painel usa uma sessão administrativa aleatória, com validade de 8 horas. O token fica apenas no `sessionStorage` do navegador e o banco guarda somente o hash SHA-256. As RPCs administrativas de criar conta e redefinir senha validam a sessão; a listagem e atualização de contas passam por uma RPC que nunca devolve o hash da senha. O login e o registo de clientes continuam usando as mesmas RPCs.
+Esta versão usa sessões de aplicação com validade de 8 horas e operações limitadas no Supabase. A recuperação do acesso administrativo continua a usar o painel existente; contas, eventos, convidados, RSVPs, presentes e imagens não são apagados nem reescritos.
 
-### Publicação coordenada
+O RSVP continua acessível pelo link público do evento. Não foi acrescentado código individual de convite nem confirmação por telefone.
 
-Para reativar as operações administrativas bloqueadas no projeto de produção, publique a migração SQL e os ficheiros do site na mesma janela de manutenção:
+### Estado da preparação
 
-1. No SQL Editor do projeto Supabase, execute `supabase/migrations/202611040001_admin_session_hardening.sql`.
-2. Publique `index.html` e `js/supabase-secure.js` juntos. O ficheiro da raiz `supabase-secure.js` é uma cópia de compatibilidade.
-3. O administrador precisa entrar novamente para receber a nova sessão.
+- `202611040001_admin_session_hardening.sql`: já aplicado no projeto de produção.
+- `202611040002_scope_public_access.sql`: já aplicado no projeto de produção.
+- Edge Function `manage-event-cover`: ainda precisa de ser publicada no Supabase.
+- `202611040003_cutover_scoped_access.sql`: ainda não aplicar. Executar só depois de a função e o novo site estarem publicados e acessíveis.
 
-Não publique apenas um dos lados: a migração exige o novo token no painel, e o painel novo precisa das RPCs da migração. A migração não apaga nem altera linhas de clientes, contas, eventos, RSVPs ou presentes. A antiga operação de alterar ID permanece desativada porque copiava e apagava a conta anterior.
+### Ordem de publicação
 
-## Recuperação da senha admin
+1. Publicar a Edge Function `manage-event-cover` no projecto Supabase `sjjezhvfdblilqqthxtl`.
+2. Publicar o conteúdo desta pasta no repositório que serve o GitHub Pages. `index.html` fica na raiz e o ficheiro `js/supabase-secure.js` mantém-se dentro de `js/`.
+3. Confirmar que o site publicado abre e que as operações de RSVP e as capas funcionam. Os utilizadores podem ter de iniciar sessão novamente para receber a nova sessão.
+4. Só então executar `supabase/migrations/202611040003_cutover_scoped_access.sql` no SQL Editor do Supabase.
 
-Abra `RECUPERAR-ADMIN.html` localmente no seu computador. A página não contacta nem altera o Supabase; ela prepara uma instrução SQL para executar manualmente no SQL Editor do projeto.
-
-Não publique `RECUPERAR-ADMIN.html` no site. A nova senha é incluída na instrução SQL gerada. Execute a instrução apenas no seu projeto Supabase, não guarde a consulta e apague-a do histórico do SQL Editor, se disponível.
-
-O SQL valida username e `role = 'admin'` e falha se não alterar exatamente uma conta. A conta pré-preenchida é `adkira@admin.com`; confirme o username antes de executar.
+Não execute novamente as migrações 001 e 002. Não aplique a 003 antes dos passos 1 e 2.

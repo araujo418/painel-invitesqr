@@ -468,17 +468,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // cover_image guarda um URL público (.../storage/v1/object/public/BUCKET/FICHEIRO);
 // apagar só a linha da tabela events NÃO apaga o ficheiro em si — é preciso
 // chamar a API de Storage à parte.
-async function deleteEventCoverImage(coverImageUrl) {
+async function deleteEventCoverImage(coverImageUrl, eventId) {
   if (!coverImageUrl) return;
   try {
     const marcador = '/storage/v1/object/public/';
     const idx = coverImageUrl.indexOf(marcador);
     if (idx === -1) return;
     const caminho = coverImageUrl.slice(idx + marcador.length); // ex: event-covers/event_xxx_123.jpg
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${caminho}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
+    const fileName = caminho.split('/').slice(1).join('/');
+    await SecureAuth.manageEventCover('delete', eventId, fileName);
   } catch (e) {
     console.warn('Não foi possível apagar a imagem de capa:', e);
   }
@@ -492,6 +490,8 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     'Accept': 'application/json'
   };
   const adminSessionToken = SecureAuth.getAdminSessionToken?.();
+  const appSessionToken = SecureAuth.getAppSessionToken?.();
+  if (appSessionToken) headers['x-client-info'] = `invitesqr/${appSessionToken}`;
   if (adminSessionToken && /^accounts(?:\?|$)/.test(endpoint)) {
     return SecureAuth.adminAccountsRequest(endpoint, method, body);
   }
@@ -605,9 +605,7 @@ async function fetchEventForGuest(eventId) {
     
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
-    const eventData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
-    );
+    const eventData = await SecureAuth.rpcPublicEvent(eventId);
     
     if (!eventData || eventData.length === 0) {
       console.error('❌ Evento não encontrado no Supabase');
@@ -726,7 +724,10 @@ async function fetchUserDataForOrganizer(userId) {
     console.log('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
     // 2. Puxar dados da conta (APENAS campos necessários)
-    const accountData = await supabaseRequest(`accounts?id=eq.${userId}&select=id,phone,status`);
+    const savedSession = SecureAuth.getSession?.();
+    const accountData = savedSession?.id === userId
+      ? [{ id: savedSession.id, phone: savedSession.phone, status: savedSession.status }]
+      : [];
     
     // ✅ Normalizar nomes dos campos do Supabase para o frontend - COM VALIDAÇÕES RIGOROSAS
     const normalizedEvents = (eventsData || []).map(event => {
@@ -1563,30 +1564,8 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
     console.log('  Tamanho:', blob.size, 'bytes');
     
     // ✅ URL CORRETA para Supabase Storage Upload
-    const uploadURL = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
-    
-    console.log('  Upload URL:', uploadURL);
-    
-    const response = await fetch(uploadURL, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': blob.type || 'image/jpeg'
-      },
-      body: blob
-    });
-    
-    console.log('📡 Resposta do upload:', response.status, response.statusText);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Erro no upload:', response.status, errorText);
-      throw new Error(`Erro ${response.status}: ${errorText}`);
-    }
-    
-    // ✅ URL PÚBLICA - usar formato CDN que tem CORS configurado
-    const imageURL = `https://sjjezhvfdblilqqthxtl.supabase.co/storage/v1/object/public/${bucketName}/${fileName}`;
+    const result = await SecureAuth.manageEventCover('upload', eventId, fileName, blob);
+    const imageURL = result.public_url;
     console.log('✅ Imagem enviada com sucesso!');
     console.log('  URL Pública (CDN):', imageURL);
     
@@ -1733,23 +1712,14 @@ function extractFileNameFromURL(url) {
 async function deleteImageFromSupabase(fileName) {
   try {
     const bucketName = 'event-covers';
-    const deleteURL = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
-    
     console.log('🗑️ Deletando imagem:', fileName);
-    
-    const response = await fetch(deleteURL, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-      }
-    });
-    
-    if (response.ok) {
+    const eventId = Store.currentEventId;
+    try {
+      await SecureAuth.manageEventCover('delete', eventId, fileName);
       console.log('✅ Imagem antiga deletada:', fileName);
       return true;
-    } else {
-      console.error('❌ Erro ao deletar imagem:', response.status);
+    } catch (error) {
+      console.error('❌ Erro ao deletar imagem:', error);
       return false;
     }
   } catch (error) {
@@ -4004,6 +3974,15 @@ function handleRSVP(e) {
 // ✅ Salvar RSVP no Supabase
 async function saveRSVPToSupabase(data, isUpdate, nomeOriginal) {
   try {
+    if (!SecureAuth.getAppSessionToken?.()) {
+      const publicCode = Store.guestEventData?.eventCode || Store.guestEventData?.event_code;
+      const result = await SecureAuth.rpcPublicRsvp(publicCode, data, isUpdate ? nomeOriginal : null);
+      if (result?.id) {
+        sendRealtimeNotification(data);
+        await reloadEventFromSupabase(data.event_id);
+      }
+      return;
+    }
     if (isUpdate) {
       // Atualizar registro existente — filtra pelo nome ORIGINAL (antes da
       // edição), porque data.guest_name já pode ser o nome novo/corrigido.
@@ -4050,7 +4029,10 @@ async function reloadEventFromSupabase(eventId) {
     console.log('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)`);
+    const guestCode = Store.guestEventData?.eventCode || Store.guestEventData?.event_code;
+    const eventData = SecureAuth.getAppSessionToken?.()
+      ? await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at)`)
+      : await SecureAuth.rpcPublicEvent(guestCode);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -4132,6 +4114,9 @@ async function reloadEventFromSupabase(eventId) {
         // Se não existe, adicionar
         Store.events.push(normalizedEvent);
         console.log('✅ Evento NOVO adicionado ao Store com', normalizedEvent.confirmations.length, 'confirmações');
+      }
+      if (!SecureAuth.getAppSessionToken?.() && Store.guestEventData) {
+        Store.guestEventData = normalizedEvent;
       }
       
       return normalizedEvent;
@@ -4270,6 +4255,9 @@ async function saveGiftsToSupabase(eventId, gifts) {
 // ✅ Carregar presentes do Supabase
 async function loadGiftsFromSupabase(eventId) {
   try {
+    if (!SecureAuth.getAppSessionToken?.()) {
+      return (Store.guestEventData?.gifts || []).map(g => ({ ...g }));
+    }
     const giftsData = await supabaseRequest(`gifts?event_id=eq.${eventId}`);
     if (giftsData && giftsData.length > 0) {
       return giftsData.map(g => ({
@@ -4288,6 +4276,11 @@ async function loadGiftsFromSupabase(eventId) {
 }
 
 async function updateGiftReservationInSupabase(giftId, reserved, reservedBy) {
+  if (!SecureAuth.getAppSessionToken?.()) {
+    const eventCode = Store.guestEventData?.eventCode || Store.guestEventData?.event_code;
+    await SecureAuth.rpcPublicGiftReservation(eventCode, giftId, reserved, reservedBy);
+    return;
+  }
   const response = await supabaseRequest(`gifts?id=eq.${giftId}`, 'PATCH', {
     reserved,
     reserved_by: reservedBy || null
@@ -4724,7 +4717,7 @@ async function confirmRemoveGiftReservation(giftId, confirmModal, editModal) {
   gift.reservedBy = null;
 
   try {
-    await updateGiftReservationInSupabase(giftId, false, null);
+    await updateGiftReservationInSupabase(giftId, false, previousReservedBy);
     confirmModal.remove();
     if (editModal) editModal.remove();
     
@@ -5627,7 +5620,7 @@ async function eliminarContaCompleta(userId) {
   for (const ev of eventos) {
     await supabaseRequest(`rsvps?event_id=eq.${ev.id}`, 'DELETE', {});
     await supabaseRequest(`gifts?event_id=eq.${ev.id}`, 'DELETE', {});
-    if (ev.cover_image) await deleteEventCoverImage(ev.cover_image);
+    if (ev.cover_image) await deleteEventCoverImage(ev.cover_image, ev.id);
     await supabaseRequest(`events?id=eq.${ev.id}`, 'DELETE', {});
   }
   await supabaseRequest(`accounts?id=eq.${userId}`, 'DELETE', {});
@@ -7698,9 +7691,7 @@ async function checkURLForEvent() {
     console.log('🔍 Procurando por event_code=', eventCode);
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
-    let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,extra_fields,rsvp_links,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,extra_data,link_key,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
-    );
+    let eventsData = await SecureAuth.rpcPublicEvent(eventCode);
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
     
