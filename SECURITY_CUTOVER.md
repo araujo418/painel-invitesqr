@@ -1,48 +1,18 @@
 # Segurança do Supabase — sequência de publicação
 
-As duas migrações de segurança estão separadas para evitar uma janela em que
-os convidados ou organizadores percam acesso.
+## Estado actual
 
-## O que foi preparado
+No projecto de produção, as migrações `202611040001_admin_session_hardening.sql` e `202611040002_scope_public_access.sql` já foram aplicadas. A migração `202611040003_cutover_scoped_access.sql` ainda não foi aplicada.
 
-- O login existente continua a usar telefone/username e senha. Passa a emitir
-  um token aleatório de sessão válido por 8 horas; apenas o hash fica no banco.
-- Organizadores e administradores só consultam ou alteram eventos, RSVPs e
-  presentes da sua conta, com as operações administrativas verificadas no
-  banco.
-- O link público continua a carregar o evento, confirmar/editar RSVP e reservar
-  presentes dentro daquele evento. Não foi adicionado código por convidado nem
-  confirmação por telefone.
-- Upload e remoção de capas passam por `manage-event-cover`, que verifica a
-  sessão e a propriedade do evento. O bucket continua público para exibir as
-  imagens já existentes.
-- As migrações não apagam nem reescrevem contas, eventos, convidados, RSVPs,
-  presentes ou imagens.
+A Edge Function `manage-event-cover` ainda tem de ser publicada. Depois deve ser publicada a versão correspondente do site. Só então se aplica a migração 003, que fecha o acesso REST anónimo às tabelas e remove permissões anónimas de upload/listagem no Storage.
 
 ## Ordem obrigatória
 
-1. Aplicar `202611040001_admin_session_hardening.sql` (se ainda não estiver
-   aplicado) e depois `202611040002_scope_public_access.sql`. Esta fase apenas
-   prepara sessões e RPCs; as regras públicas atuais continuam temporariamente
-   ativas.
-2. Publicar a Edge Function:
+1. Publicar `supabase/functions/manage-event-cover/index.ts` como a função `manage-event-cover` no projecto `sjjezhvfdblilqqthxtl`.
+2. Publicar `index.html` e `js/supabase-secure.js` no branch usado pelo GitHub Pages. O painel e os clientes poderão ter de iniciar sessão novamente para receber uma sessão nova.
+3. Confirmar que o site abre, que RSVP e capas estão operacionais e que clientes conseguem entrar.
+4. Executar `supabase/migrations/202611040003_cutover_scoped_access.sql` no SQL Editor do Supabase.
 
-   ```sh
-   supabase functions deploy manage-event-cover --project-ref sjjezhvfdblilqqthxtl
-   ```
+**Não executar novamente as migrações 001/002. Não executar a migração 003 antes de os passos 1–3 estarem concluídos.**
 
-3. Publicar os arquivos do site deste pacote no branch usado pelo GitHub Pages.
-   O usuário precisa entrar novamente após a publicação para receber uma sessão.
-4. Confirmar que o site publicado carrega links de evento, RSVP e capas. Só
-   então aplicar `202611040003_cutover_scoped_access.sql` no SQL Editor.
-5. Verificar: login do administrador, login de um cliente, painel do cliente,
-   link público de convite, envio/edição de RSVP, reserva de presente e exibição
-   de capa pública. A última migração fecha o acesso REST anónimo às tabelas e
-   remove upload/listagem anónimos do Storage.
-
-**Não aplicar a migração 003 antes de os passos 1–3 estarem publicados.** Se o
-site ainda estiver na versão antiga, os convidados e organizadores deixam de
-conseguir usar as chamadas diretas que ela faz hoje.
-
-Não foi feita qualquer alteração no projeto de produção durante esta
-preparação; as permissões atuais só mudam quando a migração 003 for aplicada.
+As migrações não apagam nem reescrevem contas, eventos, convidados, RSVPs, presentes ou imagens. O link público de cada evento continua a permitir carregar o evento, enviar/editar RSVP e reservar presentes nesse evento. Não foi adicionado código individual nem confirmação por telefone.
